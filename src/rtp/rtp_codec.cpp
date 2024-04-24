@@ -3,21 +3,12 @@
 #include <chrono>
 
 #include "log.h"
+#include "obu_parser.h"
 
 #define RTP_VERSION 2
 #define NALU 1
 #define FU_A 28
 #define FU_B 29
-
-constexpr int kObuTypeSequenceHeader = 1;
-constexpr int kObuTypeTemporalDelimiter = 2;
-constexpr int kObuTypeFrameHeader = 3;
-constexpr int kObuTypeTileGroup = 4;
-constexpr int kObuTypeMetadata = 5;
-constexpr int kObuTypeFrame = 6;
-constexpr int kObuTypeRedundantFrameHeader = 7;
-constexpr int kObuTypeTileList = 8;
-constexpr int kObuTypePadding = 15;
 
 RtpCodec ::RtpCodec(RtpPacket::PAYLOAD_TYPE payload_type)
     : version_(RTP_VERSION),
@@ -227,6 +218,13 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
       }
     }
   } else if (RtpPacket::PAYLOAD_TYPE::AV1 == payload_type_) {
+    std::vector<Obu> obus = ParseObus(buffer, size);
+    LOG_ERROR("Total size = [{}]", size);
+    for (int i = 0; i < obus.size(); i++) {
+      LOG_ERROR("[{}] Obu size = [{}], Obu type [{}]", i, obus[i].size_,
+                ObuTypeToString((OBU_TYPE)ObuType(obus[i].header_)));
+    }
+
     if (size <= MAX_NALU_LEN) {
       RtpPacket rtp_packet;
       rtp_packet.SetVerion(version_);

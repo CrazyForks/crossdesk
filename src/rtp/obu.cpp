@@ -15,9 +15,11 @@ Obu::Obu(const Obu &obu) {
       memcpy(payload_, obu.payload_, obu.payload_size_);
     }
     payload_size_ = obu.payload_size_;
+    size_ = obu.size_;
     header_ = obu.header_;
     extension_header_ = obu.extension_header_;
   } else {
+    size_ = obu.size_;
     header_ = obu.header_;
     extension_header_ = obu.extension_header_;
   }
@@ -26,6 +28,7 @@ Obu::Obu(const Obu &obu) {
 Obu::Obu(Obu &&obu)
     : payload_((uint8_t *)std::move(obu.payload_)),
       payload_size_(obu.payload_size_),
+      size_(obu.size_),
       header_(obu.header_),
       extension_header_(obu.extension_header_) {
   obu.payload_ = nullptr;
@@ -38,6 +41,7 @@ Obu &Obu::operator=(const Obu &obu) {
       payload_ = (uint8_t *)realloc(payload_, obu.payload_size_);
       memcpy(payload_, obu.payload_, obu.payload_size_);
       payload_size_ = obu.payload_size_;
+      size_ = obu.size_;
       header_ = obu.header_;
       extension_header_ = obu.extension_header_;
     } else {
@@ -54,6 +58,8 @@ Obu &Obu::operator=(Obu &&obu) {
     obu.payload_ = nullptr;
     payload_size_ = obu.payload_size_;
     obu.payload_size_ = 0;
+    size_ = obu.size_;
+    obu.size_ = 0;
     header_ = obu.header_;
     obu.header_ = 0;
     extension_header_ = obu.extension_header_;
@@ -68,6 +74,7 @@ Obu::~Obu() {
     payload_ = nullptr;
   }
   payload_size_ = 0;
+  size_ = 0;
   header_ = 0;
   extension_header_ = 0;
 }

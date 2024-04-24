@@ -29,7 +29,7 @@ bool ByteBufferReader::ReadUInt8(uint8_t* val) {
   return ReadBytes(reinterpret_cast<char*>(val), 1);
 }
 
-bool ByteBufferReader::ReadUVarint(uint64_t* val) {
+bool ByteBufferReader::ReadUVarint(uint64_t* val, size_t* len) {
   if (!val) {
     return false;
   }
@@ -46,6 +46,9 @@ bool ByteBufferReader::ReadUVarint(uint64_t* val) {
     // True if the msb is not a continuation byte.
     if (static_cast<uint64_t>(byte) < 0x80) {
       *val = v;
+      if (len) {
+        *len = i / 8 + (i % 8 ? 1 : 0) + 1;
+      }
       return true;
     }
   }

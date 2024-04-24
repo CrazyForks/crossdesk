@@ -24,7 +24,7 @@ class ByteBufferReader {
 
   bool ReadBytes(char* val, size_t len);
   bool ReadUInt8(uint8_t* val);
-  bool ReadUVarint(uint64_t* val);
+  bool ReadUVarint(uint64_t* val, size_t* len);
 
   bool Consume(size_t size);
 

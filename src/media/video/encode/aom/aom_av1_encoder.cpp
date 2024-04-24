@@ -20,8 +20,6 @@ extern "C" {
 };
 #endif
 
-#include "obu_parser.h"
-
 #define SAVE_NV12_STREAM 0
 #define SAVE_H264_STREAM 1
 
@@ -341,13 +339,6 @@ int AomAv1Encoder::Encode(
       int qp = -1;
       SET_ENCODER_PARAM_OR_RETURN_ERROR(AOME_GET_LAST_QUANTIZER, &qp);
       LOG_INFO("Encoded frame qp = {}", qp);
-
-      std::vector<Obu> obus = ParseObus(encoded_frame_, encoded_frame_size_);
-      for (int i = 0; i < obus.size(); i++) {
-        LOG_ERROR("[{}] Obu size = [{}], Obu type [{}]", i,
-                  obus[i].payload_size_,
-                  ObuTypeToString((OBU_TYPE)ObuType(obus[i].header_)));
-      }
 
       if (on_encoded_image) {
         on_encoded_image((char *)encoded_frame_, encoded_frame_size_);

@@ -70,18 +70,21 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
                      payload_reader.Length());
       payload_reader.Consume(payload_reader.Length());
     } else {
-      uint64_t size = 0;
-      if (!payload_reader.ReadUVarint(&size) ||
-          size > payload_reader.Length()) {
+      uint64_t payload_size = 0;
+      size_t len = 0;
+      if (!payload_reader.ReadUVarint(&payload_size, &len) ||
+          payload_size > payload_reader.Length()) {
         LOG_ERROR(
-            "Malformed AV1 input: declared size {} is larger than remaining "
+            "Malformed AV1 input: declared payload_size {} is larger than "
+            "remaining "
             "buffer size {}",
-            size, payload_reader.Length());
+            payload_size, payload_reader.Length());
         return {};
       }
       obu.SetPayload(reinterpret_cast<const uint8_t*>(payload_reader.Data()),
-                     size);
-      payload_reader.Consume(size);
+                     payload_size);
+      obu.size_ += len;
+      payload_reader.Consume(payload_size);
     }
     obu.size_ += obu.payload_size_;
     // Skip obus that shouldn't be transfered over rtp.
