@@ -342,7 +342,7 @@ int AomAv1Encoder::Encode(const uint8_t *pData, int nSize,
 
       int qp = -1;
       SET_ENCODER_PARAM_OR_RETURN_ERROR(AOME_GET_LAST_QUANTIZER, &qp);
-      LOG_INFO("Encoded frame qp = {}", qp);
+      // LOG_INFO("Encoded frame qp = {}", qp);
 
       if (on_encoded_image) {
         on_encoded_image((char *)encoded_frame_, encoded_frame_size_,

@@ -247,7 +247,7 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
 
         rtp_packet.SetAv1AggrHeader(0, 0, 1, 0);
 
-        rtp_packet.EncodeAv1(obus[i].payload_, obus[i].payload_size_);
+        rtp_packet.EncodeAv1(obus[i].data_, obus[i].payload_size_);
         packets.emplace_back(rtp_packet);
       } else {
         size_t last_packet_size = obus[i].payload_size_ % MAX_NALU_LEN;
@@ -281,10 +281,10 @@ void RtpCodec::Encode(uint8_t* buffer, size_t size,
           rtp_packet.SetAv1AggrHeader(z, y, w, n);
 
           if (index == packet_num - 1 && last_packet_size > 0) {
-            rtp_packet.EncodeAv1(obus[i].payload_ + index * MAX_NALU_LEN,
+            rtp_packet.EncodeAv1(obus[i].data_ + index * MAX_NALU_LEN,
                                  last_packet_size);
           } else {
-            rtp_packet.EncodeAv1(obus[i].payload_ + index * MAX_NALU_LEN,
+            rtp_packet.EncodeAv1(obus[i].data_ + index * MAX_NALU_LEN,
                                  MAX_NALU_LEN);
           }
           packets.emplace_back(rtp_packet);
@@ -510,9 +510,9 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
     }
   } else if (RtpPacket::PAYLOAD_TYPE::AV1 == payload_type_) {
     std::vector<Obu> obus = ParseObus(buffer, size);
-    LOG_ERROR("Total size = [{}]", size);
+    // LOG_ERROR("Total size = [{}]", size);
     for (int i = 0; i < obus.size(); i++) {
-      LOG_ERROR("[{}] Obu size = [{}], Obu type [{}]", i, obus[i].size_,
+      LOG_ERROR("1 [{}] Obu size = [{}], Obu type [{}]", i, obus[i].size_,
                 ObuTypeToString((OBU_TYPE)ObuType(obus[i].header_)));
       if (obus[i].size_ <= MAX_NALU_LEN) {
         RtpPacket rtp_packet;
@@ -539,13 +539,13 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
         }
 
         rtp_packet.SetAv1AggrHeader(0, 0, 1, 0);
-
-        rtp_packet.EncodeAv1(obus[i].payload_, obus[i].payload_size_);
+        rtp_packet.EncodeAv1(obus[i].data_, obus[i].size_);
+        LOG_ERROR("enc payload size = {}", rtp_packet.PayloadSize());
         packets.emplace_back(rtp_packet);
       } else {
-        size_t last_packet_size = obus[i].payload_size_ % MAX_NALU_LEN;
+        size_t last_packet_size = obus[i].size_ % MAX_NALU_LEN;
         size_t packet_num =
-            obus[i].payload_size_ / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
+            obus[i].size_ / MAX_NALU_LEN + (last_packet_size ? 1 : 0);
         timestamp_ = std::chrono::high_resolution_clock::now()
                          .time_since_epoch()
                          .count();
@@ -577,12 +577,14 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
           rtp_packet.SetAv1AggrHeader(z, y, w, n);
 
           if (index == packet_num - 1 && last_packet_size > 0) {
-            rtp_packet.EncodeAv1(obus[i].payload_ + index * MAX_NALU_LEN,
+            rtp_packet.EncodeAv1(obus[i].data_ + index * MAX_NALU_LEN,
                                  last_packet_size);
           } else {
-            rtp_packet.EncodeAv1(obus[i].payload_ + index * MAX_NALU_LEN,
+            rtp_packet.EncodeAv1(obus[i].data_ + index * MAX_NALU_LEN,
                                  MAX_NALU_LEN);
           }
+
+          LOG_ERROR("enc payload size = {}", rtp_packet.PayloadSize());
           packets.emplace_back(rtp_packet);
         }
       }

@@ -311,6 +311,13 @@ class RtpPacket {
 
   uint8_t FecSourceSymbolNum() { return fec_source_symbol_num_; }
 
+  void GetAv1AggrHeader(int &z, int &y, int &w, int &n) {
+    z = av1_aggr_header_ >> 7;
+    y = av1_aggr_header_ >> 6 & 0x01;
+    w = av1_aggr_header_ >> 4 & 0x03;
+    n = av1_aggr_header_ >> 3 & 0x01;
+  }
+
   // Payload
   const uint8_t *Payload() {
     ParseRtpData();

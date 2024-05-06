@@ -30,7 +30,13 @@ class RtpVideoReceiver : public ThreadBase {
   }
 
  private:
-  bool CheckIsFrameCompleted(RtpPacket& rtp_packet);
+  void ProcessAV1RtpPacket(RtpPacket& rtp_packet);
+
+ private:
+  void ProcessH264RtpPacket(RtpPacket& rtp_packet);
+  bool CheckIsH264FrameCompleted(RtpPacket& rtp_packet);
+
+ private:
   bool CheckIsTimeSendRR();
   int SendRtcpRR(RtcpReceiverReport& rtcp_rr);
 

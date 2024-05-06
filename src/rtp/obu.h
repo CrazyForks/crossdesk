@@ -27,8 +27,9 @@ class Obu {
   uint8_t header_ = 0;
   uint8_t extension_header_ = 0;  // undefined if (header & kXbit) == 0
   uint8_t *payload_ = nullptr;
-  int size_ = 0;  // size of the header and payload combined.
   int payload_size_ = 0;
+  uint8_t *data_ = nullptr;
+  int size_ = 0;  // size of the header and payload combined.
 };
 
 #endif

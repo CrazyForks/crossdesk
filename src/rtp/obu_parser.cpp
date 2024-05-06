@@ -49,6 +49,8 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
   std::vector<Obu> result;
   ByteBufferReader payload_reader(reinterpret_cast<const char*>(payload),
                                   payload_size);
+
+  int pos = 0;
   while (payload_reader.Length() > 0) {
     Obu obu;
     payload_reader.ReadUInt8(&obu.header_);
@@ -87,6 +89,10 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
       payload_reader.Consume(payload_size);
     }
     obu.size_ += obu.payload_size_;
+    obu.data_ = (uint8_t*)malloc(obu.size_);
+    memcpy(obu.data_, payload + pos, obu.size_);
+    pos += obu.size_;
+
     // Skip obus that shouldn't be transfered over rtp.
     int obu_type = ObuType(obu.header_);
     // if (obu_type != kObuTypeTemporalDelimiter &&  //

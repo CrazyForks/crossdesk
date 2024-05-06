@@ -755,13 +755,18 @@ size_t RtpPacket::DecodeAv1(uint8_t *payload) {
     extension_data_ = buffer_ + 16 + extension_offset;
   }
 
-  uint32_t payload_offset =
+  uint32_t aggr_header_offset =
       (has_extension_ ? extension_len_ : 0) + extension_offset;
+
+  av1_aggr_header_ = buffer_[12 + aggr_header_offset];
+
+  uint32_t payload_offset = aggr_header_offset;
 
   payload_size_ = size_ - (13 + payload_offset);
   payload_ = buffer_ + 13 + payload_offset;
   if (payload) {
     memcpy(payload, payload_, payload_size_);
   }
+
   return payload_size_;
 }

@@ -1,6 +1,7 @@
 #include "rtp_video_receiver.h"
 
 #include "log.h"
+#include "obu_parser.h"
 
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
@@ -28,12 +29,14 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     RtcpReportBlock report;
 
     // auto duration = std::chrono::system_clock::now().time_since_epoch();
-    // auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
-    // uint32_t seconds_u32 = static_cast<uint32_t>(
+    // auto seconds =
+    // std::chrono::duration_cast<std::chrono::seconds>(duration); uint32_t
+    // seconds_u32 = static_cast<uint32_t>(
     //     std::chrono::duration_cast<std::chrono::seconds>(duration).count());
 
     // uint32_t fraction_u32 = static_cast<uint32_t>(
-    //     std::chrono::duration_cast<std::chrono::nanoseconds>(duration - seconds)
+    //     std::chrono::duration_cast<std::chrono::nanoseconds>(duration -
+    //     seconds)
     //         .count());
 
     report.source_ssrc = 0x00;
@@ -50,7 +53,14 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
 
     // SendRtcpRR(rtcp_rr);
   }
+  if (rtp_packet.PayloadType() == RtpPacket::PAYLOAD_TYPE::AV1) {
+    ProcessAV1RtpPacket(rtp_packet);
+  } else {
+    ProcessH264RtpPacket(rtp_packet);
+  }
+}
 
+void RtpVideoReceiver::ProcessH264RtpPacket(RtpPacket& rtp_packet) {
   if (!fec_enable_) {
     if (RtpPacket::PAYLOAD_TYPE::H264 == rtp_packet.PayloadType()) {
       if (RtpPacket::NAL_UNIT_TYPE::NALU == rtp_packet.NalUnitType()) {
@@ -58,7 +68,7 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
             VideoFrame(rtp_packet.Payload(), rtp_packet.PayloadSize()));
       } else if (RtpPacket::NAL_UNIT_TYPE::FU_A == rtp_packet.NalUnitType()) {
         incomplete_frame_list_[rtp_packet.SequenceNumber()] = rtp_packet;
-        bool complete = CheckIsFrameCompleted(rtp_packet);
+        bool complete = CheckIsH264FrameCompleted(rtp_packet);
       }
     }
   } else {
@@ -68,7 +78,7 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
             VideoFrame(rtp_packet.Payload(), rtp_packet.PayloadSize()));
       } else if (RtpPacket::NAL_UNIT_TYPE::FU_A == rtp_packet.NalUnitType()) {
         incomplete_frame_list_[rtp_packet.SequenceNumber()] = rtp_packet;
-        bool complete = CheckIsFrameCompleted(rtp_packet);
+        bool complete = CheckIsH264FrameCompleted(rtp_packet);
       }
     } else if (RtpPacket::PAYLOAD_TYPE::H264_FEC_SOURCE ==
                rtp_packet.PayloadType()) {
@@ -163,7 +173,30 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   }
 }
 
-bool RtpVideoReceiver::CheckIsFrameCompleted(RtpPacket& rtp_packet) {
+void RtpVideoReceiver::ProcessAV1RtpPacket(RtpPacket& rtp_packet) {
+  LOG_ERROR("recv payload size = {}, sequence_number_ = {}",
+            rtp_packet.PayloadSize(), rtp_packet.SequenceNumber());
+
+  int z, y, w, n;
+  rtp_packet.GetAv1AggrHeader(z, y, w, n);
+  LOG_ERROR("z = {}, y = {}, w = {}, n = {}", z, y, w, n);
+
+  if (z == 0) {
+  }
+
+  if (y == 0) {
+  }
+
+  std::vector<Obu> obus =
+      ParseObus((uint8_t*)rtp_packet.Payload(), rtp_packet.PayloadSize());
+  for (int i = 0; i < obus.size(); i++) {
+    LOG_ERROR("2 [{}|{}] Obu size = [{}], Obu type [{}]", i, obus.size(),
+              obus[i].size_,
+              ObuTypeToString((OBU_TYPE)ObuType(obus[i].header_)));
+  }
+}
+
+bool RtpVideoReceiver::CheckIsH264FrameCompleted(RtpPacket& rtp_packet) {
   if (rtp_packet.FuAEnd()) {
     uint16_t end_seq = rtp_packet.SequenceNumber();
     if (incomplete_frame_list_.size() == end_seq) {
