@@ -5,23 +5,8 @@
 
 #include "log.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavdevice/avdevice.h>
-#include <libavfilter/avfilter.h>
-#include <libavformat/avformat.h>
-#include <libavutil/imgutils.h>
-#include <libswscale/swscale.h>
-};
-#ifdef __cplusplus
-};
-#endif
-
-#define SAVE_NV12_STREAM 0
-#define SAVE_H264_STREAM 1
+#define SAVE_RECEIVED_NV12_STREAM 0
+#define SAVE_ENCODED_AV1_STREAM 0
 
 #define YUV420P_BUFFER_SIZE 1280 * 720 * 3 / 2
 static unsigned char yuv420p_buffer[YUV420P_BUFFER_SIZE];
@@ -44,30 +29,6 @@ constexpr int kRtpTicksPerSecond = 90000;
 constexpr double kMinimumFrameRate = 1.0;
 
 constexpr uint8_t kObuSizePresentBit = 0b0'0000'010;
-
-static int NV12ToYUV420PFFmpeg(unsigned char *src_buffer, int width, int height,
-                               unsigned char *dst_buffer) {
-  AVFrame *Input_pFrame = av_frame_alloc();
-  AVFrame *Output_pFrame = av_frame_alloc();
-  struct SwsContext *img_convert_ctx = sws_getContext(
-      width, height, AV_PIX_FMT_NV12, 1280, 720, AV_PIX_FMT_YUV420P,
-      SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
-
-  av_image_fill_arrays(Input_pFrame->data, Input_pFrame->linesize, src_buffer,
-                       AV_PIX_FMT_NV12, width, height, 1);
-  av_image_fill_arrays(Output_pFrame->data, Output_pFrame->linesize, dst_buffer,
-                       AV_PIX_FMT_YUV420P, 1280, 720, 1);
-
-  sws_scale(img_convert_ctx, (uint8_t const **)Input_pFrame->data,
-            Input_pFrame->linesize, 0, height, Output_pFrame->data,
-            Output_pFrame->linesize);
-
-  if (Input_pFrame) av_free(Input_pFrame);
-  if (Output_pFrame) av_free(Output_pFrame);
-  if (img_convert_ctx) sws_freeContext(img_convert_ctx);
-
-  return 0;
-}
 
 static aom_superblock_size_t GetSuperblockSize(int width, int height,
                                                int threads) {
@@ -127,16 +88,16 @@ int AomAv1Encoder::GetCpuSpeed(int width, int height) {
 AomAv1Encoder::AomAv1Encoder() {}
 
 AomAv1Encoder::~AomAv1Encoder() {
-  if (SAVE_NV12_STREAM && file_nv12_) {
+  if (SAVE_RECEIVED_NV12_STREAM && file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
     file_nv12_ = nullptr;
   }
 
-  if (SAVE_H264_STREAM && file_ivf_) {
-    fflush(file_ivf_);
-    fclose(file_ivf_);
-    file_ivf_ = nullptr;
+  if (SAVE_ENCODED_AV1_STREAM && file_av1_) {
+    fflush(file_av1_);
+    fclose(file_av1_);
+    file_av1_ = nullptr;
   }
 
   delete encoded_frame_;
@@ -272,17 +233,17 @@ int AomAv1Encoder::Init() {
   frame_for_encode_ = aom_img_wrap(nullptr, AOM_IMG_FMT_NV12, frame_width_,
                                    frame_height_, 1, nullptr);
 
-  if (SAVE_H264_STREAM) {
-    file_ivf_ = fopen("encoded_stream.ivf", "w+b");
-    if (!file_ivf_) {
-      LOG_ERROR("Fail to open encoded_stream.ivf");
+  if (SAVE_RECEIVED_NV12_STREAM) {
+    file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
+    if (!file_nv12_) {
+      LOG_ERROR("Fail to open received_nv12_stream.yuv");
     }
   }
 
-  if (SAVE_NV12_STREAM) {
-    file_nv12_ = fopen("raw_stream.yuv", "w+b");
-    if (!file_nv12_) {
-      LOG_ERROR("Fail to open raw_stream.yuv");
+  if (SAVE_ENCODED_AV1_STREAM) {
+    file_av1_ = fopen("encoded_av1_stream.ivf", "w+b");
+    if (!file_av1_) {
+      LOG_ERROR("Fail to open encoded_av1_stream.ivf");
     }
   }
 
@@ -293,7 +254,7 @@ int AomAv1Encoder::Encode(const uint8_t *pData, int nSize,
                           std::function<int(char *encoded_packets, size_t size,
                                             VideoFrameType frame_type)>
                               on_encoded_image) {
-  if (SAVE_NV12_STREAM) {
+  if (SAVE_RECEIVED_NV12_STREAM) {
     fwrite(pData, 1, nSize, file_nv12_);
   }
 
@@ -308,9 +269,6 @@ int AomAv1Encoder::Encode(const uint8_t *pData, int nSize,
   frame_for_encode_->stride[AOM_PLANE_Y] = frame_width_;
   frame_for_encode_->stride[AOM_PLANE_U] = frame_width_;
   frame_for_encode_->stride[AOM_PLANE_V] = 0;
-
-  // NV12ToYUV420PFFmpeg((unsigned char *)pData, frame_width_, frame_height_,
-  //                     (unsigned char *)yuv420p_buffer);
 
   VideoFrameType frame_type;
   if (0 == seq_++ % 300) {
@@ -347,8 +305,8 @@ int AomAv1Encoder::Encode(const uint8_t *pData, int nSize,
       if (on_encoded_image) {
         on_encoded_image((char *)encoded_frame_, encoded_frame_size_,
                          frame_type);
-        if (SAVE_H264_STREAM) {
-          fwrite(encoded_frame_, 1, encoded_frame_size_, file_ivf_);
+        if (SAVE_ENCODED_AV1_STREAM) {
+          fwrite(encoded_frame_, 1, encoded_frame_size_, file_av1_);
         }
       } else {
         OnEncodedImage((char *)encoded_frame_, encoded_frame_size_);

@@ -36,7 +36,8 @@ class NvidiaVideoEncoder : public VideoEncoder {
   CUcontext cuda_context_ = nullptr;
   std::vector<std::vector<uint8_t>> encoded_packets_;
   unsigned char* encoded_image_ = nullptr;
-  FILE* file_ = nullptr;
+  FILE* file_nv12_ = nullptr;
+  FILE* file_h264_ = nullptr;
   unsigned char* nv12_data_ = nullptr;
   unsigned int seq_ = 0;
 };

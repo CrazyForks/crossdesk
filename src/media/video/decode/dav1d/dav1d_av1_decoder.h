@@ -49,7 +49,9 @@ class Dav1dAv1Decoder : public VideoDecoder {
   VideoFrame *decoded_frame_yuv_ = nullptr;
   VideoFrame *decoded_frame_nv12_ = nullptr;
 
-  FILE *file_ = nullptr;
+  FILE *file_av1_ = nullptr;
+  FILE *file_nv12_ = nullptr;
+
   bool first_ = false;
 
   // dav1d

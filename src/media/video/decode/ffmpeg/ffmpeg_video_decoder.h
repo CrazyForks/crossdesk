@@ -40,7 +40,8 @@ class FfmpegVideoDecoder : public VideoDecoder {
 
   VideoFrame *decoded_frame_ = nullptr;
 
-  FILE *file_ = nullptr;
+  FILE *file_h264_ = nullptr;
+  FILE *file_nv12_ = nullptr;
   bool first_ = false;
 };
 

@@ -20,7 +20,9 @@ class NvidiaVideoDecoder : public VideoDecoder {
   NvDecoder* decoder = nullptr;
   bool get_first_keyframe_ = false;
   bool skip_frame_ = false;
-  FILE* file_ = nullptr;
+
+  FILE* file_h264_ = nullptr;
+  FILE* file_nv12_ = nullptr;
 };
 
 #endif

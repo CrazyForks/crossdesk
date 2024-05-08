@@ -4,8 +4,8 @@
 
 #include "log.h"
 
-#define SAVE_NV12_STREAM 0
-#define SAVE_H264_STREAM 0
+#define SAVE_RECEIVED_NV12_STREAM 0
+#define SAVE_ENCODED_H264_STREAM 0
 
 #define YUV420P_BUFFER_SIZE 1280 * 720 * 3 / 2
 static unsigned char yuv420p_buffer[YUV420P_BUFFER_SIZE];
@@ -36,13 +36,13 @@ static int NV12ToYUV420PFFmpeg(unsigned char *src_buffer, int width, int height,
 
 FFmpegVideoEncoder::FFmpegVideoEncoder() {}
 FFmpegVideoEncoder::~FFmpegVideoEncoder() {
-  if (SAVE_NV12_STREAM && file_nv12_) {
+  if (SAVE_RECEIVED_NV12_STREAM && file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
     file_nv12_ = nullptr;
   }
 
-  if (SAVE_H264_STREAM && file_h264_) {
+  if (SAVE_ENCODED_H264_STREAM && file_h264_) {
     fflush(file_h264_);
     fclose(file_h264_);
     file_h264_ = nullptr;
@@ -130,17 +130,17 @@ int FFmpegVideoEncoder::Init() {
 
   packet_ = av_packet_alloc();
 
-  if (SAVE_H264_STREAM) {
-    file_h264_ = fopen("encoded_stream.h264", "w+b");
-    if (!file_h264_) {
-      LOG_WARN("Fail to open encoded_stream.h264");
+  if (SAVE_RECEIVED_NV12_STREAM) {
+    file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
+    if (!file_nv12_) {
+      LOG_WARN("Fail to open received_nv12_stream.yuv");
     }
   }
 
-  if (SAVE_NV12_STREAM) {
-    file_nv12_ = fopen("raw_stream.yuv", "w+b");
-    if (!file_nv12_) {
-      LOG_WARN("Fail to open raw_stream.yuv");
+  if (SAVE_ENCODED_H264_STREAM) {
+    file_h264_ = fopen("encoded_h264_stream.h264", "w+b");
+    if (!file_h264_) {
+      LOG_WARN("Fail to open encoded_h264_stream.h264");
     }
   }
 
@@ -165,7 +165,7 @@ int FFmpegVideoEncoder::Encode(
     frame_->data[1] = yuv420p_buffer + frame_->width * frame_->height;
     frame_->data[2] = yuv420p_buffer + frame_->width * frame_->height * 5 / 4;
 
-    if (SAVE_NV12_STREAM) {
+    if (SAVE_RECEIVED_NV12_STREAM) {
       fwrite(yuv420p_buffer, 1, nSize, file_nv12_);
     }
   } else {
@@ -173,7 +173,7 @@ int FFmpegVideoEncoder::Encode(
     memcpy(frame_->data[1], pData + frame_->width * frame_->height,
            frame_->width * frame_->height / 2);
 
-    if (SAVE_NV12_STREAM) {
+    if (SAVE_RECEIVED_NV12_STREAM) {
       fwrite(pData, 1, nSize, file_nv12_);
     }
   }
@@ -208,7 +208,7 @@ int FFmpegVideoEncoder::Encode(
 
     if (on_encoded_image) {
       on_encoded_image((char *)packet_->data, packet_->size, frame_type);
-      if (SAVE_H264_STREAM) {
+      if (SAVE_ENCODED_H264_STREAM) {
         fwrite(packet_->data, 1, packet_->size, file_h264_);
       }
     } else {

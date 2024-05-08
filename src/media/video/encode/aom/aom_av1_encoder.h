@@ -65,7 +65,7 @@ class AomAv1Encoder : public VideoEncoder {
 
   std::vector<std::vector<uint8_t>> encoded_packets_;
   unsigned char* encoded_image_ = nullptr;
-  FILE* file_ivf_ = nullptr;
+  FILE* file_av1_ = nullptr;
   FILE* file_nv12_ = nullptr;
   unsigned char* nv12_data_ = nullptr;
   unsigned int seq_ = 0;

@@ -2,63 +2,57 @@
 
 #include <chrono>
 
+#include "libyuv.h"
 #include "log.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavdevice/avdevice.h>
-#include <libavfilter/avfilter.h>
-#include <libavformat/avformat.h>
-#include <libavutil/imgutils.h>
-#include <libswscale/swscale.h>
-};
-#ifdef __cplusplus
-};
-#endif
-
-#define SAVE_NV12_STREAM 0
-#define SAVE_H264_STREAM 0
+#define SAVE_RECEIVED_NV12_STREAM 0
+#define SAVE_ENCODED_H264_STREAM 0
 
 #define YUV420P_BUFFER_SIZE 1280 * 720 * 3 / 2
 static unsigned char yuv420p_buffer[YUV420P_BUFFER_SIZE];
 
-static int NV12ToYUV420PFFmpeg(unsigned char *src_buffer, int width, int height,
-                               unsigned char *dst_buffer) {
-  AVFrame *Input_pFrame = av_frame_alloc();
-  AVFrame *Output_pFrame = av_frame_alloc();
-  struct SwsContext *img_convert_ctx = sws_getContext(
-      width, height, AV_PIX_FMT_NV12, 1280, 720, AV_PIX_FMT_YUV420P,
-      SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+void nv12ToI420(unsigned char *Src_data, int src_width, int src_height,
+                unsigned char *Dst_data) {
+  // NV12 video size
+  int NV12_Size = src_width * src_height * 3 / 2;
+  int NV12_Y_Size = src_width * src_height;
 
-  av_image_fill_arrays(Input_pFrame->data, Input_pFrame->linesize, src_buffer,
-                       AV_PIX_FMT_NV12, width, height, 1);
-  av_image_fill_arrays(Output_pFrame->data, Output_pFrame->linesize, dst_buffer,
-                       AV_PIX_FMT_YUV420P, 1280, 720, 1);
+  // YUV420 video size
+  int I420_Size = src_width * src_height * 3 / 2;
+  int I420_Y_Size = src_width * src_height;
+  int I420_U_Size = (src_width >> 1) * (src_height >> 1);
+  int I420_V_Size = I420_U_Size;
 
-  sws_scale(img_convert_ctx, (uint8_t const **)Input_pFrame->data,
-            Input_pFrame->linesize, 0, height, Output_pFrame->data,
-            Output_pFrame->linesize);
+  // src: buffer address of Y channel and UV channel
+  unsigned char *Y_data_Src = Src_data;
+  unsigned char *UV_data_Src = Src_data + NV12_Y_Size;
+  int src_stride_y = src_width;
+  int src_stride_uv = src_width;
 
-  if (Input_pFrame) av_free(Input_pFrame);
-  if (Output_pFrame) av_free(Output_pFrame);
-  if (img_convert_ctx) sws_freeContext(img_convert_ctx);
+  // dst: buffer address of Y channel¡¢U channel and V channel
+  unsigned char *Y_data_Dst = Dst_data;
+  unsigned char *U_data_Dst = Dst_data + I420_Y_Size;
+  unsigned char *V_data_Dst = Dst_data + I420_Y_Size + I420_U_Size;
+  int Dst_Stride_Y = src_width;
+  int Dst_Stride_U = src_width >> 1;
+  int Dst_Stride_V = Dst_Stride_U;
 
-  return 0;
+  libyuv::NV12ToI420(
+      (const uint8_t *)Y_data_Src, src_stride_y, (const uint8_t *)UV_data_Src,
+      src_stride_uv, (uint8_t *)Y_data_Dst, Dst_Stride_Y, (uint8_t *)U_data_Dst,
+      Dst_Stride_U, (uint8_t *)V_data_Dst, Dst_Stride_V, src_width, src_height);
 }
 
 OpenH264Encoder::OpenH264Encoder() {}
 
 OpenH264Encoder::~OpenH264Encoder() {
-  if (SAVE_NV12_STREAM && file_nv12_) {
+  if (SAVE_RECEIVED_NV12_STREAM && file_nv12_) {
     fflush(file_nv12_);
     fclose(file_nv12_);
     file_nv12_ = nullptr;
   }
 
-  if (SAVE_H264_STREAM && file_h264_) {
+  if (SAVE_ENCODED_H264_STREAM && file_h264_) {
     fflush(file_h264_);
     fclose(file_h264_);
     file_h264_ = nullptr;
@@ -137,17 +131,17 @@ int OpenH264Encoder::Init() {
   int video_format = EVideoFormatType::videoFormatI420;
   openh264_encoder_->SetOption(ENCODER_OPTION_DATAFORMAT, &video_format);
 
-  if (SAVE_H264_STREAM) {
-    file_h264_ = fopen("encoded_stream.h264", "w+b");
-    if (!file_h264_) {
-      LOG_WARN("Fail to open encoded_stream.h264");
+  if (SAVE_RECEIVED_NV12_STREAM) {
+    file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
+    if (!file_nv12_) {
+      LOG_WARN("Fail to open received_nv12_stream.yuv");
     }
   }
 
-  if (SAVE_NV12_STREAM) {
-    file_nv12_ = fopen("raw_stream.yuv", "w+b");
-    if (!file_nv12_) {
-      LOG_WARN("Fail to open raw_stream.yuv");
+  if (SAVE_ENCODED_H264_STREAM) {
+    file_h264_ = fopen("encoded_h264_stream.h264", "w+b");
+    if (!file_h264_) {
+      LOG_WARN("Fail to open encoded_h264_stream.h264");
     }
   }
 
@@ -163,8 +157,8 @@ int OpenH264Encoder::Encode(
     return -1;
   }
 
-  if (SAVE_NV12_STREAM) {
-    fwrite(yuv420p_buffer, 1, nSize, file_nv12_);
+  if (SAVE_RECEIVED_NV12_STREAM) {
+    fwrite(pData, 1, nSize, file_nv12_);
   }
 
   VideoFrameType frame_type;
@@ -175,8 +169,8 @@ int OpenH264Encoder::Encode(
     frame_type = VideoFrameType::kVideoFrameDelta;
   }
 
-  NV12ToYUV420PFFmpeg((unsigned char *)pData, frame_width_, frame_height_,
-                      (unsigned char *)yuv420p_buffer);
+  nv12ToI420((unsigned char *)pData, frame_width_, frame_height_,
+             yuv420p_buffer);
 
   raw_frame_ = {0};
   raw_frame_.iPicWidth = frame_width_;
@@ -229,7 +223,7 @@ int OpenH264Encoder::Encode(
 
   if (on_encoded_image) {
     on_encoded_image((char *)encoded_frame_, encoded_frame_size_, frame_type);
-    if (SAVE_H264_STREAM) {
+    if (SAVE_ENCODED_H264_STREAM) {
       fwrite(encoded_frame_, 1, encoded_frame_size_, file_h264_);
     }
   } else {
@@ -275,7 +269,7 @@ int OpenH264Encoder::Encode(
 
     if (on_encoded_image) {
       on_encoded_image((char *)encoded_frame_, frame_type);
-      if (SAVE_H264_STREAM) {
+      if (SAVE_ENCODED_H264_STREAM) {
         fwrite(encoded_frame_, 1, encoded_frame_size_, file_h264_);
       }
     } else {

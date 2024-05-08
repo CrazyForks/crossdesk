@@ -4,14 +4,21 @@
 
 #include "log.h"
 
-#define SAVE_ENCODER_STREAM 0
+#define SAVE_RECEIVED_NV12_STREAM 0
+#define SAVE_ENCODED_H264_STREAM 0
 
 NvidiaVideoEncoder::NvidiaVideoEncoder() {}
 NvidiaVideoEncoder::~NvidiaVideoEncoder() {
-  if (SAVE_ENCODER_STREAM && file_) {
-    fflush(file_);
-    fclose(file_);
-    file_ = nullptr;
+  if (SAVE_RECEIVED_NV12_STREAM && file_nv12_) {
+    fflush(file_nv12_);
+    fclose(file_nv12_);
+    file_nv12_ = nullptr;
+  }
+
+  if (SAVE_ENCODED_H264_STREAM && file_h264_) {
+    fflush(file_h264_);
+    fclose(file_h264_);
+    file_h264_ = nullptr;
   }
 
   if (nv12_data_) {
@@ -67,12 +74,20 @@ int NvidiaVideoEncoder::Init() {
 
   encoder_->CreateEncoder(&init_params);
 
-  if (SAVE_ENCODER_STREAM) {
-    file_ = fopen("encode_stream.h264", "w+b");
-    if (!file_) {
-      LOG_WARN("Fail to open stream.h264");
+  if (SAVE_RECEIVED_NV12_STREAM) {
+    file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
+    if (!file_nv12_) {
+      LOG_WARN("Fail to open received_nv12_stream.yuv");
     }
   }
+
+  if (SAVE_ENCODED_H264_STREAM) {
+    file_h264_ = fopen("encoded_h264_stream.h264", "w+b");
+    if (!file_h264_) {
+      LOG_WARN("Fail to open encoded_h264_stream.h264");
+    }
+  }
+
   return 0;
 }
 
@@ -84,6 +99,10 @@ int NvidiaVideoEncoder::Encode(
   if (!encoder_) {
     LOG_ERROR("Invalid encoder");
     return -1;
+  }
+
+  if (SAVE_RECEIVED_NV12_STREAM) {
+    fwrite(pData, 1, nSize, file_nv12_);
   }
 
   VideoFrameType frame_type;
@@ -117,15 +136,11 @@ int NvidiaVideoEncoder::Encode(
   for (const auto &packet : encoded_packets_) {
     if (on_encoded_image) {
       on_encoded_image((char *)packet.data(), packet.size(), frame_type);
-      if (SAVE_ENCODER_STREAM) {
-        fwrite(packet.data(), 1, packet.size(), file_);
+      if (SAVE_ENCODED_H264_STREAM) {
+        fwrite((unsigned char *)packet.data(), 1, packet.size(), file_h264_);
       }
     } else {
       OnEncodedImage((char *)packet.data(), packet.size());
-    }
-
-    if (SAVE_ENCODER_STREAM) {
-      fwrite((unsigned char *)packet.data(), 1, packet.size(), file_);
     }
   }
 

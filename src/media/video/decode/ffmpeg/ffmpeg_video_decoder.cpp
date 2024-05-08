@@ -2,7 +2,8 @@
 
 #include "log.h"
 
-#define SAVE_DECODER_STREAM 0
+#define SAVE_RECEIVED_H264_STREAM 0
+#define SAVE_DECODED_NV12_STREAM 0
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -13,10 +14,16 @@ extern "C" {
 FfmpegVideoDecoder::FfmpegVideoDecoder() {}
 
 FfmpegVideoDecoder::~FfmpegVideoDecoder() {
-  if (SAVE_DECODER_STREAM && file_) {
-    fflush(file_);
-    fclose(file_);
-    file_ = nullptr;
+  if (SAVE_RECEIVED_H264_STREAM && file_h264_) {
+    fflush(file_h264_);
+    fclose(file_h264_);
+    file_h264_ = nullptr;
+  }
+
+  if (SAVE_DECODED_NV12_STREAM && file_nv12_) {
+    fflush(file_nv12_);
+    fclose(file_nv12_);
+    file_nv12_ = nullptr;
   }
 
   if (decoded_frame_) {
@@ -89,10 +96,17 @@ int FfmpegVideoDecoder::Init() {
 
   decoded_frame_ = new VideoFrame(1280 * 720 * 3 / 2);
 
-  if (SAVE_DECODER_STREAM) {
-    file_ = fopen("decode_stream.yuv", "w+b");
-    if (!file_) {
-      LOG_WARN("Fail to open stream.yuv");
+  if (SAVE_RECEIVED_H264_STREAM) {
+    file_h264_ = fopen("received_h264_stream.h264", "w+b");
+    if (!file_h264_) {
+      LOG_WARN("Fail to open received_h264_stream.h264");
+    }
+  }
+
+  if (SAVE_DECODED_NV12_STREAM) {
+    file_nv12_ = fopen("decoded_nv12_stream.yuv", "w+b");
+    if (!file_nv12_) {
+      LOG_WARN("Fail to open decoded_nv12_stream.yuv");
     }
   }
   return 0;
@@ -107,6 +121,10 @@ int FfmpegVideoDecoder::Decode(
     } else {
       first_ = true;
     }
+  }
+
+  if (SAVE_RECEIVED_H264_STREAM) {
+    fwrite((unsigned char *)data, 1, size, file_h264_);
   }
 
   packet_->data = (uint8_t *)data;
@@ -152,9 +170,9 @@ int FfmpegVideoDecoder::Decode(
       // LOG_ERROR("cost {}", now_ts - start_ts);
 
       on_receive_decoded_frame(*decoded_frame_);
-      if (SAVE_DECODER_STREAM) {
+      if (SAVE_DECODED_NV12_STREAM) {
         fwrite((unsigned char *)decoded_frame_->Buffer(), 1,
-               decoded_frame_->Size(), file_);
+               decoded_frame_->Size(), file_nv12_);
       }
     }
   }
