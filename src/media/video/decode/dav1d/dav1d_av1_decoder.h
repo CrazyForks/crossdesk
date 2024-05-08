@@ -46,7 +46,8 @@ class Dav1dAv1Decoder : public VideoDecoder {
   AVFrame *frame_nv12_ = nullptr;
   struct SwsContext *img_convert_ctx = nullptr;
 
-  VideoFrame *decoded_frame_ = nullptr;
+  VideoFrame *decoded_frame_yuv_ = nullptr;
+  VideoFrame *decoded_frame_nv12_ = nullptr;
 
   FILE *file_ = nullptr;
   bool first_ = false;

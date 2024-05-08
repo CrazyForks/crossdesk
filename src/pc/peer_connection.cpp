@@ -99,7 +99,6 @@ int PeerConnection::Init(PeerConnectionParams params,
         (uint8_t *)data, size,
         [this, user_id, user_id_size](VideoFrame video_frame) {
           if (on_receive_video_buffer_) {
-            LOG_ERROR("Receive video, size {}", video_frame.Size());
             on_receive_video_buffer_((const char *)video_frame.Buffer(),
                                      video_frame.Size(), user_id, user_id_size);
           }
@@ -531,7 +530,7 @@ int PeerConnection::SendVideoData(const char *data, size_t size) {
       [this](char *encoded_frame, size_t size,
              VideoEncoder::VideoFrameType frame_type) -> int {
         for (auto &ice_trans : ice_transmission_list_) {
-          LOG_ERROR("Send frame size: [{}]", size);
+          // LOG_ERROR("Send frame size: [{}]", size);
           // ice_trans.second->SendData(IceTransmission::DATA_TYPE::VIDEO,
           //                            encoded_frame, size);
           ice_trans.second->SendVideoData(

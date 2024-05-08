@@ -246,20 +246,24 @@ bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacket& rtp_packet) {
     }
 
     size_t start = rtp_packet.SequenceNumber();
-
+    bool start_count = 0;
     while (end_seq--) {
       auto it = incomplete_frame_list_.find(end_seq);
       if (it == incomplete_frame_list_.end()) {
         // The last fragment has already received. If all fragments are in
         // order, then some fragments lost in tranmission and need to be
         // repaired using FEC
-        return false;
+        // return false;
       } else if (!it->second.Av1FrameStart()) {
         continue;
       } else if (it->second.Av1FrameStart()) {
         start = it->second.SequenceNumber();
         // skip temporal delimiter OBU
-        break;
+        start_count++;
+        if (start_count == 1)
+          break;
+        else
+          break;
       } else {
         LOG_WARN("What happened?")
         return false;
