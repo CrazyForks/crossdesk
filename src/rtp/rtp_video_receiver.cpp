@@ -241,11 +241,7 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(RtpPacket& rtp_packet) {
 bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacket& rtp_packet) {
   if (rtp_packet.Av1FrameEnd()) {
     uint16_t end_seq = rtp_packet.SequenceNumber();
-    if (incomplete_frame_list_.size() == end_seq) {
-      return true;
-    }
-
-    size_t start = rtp_packet.SequenceNumber();
+    size_t start = end_seq;
     bool start_count = 0;
     while (end_seq--) {
       auto it = incomplete_frame_list_.find(end_seq);
@@ -258,19 +254,14 @@ bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacket& rtp_packet) {
         continue;
       } else if (it->second.Av1FrameStart()) {
         start = it->second.SequenceNumber();
-        // skip temporal delimiter OBU
-        start_count++;
-        if (start_count == 1)
-          break;
-        else
-          break;
+        break;
       } else {
         LOG_WARN("What happened?")
         return false;
       }
     }
 
-    if (start != rtp_packet.SequenceNumber()) {
+    if (start <= rtp_packet.SequenceNumber()) {
       if (!nv12_data_) {
         nv12_data_ = new uint8_t[NV12_BUFFER_SIZE];
       }

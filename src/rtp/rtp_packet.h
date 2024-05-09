@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#include "log.h"
+
 // Common
 //  0                   1                   2                   3
 //  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -350,14 +352,30 @@ class RtpPacket {
     ParseRtpData();
     int z, y, w, n;
     GetAv1AggrHeader(z, y, w, n);
-    return !z && !y;
+    // return !z && !y;
+
+    if (z == 0 && y == 0 && w == 1) {
+      return true;
+    } else if (z == 0 && y == 1 & w == 1) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   bool Av1FrameEnd() {
     ParseRtpData();
     int z, y, w, n;
     GetAv1AggrHeader(z, y, w, n);
-    return z && !y;
+    // return z && !y;
+
+    if (z == 0 && y == 0 && w == 1) {
+      return true;
+    } else if (z == 1 && y == 0 & w == 1) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
  private:
@@ -372,7 +390,7 @@ class RtpPacket {
   uint32_t total_csrc_number_ = 0;
   bool marker_ = false;
   uint32_t payload_type_ = 0;
-  uint16_t sequence_number_ = 0;
+  uint16_t sequence_number_ = 1;
   uint32_t timestamp_ = 0;
   uint32_t ssrc_ = 0;
   std::vector<uint32_t> csrcs_;

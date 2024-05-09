@@ -12,7 +12,7 @@ add_defines("ASIO_STANDALONE", "ASIO_HAS_STD_TYPE_TRAITS", "ASIO_HAS_STD_SHARED_
     "ASIO_HAS_CSTDINT", "ASIO_HAS_STD_ARRAY",  "ASIO_HAS_STD_SYSTEM_ERROR")
 
 add_requires("asio 1.24.0", "nlohmann_json", "spdlog 1.11.0", "openfec", "libopus 1.4", "dav1d 1.1.0", "libyuv")
-add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus", "libyuv")
+add_packages("asio", "nlohmann_json", "spdlog", "openfec", "libopus", "dav1d", "libyuv")
 
 includes("thirdparty")
 
@@ -21,7 +21,7 @@ if is_os("windows") then
     add_requires("vcpkg::libnice 0.1.21")
     add_requires("vcpkg::aom")
     add_requires("openh264 2.1.1", {configs = {shared = false}})
-    add_packages("vcpkg::ffmpeg", "vcpkg::libnice", "vcpkg::aom", "openh264", "dav1d", "cuda")
+    add_packages("vcpkg::ffmpeg", "vcpkg::libnice", "vcpkg::aom", "openh264", "cuda")
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
     add_requires("cuda")
 elseif is_os("linux") then

@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include "log.h"
-
 void RtpPacket::TryToDecodeRtpPacket() {
   if (PAYLOAD_TYPE::H264 == PAYLOAD_TYPE(buffer_[1] & 0x7F)) {
     nal_unit_type_ = NAL_UNIT_TYPE(buffer_[12] & 0x1F);

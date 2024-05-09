@@ -17,7 +17,7 @@ RtpCodec ::RtpCodec(RtpPacket::PAYLOAD_TYPE payload_type)
       has_padding_(false),
       has_extension_(false),
       payload_type_(payload_type),
-      sequence_number_(0) {
+      sequence_number_(1) {
   fec_encoder_.Init();
 }
 
@@ -541,7 +541,7 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
 
         rtp_packet.SetAv1AggrHeader(0, 0, 1, 0);
         rtp_packet.EncodeAv1(obus[i].data_, obus[i].size_);
-        // LOG_ERROR("enc payload size = {}", rtp_packet.PayloadSize());
+
         packets.emplace_back(rtp_packet);
       } else {
         size_t last_packet_size = obus[i].size_ % MAX_NALU_LEN;
@@ -583,7 +583,6 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
                                  MAX_NALU_LEN);
           }
 
-          // LOG_ERROR("enc payload size = {}", rtp_packet.PayloadSize());
           packets.emplace_back(rtp_packet);
         }
       }
