@@ -19,9 +19,9 @@ includes("thirdparty")
 if is_os("windows") then
     add_requires("vcpkg::ffmpeg 5.1.2", {configs = {shared = false}})
     add_requires("vcpkg::libnice 0.1.21")
-    add_requires("vcpkg::aom")
     add_requires("openh264 2.1.1", {configs = {shared = false}})
-    add_packages("vcpkg::ffmpeg", "vcpkg::libnice", "vcpkg::aom", "openh264", "cuda")
+    add_requires("vcpkg::aom")
+    add_packages("vcpkg::ffmpeg", "vcpkg::libnice", "openh264", "vcpkg::aom", "cuda")
     add_defines("_WEBSOCKETPP_CPP11_INTERNAL_")
     add_requires("cuda")
 elseif is_os("linux") then
@@ -29,6 +29,7 @@ elseif is_os("linux") then
     add_requires("glib", {system = true})
     add_requires("vcpkg::libnice 0.1.21")
     add_requires("openh264 2.1.1", {configs = {shared = false}})
+    add_requires("vcpkg::aom")
     add_packages("ffmpeg", "glib", "vcpkg::libnice", "openh264", "cuda")
     add_cxflags("-fPIC") 
     add_syslinks("pthread")
@@ -36,7 +37,8 @@ elseif is_os("macosx") then
     add_requires("ffmpeg 5.1.2", {system = false})
     add_requires("vcpkg::libnice", {configs = {shared = false}})
     add_requires("vcpkg::openh264", {configs = {shared = false}})
-    add_packages("ffmpeg", "vcpkg::libnice", "vcpkg::openh264")
+    add_requires("vcpkg::aom")
+    add_packages("ffmpeg", "vcpkg::libnice", "vcpkg::openh264", "vcpkg::aom")
     add_ldflags("-Wl,-ld_classic")
 end
 
@@ -143,7 +145,9 @@ target("media")
         "src/media/video/encode/ffmpeg/*.cpp",
         "src/media/video/decode/ffmpeg/*.cpp",
         "src/media/video/encode/openh264/*.cpp",
-        "src/media/video/decode/openh264/*.cpp")
+        "src/media/video/decode/openh264/*.cpp",
+        "src/media/video/encode/aom/*.cpp",
+        "src/media/video/decode/dav1d/*.cpp")
         add_includedirs("src/media/video/encode",
         "src/media/video/decode",
         "src/media/video/encode/nvcodec",
@@ -152,6 +156,8 @@ target("media")
         "src/media/video/decode/ffmpeg",
         "src/media/video/encode/openh264",
         "src/media/video/decode/openh264",
+        "src/media/video/encode/aom",
+        "src/media/video/decode/dav1d",
         "thirdparty/nvcodec/Interface",
         "thirdparty/nvcodec/Samples", {public = true})
     elseif is_os("macosx") then
@@ -160,13 +166,17 @@ target("media")
         "src/media/video/encode/ffmpeg/*.cpp",
         "src/media/video/decode/ffmpeg/*.cpp",
         "src/media/video/encode/openh264/*.cpp",
-        "src/media/video/decode/openh264/*.cpp")
+        "src/media/video/decode/openh264/*.cpp",
+        "src/media/video/encode/aom/*.cpp",
+        "src/media/video/decode/dav1d/*.cpp")
         add_includedirs("src/media/video/encode",
         "src/media/video/decode",
         "src/media/video/encode/ffmpeg",
         "src/media/video/decode/ffmpeg",
         "src/media/video/encode/openh264",
-        "src/media/video/decode/openh264", {public = true})
+        "src/media/video/decode/openh264",
+        "src/media/video/encode/aom",
+        "src/media/video/decode/dav1d", {public = true})
     end
     add_files("src/media/audio/encode/*.cpp",
         "src/media/audio/decode/*.cpp")

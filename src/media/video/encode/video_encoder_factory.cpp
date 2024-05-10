@@ -1,6 +1,7 @@
 #include "video_encoder_factory.h"
 
 #if __APPLE__
+#include "aom/aom_av1_encoder.h"
 #include "ffmpeg/ffmpeg_video_encoder.h"
 #include "openh264/openh264_encoder.h"
 #else

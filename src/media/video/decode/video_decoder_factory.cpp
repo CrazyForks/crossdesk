@@ -1,6 +1,7 @@
 #include "video_decoder_factory.h"
 
 #if __APPLE__
+#include "dav1d/dav1d_av1_decoder.h"
 #include "ffmpeg/ffmpeg_video_decoder.h"
 #include "openh264/openh264_decoder.h"
 #else
