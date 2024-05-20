@@ -184,40 +184,16 @@ void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame) {
     int width = 1280;
     int height = 720;
 
-    // libyuv::ARGBToI420(frame.data, frame.width * 4, yuv420_frame_,
-    // frame.width,
-    //                    yuv420_frame_ + frame.width * frame.height,
-    //                    frame.width / 2,
-    //                    yuv420_frame_ + frame.width * frame.height * 5 / 4,
-    //                    frame.width / 2, frame.width, frame.height);
-
-    // libyuv::I420Scale(
-    //     (const uint8_t *)yuv420_frame_, frame.width,
-    //     (const uint8_t *)(yuv420_frame_ + frame.width * frame.height),
-    //     frame.width / 2,
-    //     (const uint8_t *)(yuv420_frame_ + frame.width * frame.height * 5 /
-    //     4), frame.width / 2, frame.width, frame.height, (uint8_t
-    //     *)yuv420_frame_, width, (uint8_t *)(yuv420_frame_ + width * height),
-    //     width / 2, (uint8_t *)(yuv420_frame_ + width * height * 5 / 4), width
-    //     / 2, width, height, libyuv::FilterMode::kFilterLinear);
-
-    // libyuv::I420ToNV12(
-    //     (const uint8_t *)yuv420_frame_, width,
-    //     (const uint8_t *)(yuv420_frame_ + width * height), width / 2,
-    //     (const uint8_t *)(yuv420_frame_ + width * height * 5 / 4), width / 2,
-    //     nv12_frame_, width, nv12_frame_ + width * height, width, width,
-    //     height);
-
-    libyuv::ARGBToNV12(frame.data, frame.width * 4, nv12_frame_, frame.width,
-                       nv12_frame_ + frame.width * frame.height,
-                       frame.width / 2, frame.width, frame.height);
+    libyuv::ARGBToNV12((const uint8_t *)frame.data, frame.width * 4,
+                       (uint8_t *)nv12_frame_, frame.width,
+                       (uint8_t *)(nv12_frame_ + frame.width * frame.height),
+                       frame.width, frame.width, frame.height);
 
     libyuv::NV12Scale(
         (const uint8_t *)nv12_frame_, frame.width,
         (const uint8_t *)(nv12_frame_ + frame.width * frame.height),
-        frame.width / 2, frame.width, frame.height,
-        (uint8_t *)nv12_frame_scaled_, width,
-        (uint8_t *)(nv12_frame_scaled_ + width * height), width / 2, width,
+        frame.width, frame.width, frame.height, (uint8_t *)nv12_frame_scaled_,
+        width, (uint8_t *)(nv12_frame_scaled_ + width * height), width, width,
         height, libyuv::FilterMode::kFilterLinear);
 
     _on_data(nv12_frame_scaled_, width * height * 3 / 2, width, height);
