@@ -55,23 +55,6 @@ int fps = 0;
 static std::atomic<bool> audio_buffer_fresh{false};
 static uint32_t last_ts = 0;
 
-// int64_t src_ch_layout = AV_CH_LAYOUT_MONO;
-// int src_rate = 48000;
-// enum AVSampleFormat src_sample_fmt = AV_SAMPLE_FMT_S16;
-// int src_nb_channels = 0;
-// uint8_t **src_data = NULL;
-// int src_linesize;
-// int src_nb_samples = 480;
-
-// int64_t dst_ch_layout = AV_CH_LAYOUT_MONO;
-// int dst_rate = 48000;
-// enum AVSampleFormat dst_sample_fmt = AV_SAMPLE_FMT_S16;
-// int dst_nb_channels = 0;
-// uint8_t **dst_data = NULL;
-// int dst_linesize;
-// int dst_nb_samples;
-// int max_dst_nb_samples;
-
 int dst_bufsize;
 struct SwrContext *swr_ctx;
 
@@ -187,47 +170,20 @@ inline int ProcessMouseKeyEven(SDL_Event &ev) {
 }
 
 void SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
-  // int64_t delay = swr_get_delay(swr_ctx, src_rate);
-  // dst_nb_samples = (int)av_rescale_rnd(delay + src_nb_samples, dst_rate,
-  //                                      src_rate, AV_ROUND_UP);
-  // if (dst_nb_samples > max_dst_nb_samples) {
-  //   av_freep(&dst_data[0]);
-  //   ret = av_samples_alloc(dst_data, &dst_linesize, dst_nb_channels,
-  //                          dst_nb_samples, dst_sample_fmt, 1);
-  //   if (ret < 0) return;
-  //   max_dst_nb_samples = dst_nb_samples;
-  // }
+  if (1) {
+    if ("ClientConnected" == client_connection_status_str) {
+      SendData(peer_client, DATA_TYPE::AUDIO, (const char *)stream, len);
+    }
 
-  // ret = swr_convert(swr_ctx, dst_data, dst_nb_samples,
-  //                   (const uint8_t **)&stream, src_nb_samples);
-  // if (ret < 0) {
-  //   fprintf(stderr, "Error while converting\n");
-  //   return;
-  // }
-  // dst_bufsize = av_samples_get_buffer_size(&dst_linesize, dst_nb_channels,
-  // ret,
-  //                                          dst_sample_fmt, 1);
-  // if (dst_bufsize < 0) {
-  //   fprintf(stderr, "Could not get sample buffer size\n");
-  //   return;
-  // }
-
-  // if (1) {
-  //   if ("ClientConnected" == client_connection_status_str) {
-  //     SendData(peer_client, DATA_TYPE::AUDIO, (const char *)dst_data[0],
-  //              dst_bufsize);
-  //   }
-
-  //   if ("ServerConnected" == server_connection_status_str) {
-  //     SendData(peer_server, DATA_TYPE::AUDIO, (const char *)dst_data[0],
-  //              dst_bufsize);
-  //   }
-  // } else {
-  //   memcpy(audio_buffer, dst_data[0], dst_bufsize);
-  //   audio_len = dst_bufsize;
-  //   SDL_Delay(10);
-  //   audio_buffer_fresh = true;
-  // }
+    if ("ServerConnected" == server_connection_status_str) {
+      SendData(peer_server, DATA_TYPE::AUDIO, (const char *)stream, len);
+    }
+  } else {
+    memcpy(audio_buffer, stream, len);
+    audio_len = len;
+    SDL_Delay(10);
+    audio_buffer_fresh = true;
+  }
 }
 
 void SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len) {
@@ -386,58 +342,6 @@ void ClientConnectionStatus(ConnectionStatus status) {
   }
 }
 
-int initResampler() {
-  /* create resampler context */
-  // swr_ctx = swr_alloc();
-  // if (!swr_ctx) {
-  //   fprintf(stderr, "Could not allocate resampler context\n");
-  //   ret = AVERROR(ENOMEM);
-  //   return -1;
-  // }
-
-  // /* set options */
-  // av_opt_set_int(swr_ctx, "in_channel_layout", src_ch_layout, 0);
-  // av_opt_set_int(swr_ctx, "in_sample_rate", src_rate, 0);
-  // av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", src_sample_fmt, 0);
-
-  // av_opt_set_int(swr_ctx, "out_channel_layout", dst_ch_layout, 0);
-  // av_opt_set_int(swr_ctx, "out_sample_rate", dst_rate, 0);
-  // av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", dst_sample_fmt, 0);
-
-  // /* initialize the resampling context */
-  // if ((ret = swr_init(swr_ctx)) < 0) {
-  //   fprintf(stderr, "Failed to initialize the resampling context\n");
-  //   return -1;
-  // }
-
-  // /* allocate source and destination samples buffers */
-  // src_nb_channels = av_get_channel_layout_nb_channels(src_ch_layout);
-
-  // ret = av_samples_alloc_array_and_samples(&src_data, &src_linesize,
-  //                                          src_nb_channels, src_nb_samples,
-  //                                          src_sample_fmt, 0);
-  // if (ret < 0) {
-  //   fprintf(stderr, "Could not allocate source samples\n");
-  //   return -1;
-  // }
-
-  // max_dst_nb_samples = dst_nb_samples =
-  //     av_rescale_rnd(src_nb_samples, dst_rate, src_rate, AV_ROUND_UP);
-
-  // /* buffer is going to be directly written to a rawaudio file, no alignment
-  // */ dst_nb_channels = av_get_channel_layout_nb_channels(dst_ch_layout);
-
-  // ret = av_samples_alloc_array_and_samples(&dst_data, &dst_linesize,
-  //                                          dst_nb_channels, dst_nb_samples,
-  //                                          dst_sample_fmt, 0);
-  // if (ret < 0) {
-  //   fprintf(stderr, "Could not allocate destination samples\n");
-  //   return -1;
-  // }
-
-  return 0;
-}
-
 int main(int argc, char *argv[]) {
   LOG_INFO("Remote desk");
 
@@ -445,8 +349,6 @@ int main(int argc, char *argv[]) {
       std::chrono::duration_cast<std::chrono::milliseconds>(
           std::chrono::high_resolution_clock::now().time_since_epoch())
           .count());
-
-  initResampler();
 
   cd_cache_file = fopen("cache.cd", "r+");
   if (cd_cache_file) {
