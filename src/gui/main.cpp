@@ -1,4 +1,4 @@
-#include <SDL.h>
+﻿#include <SDL.h>
 #include <stdio.h>
 #ifdef _WIN32
 #ifdef REMOTE_DESK_DEBUG
@@ -93,7 +93,15 @@ bool received_frame = false;
 bool menu_hovered = false;
 
 static bool connect_button_pressed = false;
+static bool fullscreen_button_pressed = false;
+
+#if CHINESE_FONT
+static const char *connect_label = u8"连接";
+static const char *fullscreen_label = u8"全屏";
+#else
 static const char *connect_label = "Connect";
+static const char *fullscreen_label = "FULLSCREEN";
+#endif
 static char input_password[7] = "";
 static FILE *cd_cache_file = nullptr;
 static CDCache cd_cache;
@@ -727,20 +735,25 @@ int main(int argc, char *argv[]) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-#if CHINESE_FONT
-            if (ImGui::Button(u8"连接")) {
-#else
-            if (ImGui::Button("Connect")) {
-#endif
+
+            if (ImGui::Button(connect_label)) {
               int ret = -1;
               if ("ClientSignalConnected" == client_signal_status_str) {
+#if CHINESE_FONT
+                if (strcmp(connect_label, u8"连接") == 0 && !joined) {
+#else
                 if (strcmp(connect_label, "Connect") == 0 && !joined) {
+#endif
                   std::string user_id = "C-" + mac_addr_str;
                   ret = JoinConnection(peer_client, remote_id, client_password);
                   if (0 == ret) {
                     // joined = true;
                   }
+#if CHINESE_FONT
+                } else if (strcmp(connect_label, u8"断开连接") == 0 && joined) {
+#else
                 } else if (strcmp(connect_label, "Disconnect") == 0 && joined) {
+#endif
                   ret = LeaveConnection(peer_client);
                   memset(audio_buffer, 0, 960);
                   if (0 == ret) {
@@ -751,8 +764,13 @@ int main(int argc, char *argv[]) {
 
                 if (0 == ret) {
                   connect_button_pressed = !connect_button_pressed;
+#if CHINESE_FONT
+                  connect_label =
+                      connect_button_pressed ? u8"断开连接" : u8"连接";
+#else
                   connect_label =
                       connect_button_pressed ? "Disconnect" : "Connect";
+#endif
                 }
               }
             }
@@ -785,13 +803,24 @@ int main(int argc, char *argv[]) {
       ImGui::SameLine();
 
 #if CHINESE_FONT
-      if (ImGui::Button(u8"全屏")) {
+      if (ImGui::Button(fullscreen_label)) {
+        if (strcmp(fullscreen_label, u8"全屏") == 0) {
 #else
-      if (ImGui::Button("FULLSCREEN")) {
+      if (ImGui::Button(fullscreen_label)) {
+        if (strcmp(fullscreen_label, "FULLSCREEN") == 0) {
 #endif
-        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+          SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        } else {
+          SDL_SetWindowFullscreen(window, SDL_FALSE);
+        }
+        fullscreen_button_pressed = !fullscreen_button_pressed;
+#if CHINESE_FONT
+        fullscreen_label = fullscreen_button_pressed ? u8"退出全屏" : u8"全屏";
+#else
+        fullscreen_label =
+            fullscreen_button_pressed ? "EXIT FULLSCREEN" : "FULLSCREEN";
+#endif
       }
-
       ImGui::End();
     }
 
