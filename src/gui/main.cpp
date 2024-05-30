@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
   Connection connection;
 
   connection.DeskConnectionInit();
-  connection.DeskConnectionCreate();
+  connection.DeskConnectionCreate("123456");
   // connection.Create("123456", 800, 600);
 
   main_window.Run();

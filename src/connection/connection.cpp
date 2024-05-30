@@ -7,31 +7,18 @@
 #include "log.h"
 #include "platform.h"
 
-void ServerReceiveVideoBuffer(const char *data, size_t size,
-                              const char *user_id, size_t user_id_size) {}
+void ReceiveVideoBuffer(const char *data, size_t size, const char *user_id,
+                        size_t user_id_size) {}
 
-void ClientReceiveVideoBuffer(const char *data, size_t size,
-                              const char *user_id, size_t user_id_size) {}
+void ReceiveAudioBuffer(const char *data, size_t size, const char *user_id,
+                        size_t user_id_size) {}
 
-void ServerReceiveAudioBuffer(const char *data, size_t size,
-                              const char *user_id, size_t user_id_size) {}
+void ReceiveDataBuffer(const char *data, size_t size, const char *user_id,
+                       size_t user_id_size) {}
 
-void ClientReceiveAudioBuffer(const char *data, size_t size,
-                              const char *user_id, size_t user_id_size) {}
+void SignalStatus(SignalStatus status) {}
 
-void ServerReceiveDataBuffer(const char *data, size_t size, const char *user_id,
-                             size_t user_id_size) {}
-
-void ClientReceiveDataBuffer(const char *data, size_t size, const char *user_id,
-                             size_t user_id_size) {}
-
-void ServerSignalStatus(SignalStatus status) {}
-
-void ClientSignalStatus(SignalStatus status) {}
-
-void ServerConnectionStatus(ConnectionStatus status) {}
-
-void ClientConnectionStatus(ConnectionStatus status) {}
+void ConnectionStatus(ConnectionStatus status) {}
 
 Connection::Connection() {}
 
@@ -44,35 +31,20 @@ int Connection::DeskConnectionInit() {
   std::string mac_addr_str = GetMac();
   mac_addr_str_ = mac_addr_str;
 
-  server_params_.cfg_path =
-      f.good() ? "../../../../config/config.ini" : "config.ini";
-  server_params_.on_receive_video_buffer = ServerReceiveVideoBuffer;
-  server_params_.on_receive_audio_buffer = ServerReceiveAudioBuffer;
-  server_params_.on_receive_data_buffer = ServerReceiveDataBuffer;
-  server_params_.on_signal_status = ServerSignalStatus;
-  server_params_.on_connection_status = ServerConnectionStatus;
+  params_.cfg_path = f.good() ? "../../../../config/config.ini" : "config.ini";
+  params_.on_receive_video_buffer = ReceiveVideoBuffer;
+  params_.on_receive_audio_buffer = ReceiveAudioBuffer;
+  params_.on_receive_data_buffer = ReceiveDataBuffer;
+  params_.on_signal_status = SignalStatus;
+  params_.on_connection_status = ConnectionStatus;
 
-  client_params_.cfg_path =
-      f.good() ? "../../../../config/config.ini" : "config.ini";
-  client_params_.on_receive_video_buffer = ClientReceiveVideoBuffer;
-  client_params_.on_receive_audio_buffer = ClientReceiveAudioBuffer;
-  client_params_.on_receive_data_buffer = ClientReceiveDataBuffer;
-  client_params_.on_signal_status = ClientSignalStatus;
-  client_params_.on_connection_status = ClientConnectionStatus;
+  peer_ = CreatePeer(&params_);
+  LOG_INFO("Create peer");
+  user_id_ = "S-" + mac_addr_str_;
+  Init(peer_, user_id_.c_str());
+  LOG_INFO("Peer init finish");
 
-  peer_server_ = CreatePeer(&server_params_);
-  LOG_INFO("Create peer_server_");
-  server_user_id_ = "S-" + mac_addr_str_;
-  Init(peer_server_, server_user_id_.c_str());
-  LOG_INFO("peer_server_ init finish");
-
-  peer_client_ = CreatePeer(&client_params_);
-  LOG_INFO("Create peer_client_");
-  client_user_id_ = "C-" + mac_addr_str_;
-  Init(peer_client_, client_user_id_.c_str());
-  LOG_INFO("peer_client_ init finish");
-
-  while (SignalStatus::SignalConnected != server_signal_status_) {
+  while (SignalStatus::SignalConnected != signal_status_) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 
@@ -96,7 +68,7 @@ int Connection::DeskConnectionInit() {
         auto tc = duration.count() * 1000;
 
         if (tc >= 0) {
-          SendData(peer_server_, DATA_TYPE::VIDEO, (const char *)data,
+          SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
                    NV12_BUFFER_SIZE);
           last_frame_time_ = now_time;
         }
@@ -125,9 +97,9 @@ int Connection::DeskConnectionInit() {
 
 int Connection::DeskConnectionCreate(const char *input_password) {
   input_password_ = input_password;
-  is_created_connection_ = CreateConnection(peer_server_, mac_addr_str_.c_str(),
-                                            input_password_.c_str())
-                               ? false
-                               : true;
+  is_created_connection_ =
+      CreateConnection(peer_, mac_addr_str_.c_str(), input_password_.c_str())
+          ? false
+          : true;
   return 0;
 }

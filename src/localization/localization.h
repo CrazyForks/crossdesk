@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * @Author: DI JUNKUN
  * @Date: 2024-05-29
  * Copyright (c) 2024 by DI JUNKUN, All Rights Reserved.
@@ -12,16 +12,17 @@
 
 namespace localization {
 
-std::vector<std::string> menu = {u8"²Ëµ¥", "Menu"};
-std::vector<std::string> local_id = {u8"±¾»úID:", "Local ID:"};
-std::vector<std::string> password = {u8"ÃÜÂë:", "Password:"};
-std::vector<std::string> max_password_len = {u8"×î³¤6¸ö×Ö·û", "Max 6 chars"};
-std::vector<std::string> remote_id = {u8"¶Ô¶ËID:", "Remote ID:"};
-std::vector<std::string> connect = {u8"Á¬½Ó", "Connect"};
-std::vector<std::string> disconnect = {u8"¶Ï¿ªÁ¬½Ó", "Disconnect"};
-std::vector<std::string> reset_ratio = {u8"ÖØÖÃ±ÈÀı", "Reset ratio"};
-std::vector<std::string> fullscreen = {u8"È«ÆÁ", "Fullscreen"};
-std::vector<std::string> exit_fullscreen = {u8"ÍË³öÈ«ÆÁ", "Exit fullscreen"};
+std::vector<std::string> menu = {u8"èœå•", "Menu"};
+std::vector<std::string> local_id = {u8"æœ¬æœºID:", "Local ID:"};
+std::vector<std::string> password = {u8"å¯†ç :", "Password:"};
+std::vector<std::string> max_password_len = {u8"æœ€å¤§6ä¸ªç§Ÿæˆ¿å­—ç¬¦",
+                                             "Max 6 chars"};
+std::vector<std::string> remote_id = {u8"è¿œç«¯ID:", "Remote ID:"};
+std::vector<std::string> connect = {u8"è¿æ¥", "Connect"};
+std::vector<std::string> disconnect = {u8"æ–­å¼€è¿æ¥", "Disconnect"};
+std::vector<std::string> reset_ratio = {u8"é‡ç½®çª—å£", "Reset ratio"};
+std::vector<std::string> fullscreen = {u8"å…¨å±", "Fullscreen"};
+std::vector<std::string> exit_fullscreen = {u8"é€€å‡ºå…¨å±", "Exit fullscreen"};
 
 }  // namespace localization
 

@@ -95,12 +95,6 @@ target("config_center")
     add_files("src/config_center/*.cpp")
     add_includedirs("src/config_center", {public = true})
 
-target("render")
-    set_kind("object")
-    add_deps("log", "common", "config_center")
-    add_files("src/render/*.cpp")
-    add_includedirs("src/render", {public = true})
-
 target("localization")
     set_kind("headeronly")
     add_includedirs("src/localization", {public = true})
@@ -108,6 +102,11 @@ target("localization")
 target("connection")
     set_kind("object")
     add_deps("log", "common", "screen_capturer", "device_controller")
+    if is_os("macosx") then
+        add_packages("ffmpeg")
+    elseif is_os("linux") then
+        add_packages("ffmpeg")
+    end
     add_files("src/connection/*.cpp")
     add_includedirs("src/connection", {public = true})
 
@@ -119,7 +118,7 @@ target("main_window")
 
 target("remote_desk")
     set_kind("binary")
-    add_deps("log", "common", "projectx", "screen_capturer", "device_controller", "render", "main_window", "connection")
+    add_deps("log", "common", "projectx", "screen_capturer", "device_controller", "main_window", "connection")
     if is_os("macosx") then
         add_packages("ffmpeg")
     elseif is_os("linux") then
@@ -135,7 +134,7 @@ target("remote_desk")
 --     elseif is_os("linux") then
 --         add_packages("ffmpeg")
 --     end
---     add_files("src/gui/main.cpp")
+--     add_files("src/gui/main_single_peer.cpp")
 
     -- after_install(function (target)
     --     os.cp("$(projectdir)/thirdparty/nvcodec/Lib/x64/*.so", "$(projectdir)/out/bin")

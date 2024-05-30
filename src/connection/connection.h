@@ -20,21 +20,17 @@ class Connection {
   ~Connection();
 
  public:
-  int DeskConnectionInit(const char *input_password, int screen_width,
-                         int screen_height);
-  int DeskConnectionCreate();
+  int DeskConnectionInit();
+  int DeskConnectionCreate(const char *input_password);
 
  private:
-  PeerPtr *peer_server_ = nullptr;
-  PeerPtr *peer_client_ = nullptr;
+  PeerPtr *peer_ = nullptr;
 
   std::string mac_addr_str_ = "";
 
-  Params server_params_;
-  Params client_params_;
+  Params params_;
 
-  std::string server_user_id_ = "";
-  std::string client_user_id_ = "";
+  std::string user_id_ = "";
 
   std::string input_password_ = "";
 
@@ -52,12 +48,8 @@ class Connection {
   std::chrono::steady_clock::time_point last_frame_time_;
 #endif
 
-  std::atomic<ConnectionStatus> server_connection_status_{
-      ConnectionStatus::Closed};
-  std::atomic<ConnectionStatus> client_connection_status_{
-      ConnectionStatus::Closed};
-  std::atomic<SignalStatus> server_signal_status_{SignalStatus::SignalClosed};
-  std::atomic<SignalStatus> client_signal_status_{SignalStatus::SignalClosed};
+  std::atomic<ConnectionStatus> connection_status_{ConnectionStatus::Closed};
+  std::atomic<SignalStatus> signal_status_{SignalStatus::SignalClosed};
 };
 
 #endif
