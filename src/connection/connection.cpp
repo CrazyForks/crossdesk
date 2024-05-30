@@ -7,18 +7,18 @@
 #include "log.h"
 #include "platform.h"
 
-void ReceiveVideoBuffer(const char *data, size_t size, const char *user_id,
-                        size_t user_id_size) {}
+void ReceiveVideoBufferCb(const char *data, size_t size, const char *user_id,
+                          size_t user_id_size, void *user_data) {}
 
-void ReceiveAudioBuffer(const char *data, size_t size, const char *user_id,
-                        size_t user_id_size) {}
+void ReceiveAudioBufferCb(const char *data, size_t size, const char *user_id,
+                          size_t user_id_size, void *user_data) {}
 
-void ReceiveDataBuffer(const char *data, size_t size, const char *user_id,
-                       size_t user_id_size) {}
+void ReceiveDataBufferCb(const char *data, size_t size, const char *user_id,
+                         size_t user_id_size, void *user_data) {}
 
-void SignalStatus(SignalStatus status) {}
+void SignalStatusCb(SignalStatus status, void *user_data) {}
 
-void ConnectionStatus(ConnectionStatus status) {}
+void ConnectionStatusCb(ConnectionStatus status, void *user_data) {}
 
 Connection::Connection() {}
 
@@ -32,11 +32,32 @@ int Connection::DeskConnectionInit() {
   mac_addr_str_ = mac_addr_str;
 
   params_.cfg_path = f.good() ? "../../../../config/config.ini" : "config.ini";
-  params_.on_receive_video_buffer = ReceiveVideoBuffer;
-  params_.on_receive_audio_buffer = ReceiveAudioBuffer;
-  params_.on_receive_data_buffer = ReceiveDataBuffer;
-  params_.on_signal_status = SignalStatus;
-  params_.on_connection_status = ConnectionStatus;
+  params_.on_receive_video_buffer = ReceiveVideoBufferCb;
+  params_.on_receive_audio_buffer = ReceiveAudioBufferCb;
+  params_.on_receive_data_buffer = ReceiveDataBufferCb;
+
+  params_.on_signal_status = [](SignalStatus status, void *user_data) {
+    if (user_data == nullptr) {
+      return;
+    }
+
+    Connection *connection = (Connection *)user_data;
+    connection->signal_status_ = status;
+    if (SignalStatus::SignalConnecting == status) {
+      connection->signal_status_str_ = "SignalConnecting";
+    } else if (SignalStatus::SignalConnected == status) {
+      connection->signal_status_str_ = "SignalConnected";
+    } else if (SignalStatus::SignalFailed == status) {
+      connection->signal_status_str_ = "SignalFailed";
+    } else if (SignalStatus::SignalClosed == status) {
+      connection->signal_status_str_ = "SignalClosed";
+    } else if (SignalStatus::SignalReconnecting == status) {
+      connection->signal_status_str_ = "SignalReconnecting";
+    }
+  };
+
+  params_.on_connection_status = ConnectionStatusCb;
+  params_.user_data = this;
 
   peer_ = CreatePeer(&params_);
   LOG_INFO("Create peer");

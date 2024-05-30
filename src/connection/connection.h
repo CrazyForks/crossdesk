@@ -48,8 +48,11 @@ class Connection {
   std::chrono::steady_clock::time_point last_frame_time_;
 #endif
 
-  std::atomic<ConnectionStatus> connection_status_{ConnectionStatus::Closed};
-  std::atomic<SignalStatus> signal_status_{SignalStatus::SignalClosed};
+ public:
+  ConnectionStatus connection_status_ = ConnectionStatus::Closed;
+  SignalStatus signal_status_ = SignalStatus::SignalClosed;
+
+  std::string signal_status_str_ = "";
 };
 
 #endif
