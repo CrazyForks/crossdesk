@@ -37,13 +37,15 @@ extern "C" {
 
 typedef struct Peer PeerPtr;
 
-typedef void (*OnReceiveBuffer)(const char*, size_t, const char*, size_t);
+typedef void (*OnReceiveBuffer)(const char*, size_t, const char*, size_t,
+                                void*);
 
-typedef void (*OnSignalStatus)(SignalStatus status);
+typedef void (*OnSignalStatus)(SignalStatus, void*);
 
-typedef void (*OnConnectionStatus)(ConnectionStatus status);
+typedef void (*OnConnectionStatus)(ConnectionStatus, void*);
 
-typedef void (*NetStatusReport)(const unsigned short, const unsigned short);
+typedef void (*NetStatusReport)(const unsigned short, const unsigned short,
+                                void*);
 
 typedef struct {
   const char* cfg_path;
@@ -53,6 +55,7 @@ typedef struct {
   OnSignalStatus on_signal_status;
   OnConnectionStatus on_connection_status;
   NetStatusReport net_status_report;
+  void* user_data;
 } Params;
 
 DLLAPI PeerPtr* CreatePeer(const Params* params);

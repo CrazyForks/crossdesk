@@ -14,13 +14,14 @@
 #include "x.h"
 
 typedef void (*OnReceiveBuffer)(const char *, size_t, const char *,
-                                const size_t);
+                                const size_t, void *);
 
-typedef void (*OnSignalStatus)(SignalStatus status);
+typedef void (*OnSignalStatus)(SignalStatus status, void *);
 
-typedef void (*OnConnectionStatus)(ConnectionStatus status);
+typedef void (*OnConnectionStatus)(ConnectionStatus status, void *);
 
-typedef void (*NetStatusReport)(const unsigned short, const unsigned short);
+typedef void (*NetStatusReport)(const unsigned short, const unsigned short,
+                                void *);
 
 typedef struct {
   const char *cfg_path;
@@ -30,6 +31,7 @@ typedef struct {
   OnSignalStatus on_signal_status;
   OnConnectionStatus on_connection_status;
   NetStatusReport net_status_report;
+  void *user_data;
 } PeerConnectionParams;
 
 class PeerConnection {
@@ -112,6 +114,8 @@ class PeerConnection {
   OnReceiveBuffer on_receive_data_buffer_;
   OnSignalStatus on_signal_status_;
   OnConnectionStatus on_connection_status_;
+  void *user_data_;
+
   char *nv12_data_ = nullptr;
   bool inited_ = false;
   std::string password_;

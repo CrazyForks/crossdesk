@@ -71,25 +71,26 @@ int PeerConnection::Init(PeerConnectionParams params,
   on_receive_data_buffer_ = params.on_receive_data_buffer;
   on_signal_status_ = params.on_signal_status;
   on_connection_status_ = params.on_connection_status;
+  user_data_ = params.user_data;
 
   on_receive_ws_msg_ = [this](const std::string &msg) { ProcessSignal(msg); };
 
   on_ws_status_ = [this](WsStatus ws_status) {
     if (WsStatus::WsOpening == ws_status) {
       signal_status_ = SignalStatus::SignalConnecting;
-      on_signal_status_(SignalStatus::SignalConnecting);
+      on_signal_status_(SignalStatus::SignalConnecting, user_data_);
     } else if (WsStatus::WsOpened == ws_status) {
       signal_status_ = SignalStatus::SignalConnected;
-      on_signal_status_(SignalStatus::SignalConnected);
+      on_signal_status_(SignalStatus::SignalConnected, user_data_);
     } else if (WsStatus::WsFailed == ws_status) {
       signal_status_ = SignalStatus::SignalFailed;
-      on_signal_status_(SignalStatus::SignalFailed);
+      on_signal_status_(SignalStatus::SignalFailed, user_data_);
     } else if (WsStatus::WsClosed == ws_status) {
       signal_status_ = SignalStatus::SignalClosed;
-      on_signal_status_(SignalStatus::SignalClosed);
+      on_signal_status_(SignalStatus::SignalClosed, user_data_);
     } else if (WsStatus::WsReconnecting == ws_status) {
       signal_status_ = SignalStatus::SignalReconnecting;
-      on_signal_status_(SignalStatus::SignalReconnecting);
+      on_signal_status_(SignalStatus::SignalReconnecting, user_data_);
     }
   };
 
@@ -100,7 +101,8 @@ int PeerConnection::Init(PeerConnectionParams params,
         [this, user_id, user_id_size](VideoFrame video_frame) {
           if (on_receive_video_buffer_) {
             on_receive_video_buffer_((const char *)video_frame.Buffer(),
-                                     video_frame.Size(), user_id, user_id_size);
+                                     video_frame.Size(), user_id, user_id_size,
+                                     user_data_);
           }
         });
   };
@@ -112,7 +114,7 @@ int PeerConnection::Init(PeerConnectionParams params,
         [this, user_id, user_id_size](uint8_t *data, int size) {
           if (on_receive_audio_buffer_) {
             on_receive_audio_buffer_((const char *)data, size, user_id,
-                                     user_id_size);
+                                     user_id_size, user_data_);
           }
         });
   };
@@ -120,23 +122,23 @@ int PeerConnection::Init(PeerConnectionParams params,
   on_receive_data_ = [this](const char *data, size_t size, const char *user_id,
                             size_t user_id_size) {
     if (on_receive_data_buffer_) {
-      on_receive_data_buffer_(data, size, user_id, user_id_size);
+      on_receive_data_buffer_(data, size, user_id, user_id_size, user_data_);
     }
   };
 
   on_ice_status_change_ = [this](std::string ice_status) {
     if ("connecting" == ice_status) {
-      on_connection_status_(ConnectionStatus::Connecting);
+      on_connection_status_(ConnectionStatus::Connecting, user_data_);
     } else if ("disconnected" == ice_status) {
-      on_connection_status_(ConnectionStatus::Disconnected);
+      on_connection_status_(ConnectionStatus::Disconnected, user_data_);
     } else if ("ready" == ice_status) {
       ice_ready_ = true;
-      on_connection_status_(ConnectionStatus::Connected);
+      on_connection_status_(ConnectionStatus::Connected, user_data_);
       b_force_i_frame_ = true;
       LOG_INFO("Ice finish");
     } else if ("closed" == ice_status) {
       ice_ready_ = false;
-      on_connection_status_(ConnectionStatus::Closed);
+      on_connection_status_(ConnectionStatus::Closed, user_data_);
       LOG_INFO("Ice closed");
     } else {
       ice_ready_ = false;
@@ -348,9 +350,11 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         std::string reason = j["reason"].get<std::string>();
         LOG_ERROR("{}", reason);
         if ("Incorrect password" == reason) {
-          on_connection_status_(ConnectionStatus::IncorrectPassword);
+          on_connection_status_(ConnectionStatus::IncorrectPassword,
+                                user_data_);
         } else if ("No such transmission id" == reason) {
-          on_connection_status_(ConnectionStatus::NoSuchTransmissionId);
+          on_connection_status_(ConnectionStatus::NoSuchTransmissionId,
+                                user_data_);
         }
       } else {
         if (leave_) {
@@ -454,7 +458,7 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
 
         ice_transmission_list_[remote_user_id]->GatherCandidates();
 
-        on_connection_status_(ConnectionStatus::Connecting);
+        on_connection_status_(ConnectionStatus::Connecting, user_data_);
       }
       break;
     }
@@ -474,7 +478,7 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
           ice_transmission_list_[remote_user_id]->SetRemoteSdp(remote_sdp);
         }
 
-        on_connection_status_(ConnectionStatus::Connecting);
+        on_connection_status_(ConnectionStatus::Connecting, user_data_);
       }
       break;
     }
