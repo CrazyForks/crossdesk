@@ -519,12 +519,24 @@ int MainWindow::Run() {
 
       if (ImGui::Button(settings_button_label_.c_str())) {
         settings_button_pressed_ = !settings_button_pressed_;
+        settings_window_pos_reset_ = true;
       }
 
       if (settings_button_pressed_) {
-        ImGui::SetNextWindowSize(ImVec2(
-            localization::settings_window_width[localization_language_index_],
-            190));
+        if (settings_window_pos_reset_) {
+          const ImGuiViewport *viewport = ImGui::GetMainViewport();
+          ImGui::SetNextWindowPos(
+              ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
+                      localization::settings_window_width
+                          [localization_language_index_]) /
+                         2,
+                     (viewport->WorkSize.y - viewport->WorkPos.y - 190) / 2));
+
+          ImGui::SetNextWindowSize(ImVec2(
+              localization::settings_window_width[localization_language_index_],
+              190));
+          settings_window_pos_reset_ = false;
+        }
 
         ImGui::Begin(
             localization::settings[localization_language_index_].c_str(),
@@ -657,6 +669,7 @@ int MainWindow::Run() {
 
           SaveSettingsIntoCacheFile();
           // To do: set encode resolution
+          settings_window_pos_reset_ = true;
         }
         ImGui::SameLine();
         // Cancel
@@ -676,6 +689,7 @@ int MainWindow::Run() {
             video_video_encode_format_button_value_ =
                 video_video_encode_format_button_value_last_;
           }
+          settings_window_pos_reset_ = true;
         }
 
         ImGui::End();

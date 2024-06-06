@@ -185,6 +185,9 @@ class MainWindow {
   std::atomic<bool> start_mouse_control_{false};
   std::atomic<bool> screen_capture_is_started_{false};
   std::atomic<bool> mouse_control_is_started_{false};
+
+ private:
+  bool settings_window_pos_reset_ = true;
 };
 
 #endif
