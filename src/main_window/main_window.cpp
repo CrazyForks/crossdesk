@@ -540,7 +540,9 @@ int MainWindow::Run() {
 
         ImGui::Begin(
             localization::settings[localization_language_index_].c_str(),
-            nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+            nullptr,
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoSavedSettings);
 
         {
           const char *language_items[] = {
