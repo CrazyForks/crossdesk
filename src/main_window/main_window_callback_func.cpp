@@ -154,7 +154,7 @@ void MainWindow::OnConnectionStatusCb(ConnectionStatus status,
   } else if (ConnectionStatus::Connected == status) {
     main_window->connection_status_str_ = "Connected";
     main_window->connection_established_ = true;
-    if (main_window->is_client_mode_) {
+    if (!main_window->is_client_mode_) {
       main_window->start_screen_capture_ = true;
       main_window->start_mouse_control_ = true;
     }
