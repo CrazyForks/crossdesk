@@ -4,21 +4,22 @@
 
 ThreadBase::ThreadBase() {}
 
-ThreadBase::~ThreadBase() { Stop(); }
+ThreadBase::~ThreadBase() {
+  if (!stop_) {
+    Stop();
+  }
+}
 
 void ThreadBase::Start() {
-  if (!thread_) {
-    thread_ = std::make_unique<std::thread>(&ThreadBase::Run, this);
-  }
-
+  std::thread t(&ThreadBase::Run, this);
+  thread_ = std::move(t);
   stop_ = false;
 }
 
 void ThreadBase::Stop() {
-  stop_ = true;
-
-  if (thread_ && thread_->joinable()) {
-    thread_->join();
+  if (thread_.joinable()) {
+    stop_ = true;
+    thread_.join();
   }
 }
 

@@ -17,7 +17,7 @@
 class RtpVideoReceiver : public ThreadBase {
  public:
   RtpVideoReceiver();
-  ~RtpVideoReceiver();
+  virtual ~RtpVideoReceiver();
 
  public:
   void InsertRtpPacket(RtpPacket& rtp_packet);

@@ -35,11 +35,6 @@ IceTransmission::~IceTransmission() {
   if (rtp_data_sender_) {
     rtp_data_sender_->Stop();
   }
-
-  if (rtp_payload_) {
-    delete rtp_payload_;
-    rtp_payload_ = nullptr;
-  }
 }
 
 int IceTransmission::InitIceTransmission(

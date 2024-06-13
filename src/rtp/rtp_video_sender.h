@@ -12,7 +12,7 @@
 class RtpVideoSender : public ThreadBase {
  public:
   RtpVideoSender();
-  ~RtpVideoSender();
+  virtual ~RtpVideoSender();
 
  public:
   void Enqueue(std::vector<RtpPacket> &rtp_packets);

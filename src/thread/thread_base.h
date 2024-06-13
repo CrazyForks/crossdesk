@@ -7,7 +7,7 @@
 class ThreadBase {
  public:
   ThreadBase();
-  ~ThreadBase();
+  virtual ~ThreadBase();
 
  public:
   void Start();
@@ -22,7 +22,7 @@ class ThreadBase {
   void Run();
 
  private:
-  std::unique_ptr<std::thread> thread_ = nullptr;
+  std::thread thread_;
 
   std::atomic<bool> stop_{false};
   std::atomic<bool> pause_{false};

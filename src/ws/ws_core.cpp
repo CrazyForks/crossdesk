@@ -13,8 +13,8 @@ WsCore::WsCore() {
   m_endpoint_.init_asio();
   m_endpoint_.start_perpetual();
 
-  m_thread_ = websocketpp::lib::make_shared<websocketpp::lib::thread>(
-      &client::run, &m_endpoint_);
+  std::thread t(&client::run, &m_endpoint_);
+  m_thread_ = std::move(t);
 }
 
 WsCore::~WsCore() {
@@ -32,12 +32,12 @@ WsCore::~WsCore() {
     LOG_INFO("Closing connection error: {}", ec.message());
   }
 
-  if (m_thread_->joinable()) {
-    m_thread_->join();
+  if (m_thread_.joinable()) {
+    m_thread_.join();
   }
 
-  if (ping_thread_->joinable()) {
-    ping_thread_->join();
+  if (ping_thread_.joinable()) {
+    ping_thread_.join();
   }
 }
 
@@ -129,8 +129,8 @@ void WsCore::OnOpen(client *c, websocketpp::connection_hdl hdl) {
   ws_status_ = WsStatus::WsOpened;
   OnWsStatus(WsStatus::WsOpened);
 
-  ping_thread_ = websocketpp::lib::make_shared<websocketpp::lib::thread>(
-      &WsCore::Ping, this, hdl);
+  std::thread t(&WsCore::Ping, this, hdl);
+  ping_thread_ = std::move(t);
 }
 
 void WsCore::OnFail(client *c, websocketpp::connection_hdl hdl) {

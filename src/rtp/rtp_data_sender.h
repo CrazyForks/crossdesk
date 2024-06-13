@@ -18,7 +18,7 @@
 class RtpDataSender : public ThreadBase {
  public:
   RtpDataSender();
-  ~RtpDataSender();
+  virtual ~RtpDataSender();
 
  public:
   void Enqueue(std::vector<RtpPacket> &rtp_packets);

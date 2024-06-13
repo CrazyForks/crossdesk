@@ -18,7 +18,7 @@
 class RtpAudioSender : public ThreadBase {
  public:
   RtpAudioSender();
-  ~RtpAudioSender();
+  virtual ~RtpAudioSender();
 
  public:
   void Enqueue(std::vector<RtpPacket> &rtp_packets);

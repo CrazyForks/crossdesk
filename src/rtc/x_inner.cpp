@@ -70,14 +70,15 @@ int CreateConnection(PeerPtr *peer_ptr, const char *transmission_id,
 
 int JoinConnection(PeerPtr *peer_ptr, const char *transmission_id,
                    const char *password) {
+  int ret = -1;
   if (!peer_ptr) {
     LOG_ERROR("peer_ptr not created");
     return -1;
   }
 
-  peer_ptr->peer_connection->Join(transmission_id, password);
+  ret = peer_ptr->peer_connection->Join(transmission_id, password);
   LOG_INFO("JoinConnection [{}] with password [{}]", transmission_id, password);
-  return 0;
+  return ret;
 }
 
 int LeaveConnection(PeerPtr *peer_ptr) {

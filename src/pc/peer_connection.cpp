@@ -16,6 +16,9 @@ PeerConnection::~PeerConnection() {
     delete nv12_data_;
     nv12_data_ = nullptr;
   }
+
+  video_codec_inited_ = false;
+  audio_codec_inited_ = false;
 }
 
 int PeerConnection::Init(PeerConnectionParams params,
@@ -194,6 +197,10 @@ int PeerConnection::Init(PeerConnectionParams params,
 }
 
 int PeerConnection::CreateVideoCodec(bool hardware_acceleration) {
+  if (video_codec_inited_) {
+    return 0;
+  }
+
   hardware_acceleration_ = hardware_acceleration;
 #ifdef __APPLE__
   if (hardware_acceleration_) {
@@ -257,10 +264,16 @@ int PeerConnection::CreateVideoCodec(bool hardware_acceleration) {
       return -1;
     }
   }
+
+  video_codec_inited_ = true;
   return 0;
 }
 
 int PeerConnection::CreateAudioCodec() {
+  if (audio_codec_inited_) {
+    return 0;
+  }
+
   audio_encoder_ = std::make_unique<AudioEncoder>(AudioEncoder(48000, 1, 480));
   if (!audio_encoder_ || 0 != audio_encoder_->Init()) {
     LOG_ERROR("Audio encoder init failed");
@@ -273,6 +286,7 @@ int PeerConnection::CreateAudioCodec() {
     return -1;
   }
 
+  audio_codec_inited_ = true;
   return 0;
 }
 
@@ -338,6 +352,8 @@ int PeerConnection::Leave() {
   for (auto &user_id_it : ice_transmission_list_) {
     user_id_it.second->DestroyIceTransmission();
   }
+
+  ice_transmission_list_.clear();
 
   return 0;
 }
@@ -476,20 +492,15 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
             on_receive_audio_);
         ice_transmission_list_[remote_user_id]->SetOnReceiveDataFunc(
             on_receive_data_);
-
         ice_transmission_list_[remote_user_id]->InitIceTransmission(
             cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,
             turn_server_port_, cfg_turn_server_username_,
             cfg_turn_server_password_,
             av1_encoding_ ? RtpPacket::AV1 : RtpPacket::H264);
-
         ice_transmission_list_[remote_user_id]->SetTransmissionId(
             transmission_id_);
-
         ice_transmission_list_[remote_user_id]->SetRemoteSdp(remote_sdp);
-
         ice_transmission_list_[remote_user_id]->GatherCandidates();
-
         on_connection_status_(ConnectionStatus::Connecting, user_data_);
       }
       break;

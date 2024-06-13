@@ -53,8 +53,8 @@ class WsCore {
  private:
   client m_endpoint_;
   websocketpp::connection_hdl connection_handle_;
-  websocketpp::lib::shared_ptr<websocketpp::lib::thread> m_thread_;
-  websocketpp::lib::shared_ptr<websocketpp::lib::thread> ping_thread_;
+  std::thread m_thread_;
+  std::thread ping_thread_;
 
   WsStatus ws_status_ = WsStatus::WsClosed;
   int timeout_count_ = 0;

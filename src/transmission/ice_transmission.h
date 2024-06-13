@@ -133,7 +133,6 @@ class IceTransmission {
   std::unique_ptr<RtpAudioSender> rtp_audio_sender_ = nullptr;
   std::unique_ptr<RtpDataReceiver> rtp_data_receiver_ = nullptr;
   std::unique_ptr<RtpDataSender> rtp_data_sender_ = nullptr;
-  uint8_t *rtp_payload_ = nullptr;
   RtpPacket pop_packet_;
   bool start_send_packet_ = false;
 

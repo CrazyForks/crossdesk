@@ -6,7 +6,7 @@
 class RtpStatistics : public ThreadBase {
  public:
   RtpStatistics();
-  ~RtpStatistics();
+  virtual ~RtpStatistics();
 
  public:
   void UpdateSentBytes(uint32_t sent_bytes);
