@@ -368,7 +368,7 @@ int MainWindow::Run() {
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                          ImGuiWindowFlags_NoMove);
       } else {
-        ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+        // ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
         ImGui::Begin(localization::menu[localization_language_index_].c_str(),
                      nullptr, ImGuiWindowFlags_None);
       }
