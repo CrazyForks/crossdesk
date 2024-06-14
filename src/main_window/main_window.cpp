@@ -445,7 +445,7 @@ int MainWindow::Run() {
             if ("SignalConnected" == signal_status_str_) {
               if (connect_button_label_ ==
                       localization::connect[localization_language_index_] &&
-                  !connection_established_) {
+                  !connection_established_ && strlen(remote_id_)) {
                 if (remote_id_ == local_id_ && !peer_reserved_) {
                   peer_reserved_ = CreatePeer(&params_);
                   if (peer_reserved_) {
