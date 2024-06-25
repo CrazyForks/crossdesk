@@ -108,8 +108,10 @@ class Render {
  private:
   int screen_width_ = 1280;
   int screen_height_ = 720;
-  int main_window_width_ = 1280;
-  int main_window_height_ = 720;
+  int main_window_width_ = 960;
+  int main_window_height_ = 540;
+  int main_window_width_last_ = 960;
+  int main_window_height_last_ = 540;
   int main_window_width_before_fullscreen_ = 1280;
   int main_window_height_before_fullscreen_ = 720;
   int menu_window_height_ = 40;

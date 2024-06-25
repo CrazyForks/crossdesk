@@ -172,35 +172,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
       render->start_screen_capture_ = true;
       render->start_mouse_control_ = true;
     }
-
-    if (!render->video_window_created_) {
-      SDL_WindowFlags window_flags =
-          (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
-
-      render->sdl_texture_ =
-          SDL_CreateTexture(render->sdl_renderer_, render->pixformat_,
-                            SDL_TEXTUREACCESS_STREAMING, render->texture_width_,
-                            render->texture_height_);
-
-      render->video_window_ =
-          SDL_CreateWindow("Video", SDL_WINDOWPOS_CENTERED,
-                           SDL_WINDOWPOS_CENTERED, render->main_window_width_,
-                           render->main_window_height_, window_flags);
-
-      render->video_renderer_ = SDL_CreateRenderer(
-          render->video_window_, -1,
-          SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-      if (render->video_renderer_ == nullptr) {
-        SDL_Log("Error creating SDL_Renderer!");
-      }
-
-      render->video_texture_ =
-          SDL_CreateTexture(render->video_renderer_, render->pixformat_,
-                            SDL_TEXTUREACCESS_STREAMING, render->texture_width_,
-                            render->texture_height_);
-      render->video_window_created_ = true;
-    }
-
   } else if (ConnectionStatus::Disconnected == status) {
     render->connection_status_str_ = "Disconnected";
   } else if (ConnectionStatus::Failed == status) {

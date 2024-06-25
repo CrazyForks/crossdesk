@@ -6,7 +6,7 @@ int Render::MenuWindow() {
   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
   ImGui::BeginChild("MenuWindow",
                     ImVec2(main_window_width_, menu_window_height_),
-                    ImGuiChildFlags_Border);
+                    ImGuiChildFlags_Border, ImGuiWindowFlags_NoScrollbar);
 
   if (ImGui::BeginMenuBar()) {
     if (ImGui::BeginMenu("Menu")) {
