@@ -120,6 +120,7 @@ target("single_window")
     end
     add_files("src/single_window/*.cpp")
     add_includedirs("src/single_window", {public = true})
+    add_includedirs("fonts", {public = true})
 
 target("remote_desk")
     set_kind("binary")

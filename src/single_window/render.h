@@ -32,10 +32,12 @@ class Render {
  private:
   int CreateStreamRenderWindow();
   int MainWindow();
-  int MenuWindow();
   int LocalWindow();
   int RemoteWindow();
-  int SettingWindow();
+  int SettingButton();
+  int ControlWindow();
+  int ControlBar();
+  int MenuWindow();
 
  public:
   static void OnReceiveVideoBufferCb(const char *data, size_t size,
@@ -119,7 +121,7 @@ class Render {
   int stream_window_height_last_ = 720;
   int main_window_width_before_fullscreen_ = 1280;
   int main_window_height_before_fullscreen_ = 720;
-  int menu_window_height_ = 40;
+  int menu_window_height_ = 30;
   int local_window_width_ = 350;
 
   int texture_width_ = 1280;

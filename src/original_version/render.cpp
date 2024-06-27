@@ -1,3 +1,5 @@
+#include "render.h"
+
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -7,7 +9,6 @@
 #include "localization.h"
 #include "log.h"
 #include "platform.h"
-#include "render.h"
 #include "screen_capturer_factory.h"
 
 // Refresh Event
@@ -338,14 +339,12 @@ int Render::Run() {
 
       if (!connection_established_) {
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-        ImGui::Begin(localization::menu[localization_language_index_].c_str(),
-                     nullptr,
+        ImGui::Begin("MainWindow", nullptr,
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                          ImGuiWindowFlags_NoMove);
       } else {
         // ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
-        ImGui::Begin(localization::menu[localization_language_index_].c_str(),
-                     nullptr, ImGuiWindowFlags_None);
+        ImGui::Begin("MainWindow", nullptr, ImGuiWindowFlags_None);
       }
 
       {

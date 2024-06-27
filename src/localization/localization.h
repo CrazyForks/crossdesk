@@ -1,4 +1,4 @@
-ï»¿/*
+/*
  * @Author: DI JUNKUN
  * @Date: 2024-05-29
  * Copyright (c) 2024 by DI JUNKUN, All Rights Reserved.
@@ -10,38 +10,40 @@
 #include <vector>
 namespace localization {
 
-static std::vector<std::string> tabbar = {u8"èœå•", "Menu"};
-static std::vector<std::string> menu = {u8"èœå•", "Menu"};
-static std::vector<std::string> local_id = {u8"æœ¬æœºID", "Local ID"};
-static std::vector<std::string> password = {u8"å¯†ç ", "Password"};
-static std::vector<std::string> max_password_len = {u8"æœ€å¤§6ä¸ªå­—ç¬¦",
+static std::vector<std::string> local_desktop = {u8"±¾×ÀÃæ", "Local Desktop"};
+static std::vector<std::string> local_id = {u8"±¾»úID", "Local ID"};
+static std::vector<std::string> password = {u8"ÃÜÂë", "Password"};
+static std::vector<std::string> max_password_len = {u8"×î´ó6¸ö×Ö·û",
                                                     "Max 6 chars"};
-static std::vector<std::string> remote_id = {u8"å¯¹ç«¯ID", "Remote ID"};
-static std::vector<std::string> connect = {u8"è¿æ¥", "Connect"};
-static std::vector<std::string> disconnect = {u8"æ–­å¼€è¿æ¥", "Disconnect"};
-static std::vector<std::string> fullscreen = {u8" å…¨å±", " Fullscreen"};
-static std::vector<std::string> exit_fullscreen = {u8" é€€å‡ºå…¨å±",
+
+static std::vector<std::string> remote_desktop = {u8"¿ØÖÆÔ¶³Ì×ÀÃæ",
+                                                  "Control Remote Desktop"};
+static std::vector<std::string> remote_id = {u8"¶Ô¶ËID", "Remote ID"};
+static std::vector<std::string> connect = {u8"Á¬½Ó", "Connect"};
+static std::vector<std::string> disconnect = {u8"¶Ï¿ªÁ¬½Ó", "Disconnect"};
+static std::vector<std::string> fullscreen = {u8" È«ÆÁ", " Fullscreen"};
+static std::vector<std::string> exit_fullscreen = {u8" ÍË³öÈ«ÆÁ",
                                                    " Exit fullscreen"};
-static std::vector<std::string> control_mouse = {u8" æ§åˆ¶", " Control"};
-static std::vector<std::string> release_mouse = {u8" é‡Šæ”¾", " Release"};
-static std::vector<std::string> settings = {u8" è®¾ç½®", " Settings"};
-static std::vector<std::string> language = {u8"è¯­è¨€:", "Language:"};
-static std::vector<std::string> language_zh = {u8"ä¸­æ–‡", "Chinese"};
-static std::vector<std::string> language_en = {u8"è‹±æ–‡", "English"};
-static std::vector<std::string> video_quality = {u8"è§†é¢‘è´¨é‡:",
+static std::vector<std::string> control_mouse = {u8" ¿ØÖÆ", " Control"};
+static std::vector<std::string> release_mouse = {u8" ÊÍ·Å", " Release"};
+static std::vector<std::string> settings = {u8" ÉèÖÃ", " Settings"};
+static std::vector<std::string> language = {u8"ÓïÑÔ:", "Language:"};
+static std::vector<std::string> language_zh = {u8"ÖĞÎÄ", "Chinese"};
+static std::vector<std::string> language_en = {u8"Ó¢ÎÄ", "English"};
+static std::vector<std::string> video_quality = {u8"ÊÓÆµÖÊÁ¿:",
                                                  "Video Quality:"};
-static std::vector<std::string> video_quality_high = {u8"é«˜", "High"};
-static std::vector<std::string> video_quality_medium = {u8"ä¸­", "Medium"};
-static std::vector<std::string> video_quality_low = {u8"ä½", "Low"};
-static std::vector<std::string> video_encode_format = {u8"è§†é¢‘ç¼–ç æ ¼å¼:",
+static std::vector<std::string> video_quality_high = {u8"¸ß", "High"};
+static std::vector<std::string> video_quality_medium = {u8"ÖĞ", "Medium"};
+static std::vector<std::string> video_quality_low = {u8"µÍ", "Low"};
+static std::vector<std::string> video_encode_format = {u8"ÊÓÆµ±àÂë¸ñÊ½:",
                                                        "Video Encode Format:"};
 static std::vector<std::string> av1 = {u8"AV1", "AV1"};
 static std::vector<std::string> h264 = {u8"H.264", "H.264"};
 static std::vector<std::string> enable_hardware_video_codec = {
-    u8"å¯ç”¨ç¡¬ä»¶ç¼–è§£ç å™¨:", "Enable Hardware Video Codec:"};
+    u8"ÆôÓÃÓ²¼ş±à½âÂëÆ÷:", "Enable Hardware Video Codec:"};
 
-static std::vector<std::string> ok = {u8"ç¡®è®¤", "OK"};
-static std::vector<std::string> cancel = {u8"å–æ¶ˆ", "Cancel"};
+static std::vector<std::string> ok = {u8"È·ÈÏ", "OK"};
+static std::vector<std::string> cancel = {u8"È¡Ïû", "Cancel"};
 
 }  // namespace localization
 

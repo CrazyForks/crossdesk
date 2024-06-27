@@ -6,6 +6,8 @@
 
 #include "IconsFontAwesome6.h"
 #include "device_controller_factory.h"
+#include "fa-regular-400.h"
+#include "fa-solid-900.h"
 #include "layout_style.h"
 #include "localization.h"
 #include "log.h"
@@ -204,10 +206,6 @@ int Render::Run() {
                                       SDL_TEXTUREACCESS_STREAMING,
                                       texture_width_, texture_height_);
 
-  // Auto scaling for the render frame
-  // SDL_RenderSetLogicalSize(main_renderer_, main_window_width_,
-  //                          main_window_height_);
-
   stream_render_rect_.x = 0;
   stream_render_rect_.y = 0;
   stream_render_rect_.w = main_window_width_;
@@ -229,14 +227,14 @@ int Render::Run() {
       ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
 
   if (config_center_.GetLanguage() == ConfigCenter::LANGUAGE::CHINESE) {
-    // Load Fonts
+// Load Fonts
 #ifdef _WIN32
-    std::string default_font_path = "c:/windows/fonts/simhei.ttf";
+    std::string default_font_path = "fonts/OPPOSans-Regular.ttf";
+    // std::string default_font_path = "c:/windows/fonts/simhei.ttf";
     std::ifstream font_path_f(default_font_path.c_str());
-    std::string font_path =
-        font_path_f.good() ? "c:/windows/fonts/simhei.ttf" : "";
+    std::string font_path = font_path_f.good() ? default_font_path : "";
     if (!font_path.empty()) {
-      io.Fonts->AddFontFromFileTTF(font_path.c_str(), 30.0f, NULL,
+      io.Fonts->AddFontFromFileTTF(font_path.c_str(), 32.0f, NULL,
                                    io.Fonts->GetGlyphRangesChineseFull());
     }
 #elif __APPLE__
@@ -259,8 +257,9 @@ int Render::Run() {
   config.GlyphMinAdvanceX =
       13.0f;  // Use if you want to make the icon monospaced
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-  io.Fonts->AddFontFromFileTTF("fonts/fa-solid-900.ttf", 30.0f, &config,
-                               icon_ranges);
+  io.Fonts->AddFontFromMemoryTTF(fa_solid_900_ttf, sizeof(fa_solid_900_ttf),
+                                 30.0f, &config, icon_ranges);
+
   io.Fonts->Build();
 
   // Setup Dear ImGui style
@@ -349,7 +348,7 @@ int Render::Run() {
     if (!streaming_) {
       MainWindow();
     } else {
-      MenuWindow();
+      ControlWindow();
     }
 
     ImGui::End();
@@ -466,7 +465,6 @@ int Render::Run() {
 
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
-  ImGui::DestroyContext();
 
   SDL_DestroyRenderer(main_renderer_);
   SDL_DestroyWindow(main_window_);

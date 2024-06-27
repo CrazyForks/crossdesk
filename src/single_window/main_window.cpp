@@ -7,6 +7,8 @@ int Render::MainWindow() {
   ImGui::Begin("Render", nullptr,
                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+
+  MenuWindow();
   LocalWindow();
   RemoteWindow();
 

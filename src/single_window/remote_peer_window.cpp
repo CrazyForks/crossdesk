@@ -5,36 +5,28 @@
 #include "render.h"
 
 int Render::RemoteWindow() {
-  // if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-  //   ImGui::SetNextWindowSize(
-  //       ImVec2(main_window_width_ - MENU_WINDOW_WIDTH_CN,
-  //              main_window_height_ - menu_window_height_));
-  // } else {
-  //   ImGui::SetNextWindowSize(
-  //       ImVec2(MENU_WINDOW_WIDTH_EN, MENU_WINDOW_HEIGHT_EN));
-  // }
-
-  ImGui::SetNextWindowPos(ImVec2(local_window_width_, menu_window_height_),
+  ImGui::SetNextWindowPos(ImVec2(local_window_width_ - 1, menu_window_height_),
                           ImGuiCond_Always);
-
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(255, 255, 255, 1));
   ImGui::BeginChild(
-      "test",
+      "RemoteDesktopWindow",
       ImVec2(main_window_width_ - local_window_width_, main_window_height_),
       ImGuiChildFlags_Border,
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
 
-  ImGui::SetWindowFontScale(0.5f);
-  ImGui::Text(u8"远程控制桌面");
   ImGui::SetWindowFontScale(1.0f);
+  ImGui::Text(
+      localization::remote_desktop[localization_language_index_].c_str());
 
   ImGui::Spacing();
 
   ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
-  ImGui::BeginChild(u8"窗口2", ImVec2(330, 180), ImGuiChildFlags_Border);
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0.09));
+  ImGui::BeginChild("RemoteDesktopWindow_1", ImVec2(330, 180),
+                    ImGuiChildFlags_Border);
   {
     ImGui::SetWindowFontScale(0.5f);
-
     ImGui::Text(localization::remote_id[localization_language_index_].c_str());
 
     ImGui::Spacing();
@@ -76,7 +68,9 @@ int Render::RemoteWindow() {
   }
   ImGui::EndChild();
   ImGui::PopStyleVar();
+  ImGui::PopStyleColor();
   ImGui::EndChild();
+  ImGui::PopStyleVar();
 
   return 0;
 }

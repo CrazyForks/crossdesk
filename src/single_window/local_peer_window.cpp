@@ -4,37 +4,27 @@
 #include "render.h"
 
 int Render::LocalWindow() {
-  // if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-  //   ImGui::SetNextWindowSize(ImVec2(MENU_WINDOW_WIDTH_CN + 50,
-  //                                   main_window_height_ -
-  //                                   menu_window_height_));
-  // } else {
-  //   ImGui::SetNextWindowSize(
-  //       ImVec2(MENU_WINDOW_WIDTH_EN, MENU_WINDOW_HEIGHT_EN));
-  // }
-
   ImGui::SetNextWindowPos(ImVec2(0, menu_window_height_), ImGuiCond_Always);
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(255, 255, 255, 1));
   ImGui::BeginChild(
-      u8"本桌面main",
+      "LocalDesktopWindow",
       ImVec2(local_window_width_, main_window_height_ - menu_window_height_),
       ImGuiChildFlags_Border,
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
-  ImGui::SetWindowFontScale(0.5f);
-  ImGui::Text(u8"本桌面");
+
+  ImGui::SetWindowFontScale(1.0f);
+  ImGui::Text(
+      localization::local_desktop[localization_language_index_].c_str());
 
   ImGui::Spacing();
-  ImGui::SetWindowFontScale(1.0f);
   {
-    // local
-    // ImGui::SetNextWindowSize(ImVec2(300, 180));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
-    // ImGui::SetNextWindowPos(ImVec2(0, 50), ImGuiCond_Always);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0.05));
-    ImGui::BeginChild(u8"窗口1", ImVec2(330, 180), ImGuiChildFlags_Border);
+    ImGui::BeginChild("LocalDesktopWindow_1", ImVec2(330, 180),
+                      ImGuiChildFlags_Border);
     {
       ImGui::SetWindowFontScale(0.5f);
-
       ImGui::Text(localization::local_id[localization_language_index_].c_str());
 
       ImGui::Spacing();
@@ -107,6 +97,7 @@ int Render::LocalWindow() {
   }
 
   ImGui::EndChild();
+  ImGui::PopStyleColor();
 
   return 0;
 }
