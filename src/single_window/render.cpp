@@ -5,8 +5,8 @@
 #include <string>
 
 #include "IconsFontAwesome6.h"
+#include "OPPOSans-Regular.h"
 #include "device_controller_factory.h"
-#include "fa-regular-400.h"
 #include "fa-solid-900.h"
 #include "layout_style.h"
 #include "localization.h"
@@ -226,31 +226,10 @@ int Render::Run() {
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
 
-  if (config_center_.GetLanguage() == ConfigCenter::LANGUAGE::CHINESE) {
-// Load Fonts
-#ifdef _WIN32
-    std::string default_font_path = "fonts/OPPOSans-Regular.ttf";
-    // std::string default_font_path = "c:/windows/fonts/simhei.ttf";
-    std::ifstream font_path_f(default_font_path.c_str());
-    std::string font_path = font_path_f.good() ? default_font_path : "";
-    if (!font_path.empty()) {
-      io.Fonts->AddFontFromFileTTF(font_path.c_str(), 32.0f, NULL,
-                                   io.Fonts->GetGlyphRangesChineseFull());
-    }
-#elif __APPLE__
-    std::string default_font_path = "/System/Library/Fonts/PingFang.ttc";
-    std::ifstream font_path_f(default_font_path.c_str());
-    std::string font_path =
-        font_path_f.good() ? "/System/Library/Fonts/PingFang.ttc" : "";
-    if (!font_path.empty()) {
-      io.Fonts->AddFontFromFileTTF(font_path.c_str(), 13.0f, NULL,
-                                   io.Fonts->GetGlyphRangesChineseFull());
-    }
-#elif __linux__
-    io.Fonts->AddFontFromFileTTF("c:/windows/fonts/msyh.ttc", 13.0f, NULL,
+  // Load Fonts
+  io.Fonts->AddFontFromMemoryTTF(OPPOSans_Regular_ttf,
+                                 sizeof(OPPOSans_Regular_ttf), 32.0f, NULL,
                                  io.Fonts->GetGlyphRangesChineseFull());
-#endif
-  }
 
   ImFontConfig config;
   config.MergeMode = true;
