@@ -62,7 +62,8 @@ int Render::SettingButton() {
           localization::language_en[localization_language_index_].c_str()};
 
       ImGui::SetCursorPosY(32);
-      ImGui::Text(localization::language[localization_language_index_].c_str());
+      ImGui::Text("%s",
+                  localization::language[localization_language_index_].c_str());
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
         ImGui::SetCursorPosX(LANGUAGE_SELECT_WINDOW_PADDING_CN);
       } else {
@@ -88,6 +89,7 @@ int Render::SettingButton() {
 
       ImGui::SetCursorPosY(62);
       ImGui::Text(
+          "%s",
           localization::video_quality[localization_language_index_].c_str());
 
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
@@ -111,8 +113,8 @@ int Render::SettingButton() {
 
       ImGui::SetCursorPosY(92);
       ImGui::Text(
-          localization::video_encode_format[localization_language_index_]
-              .c_str());
+          "%s", localization::video_encode_format[localization_language_index_]
+                    .c_str());
 
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
         ImGui::SetCursorPosX(VIDEO_ENCODE_FORMAT_SELECT_WINDOW_PADDING_CN);
@@ -131,9 +133,9 @@ int Render::SettingButton() {
 
     {
       ImGui::SetCursorPosY(122);
-      ImGui::Text(localization::enable_hardware_video_codec
-                      [localization_language_index_]
-                          .c_str());
+      ImGui::Text("%s", localization::enable_hardware_video_codec
+                            [localization_language_index_]
+                                .c_str());
 
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
         ImGui::SetCursorPosX(ENABLE_HARDWARE_VIDEO_CODEC_CHECKBOX_PADDING_CN);

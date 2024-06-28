@@ -15,7 +15,7 @@ int Render::LocalWindow() {
 
   ImGui::SetWindowFontScale(1.0f);
   ImGui::Text(
-      localization::local_desktop[localization_language_index_].c_str());
+      "%s", localization::local_desktop[localization_language_index_].c_str());
 
   ImGui::Spacing();
   {
@@ -25,7 +25,8 @@ int Render::LocalWindow() {
                       ImGuiChildFlags_Border);
     {
       ImGui::SetWindowFontScale(0.5f);
-      ImGui::Text(localization::local_id[localization_language_index_].c_str());
+      ImGui::Text("%s",
+                  localization::local_id[localization_language_index_].c_str());
 
       ImGui::Spacing();
 
@@ -41,7 +42,8 @@ int Render::LocalWindow() {
 
       ImGui::SetWindowFontScale(0.5f);
 
-      ImGui::Text(localization::password[localization_language_index_].c_str());
+      ImGui::Text("%s",
+                  localization::password[localization_language_index_].c_str());
 
       strncpy(input_password_tmp_, input_password_, sizeof(input_password_));
       ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);

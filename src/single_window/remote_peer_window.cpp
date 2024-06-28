@@ -17,7 +17,7 @@ int Render::RemoteWindow() {
 
   ImGui::SetWindowFontScale(1.0f);
   ImGui::Text(
-      localization::remote_desktop[localization_language_index_].c_str());
+      "%s", localization::remote_desktop[localization_language_index_].c_str());
 
   ImGui::Spacing();
 
@@ -27,7 +27,8 @@ int Render::RemoteWindow() {
                     ImGuiChildFlags_Border);
   {
     ImGui::SetWindowFontScale(0.5f);
-    ImGui::Text(localization::remote_id[localization_language_index_].c_str());
+    ImGui::Text("%s",
+                localization::remote_id[localization_language_index_].c_str());
 
     ImGui::Spacing();
     ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
