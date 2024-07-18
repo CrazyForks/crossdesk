@@ -13,6 +13,8 @@ int Render::MenuWindow() {
       "MenuWindow", ImVec2(main_window_width_, menu_window_height_),
       ImGuiChildFlags_Border,
       ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PopStyleColor();
+
   ImGui::SetWindowFontScale(1.0f);
   if (ImGui::BeginMenuBar()) {
     if (ImGui::BeginMenu(ICON_FA_BARS, true)) {
@@ -34,7 +36,6 @@ int Render::MenuWindow() {
     }
   }
 
-  ImGui::PopStyleColor();
   ImGui::EndChild();
 
   return 0;
@@ -52,15 +53,18 @@ int Render::AboutWindow() {
   // ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0, 1.0, 1.0, 1.0));
   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
+  ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+  ImGui::SetWindowFontScale(0.5f);
   ImGui::Begin(localization::about[localization_language_index_].c_str(),
                nullptr,
                ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-  ImGui::SetWindowFontScale(0.6f);
+  ImGui::SetWindowFontScale(1.0f);
+  ImGui::SetWindowFontScale(0.5f);
   std::string text = "Version 0.0.1";
   ImGui::Text("%s", text.c_str());
 
-  ImGui::SetCursorPosX(about_window_width_ * 0.4f);
+  ImGui::SetCursorPosX(about_window_width_ * 0.42f);
   ImGui::SetCursorPosY(about_window_height_ * 0.75f);
   // OK
   if (ImGui::Button(localization::ok[localization_language_index_].c_str())) {
@@ -68,7 +72,10 @@ int Render::AboutWindow() {
   }
 
   ImGui::SetWindowFontScale(1.0f);
+  ImGui::SetWindowFontScale(0.5f);
   ImGui::End();
+  ImGui::SetWindowFontScale(1.0f);
+  ImGui::PopStyleVar(3);
 
   return 0;
 }

@@ -8,7 +8,9 @@
 
 int Render::LocalWindow() {
   ImGui::SetNextWindowPos(ImVec2(0, menu_window_height_), ImGuiCond_Always);
-  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(255, 255, 255, 1));
+  ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::BeginChild(
       "LocalDesktopWindow",
       ImVec2(local_window_width_,
@@ -17,6 +19,7 @@ int Render::LocalWindow() {
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
           ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PopStyleColor();
 
   ImGui::SetWindowFontScale(1.0f);
   ImGui::Text(
@@ -24,13 +27,16 @@ int Render::LocalWindow() {
 
   ImGui::Spacing();
   {
+    ImGui::PushStyleColor(ImGuiCol_ChildBg,
+                          ImVec4(239.0 / 255, 240.0 / 255, 242.0 / 255, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0.05));
     ImGui::BeginChild("LocalDesktopWindow_1", ImVec2(330, 180),
                       ImGuiChildFlags_Border,
                       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                           ImGuiWindowFlags_NoTitleBar |
                           ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
     {
       ImGui::SetWindowFontScale(0.5f);
       ImGui::Text("%s",
@@ -40,10 +46,12 @@ int Render::LocalWindow() {
 
       ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
       ImGui::SetWindowFontScale(1.0f);
+      ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       ImGui::InputText(
           "##local_id", (char *)mac_addr_str_.c_str(),
           mac_addr_str_.length() + 1,
           ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_ReadOnly);
+      ImGui::PopStyleVar();
 
       ImGui::SameLine();
       ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
@@ -56,6 +64,8 @@ int Render::LocalWindow() {
         ImGui::SetClipboardText(mac_addr_str_.c_str());
         copy_start_time_ = ImGui::GetTime();
       }
+
+      ImGui::PopStyleColor(3);
 
       auto time_duration = ImGui::GetTime() - copy_start_time_;
       if (local_id_copied_ && time_duration < 1.0f) {
@@ -77,6 +87,8 @@ int Render::LocalWindow() {
         ImGui::Begin("ConnectionStatusWindow", nullptr,
                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                          ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor();
 
         auto window_width = ImGui::GetWindowSize().x;
         auto window_height = ImGui::GetWindowSize().y;
@@ -93,12 +105,9 @@ int Render::LocalWindow() {
         ImGui::SetWindowFontScale(1.0f);
 
         ImGui::End();
-        ImGui::PopStyleVar(2);
-        ImGui::PopStyleColor();
       }
 
       ImGui::SetWindowFontScale(1.0f);
-      ImGui::PopStyleColor(3);
 
       ImGui::Spacing();
       ImGui::Separator();
@@ -131,6 +140,7 @@ int Render::LocalWindow() {
       }
 
       ImGui::SetWindowFontScale(1.0f);
+      ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       ImGui::InputTextWithHint(
           "##server_pwd",
           localization::max_password_len[localization_language_index_].c_str(),
@@ -138,6 +148,7 @@ int Render::LocalWindow() {
           show_password_ ? ImGuiInputTextFlags_CharsNoBlank
                          : ImGuiInputTextFlags_CharsNoBlank |
                                ImGuiInputTextFlags_Password);
+      ImGui::PopStyleVar();
 
       ImGui::SameLine();
       ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
@@ -172,13 +183,12 @@ int Render::LocalWindow() {
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PopStyleColor(3);
     }
-    ImGui::PopStyleColor();
+
     ImGui::EndChild();
-    ImGui::PopStyleVar();
   }
 
   ImGui::EndChild();
-  ImGui::PopStyleColor();
+  ImGui::PopStyleVar();
 
   return 0;
 }

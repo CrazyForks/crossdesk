@@ -1,7 +1,7 @@
 #include "render.h"
 
 int Render::ControlWindow() {
-  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   static bool a, b, c, d, e;
   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
   ImGui::SetWindowFontScale(0.5f);
@@ -23,10 +23,10 @@ int Render::ControlWindow() {
                     ImVec2(control_window_width, control_window_height_),
                     ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration);
   ImGui::SetWindowFontScale(1.0f);
+  ImGui::PopStyleColor();
 
   ControlBar();
 
-  ImGui::PopStyleColor();
   ImGui::EndChild();
 
   return 0;

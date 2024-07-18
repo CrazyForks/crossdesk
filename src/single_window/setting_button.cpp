@@ -7,7 +7,8 @@
 int Render::SettingButton() {
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(255, 255, 255, 1));
   ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 1, 0.4));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                        ImVec4(104.0 / 255, 171.0 / 255, 251.0 / 255, 1.0f));
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
 
   std::string gear = ICON_FA_GEAR;
@@ -51,12 +52,16 @@ int Render::SettingButton() {
     // Settings
     {
       ImGui::SetWindowFontScale(0.5f);
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
+      ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+
       ImGui::Begin(localization::settings[localization_language_index_].c_str(),
                    nullptr,
                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                        ImGuiWindowFlags_NoSavedSettings);
       ImGui::SetWindowFontScale(1.0f);
       ImGui::SetWindowFontScale(0.5f);
+      ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
       {
         const char *language_items[] = {
             localization::language_zh[localization_language_index_].c_str(),
@@ -155,6 +160,7 @@ int Render::SettingButton() {
         ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_EN);
       }
       ImGui::SetCursorPosY(160.0f);
+      ImGui::PopStyleVar();
 
       // OK
       if (ImGui::Button(
@@ -215,6 +221,7 @@ int Render::SettingButton() {
           LOG_INFO("Recreate peer instance successful");
         }
       }
+
       ImGui::SameLine();
       // Cancel
       if (ImGui::Button(
@@ -243,6 +250,7 @@ int Render::SettingButton() {
       ImGui::SetWindowFontScale(1.0f);
       ImGui::SetWindowFontScale(0.5f);
       ImGui::End();
+      ImGui::PopStyleVar(2);
       ImGui::SetWindowFontScale(1.0f);
     }
   }

@@ -7,7 +7,9 @@
 int Render::RemoteWindow() {
   ImGui::SetNextWindowPos(ImVec2(local_window_width_ - 1, menu_window_height_),
                           ImGuiCond_Always);
-  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(255, 255, 255, 1));
+  ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::BeginChild(
       "RemoteDesktopWindow",
       ImVec2(main_window_width_ - local_window_width_ + 1,
@@ -16,6 +18,7 @@ int Render::RemoteWindow() {
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
           ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PopStyleColor();
 
   ImGui::SetWindowFontScale(1.0f);
   ImGui::Text(
@@ -23,13 +26,17 @@ int Render::RemoteWindow() {
 
   ImGui::Spacing();
 
+  ImGui::PushStyleColor(ImGuiCol_ChildBg,
+                        ImVec4(239.0 / 255, 240.0 / 255, 242.0 / 255, 1.0f));
   ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
-  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0.09));
+
   ImGui::BeginChild("RemoteDesktopWindow_1", ImVec2(330, 180),
                     ImGuiChildFlags_Border,
                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                         ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PopStyleVar();
+  ImGui::PopStyleColor();
   {
     ImGui::SetWindowFontScale(0.5f);
     ImGui::Text("%s",
@@ -38,10 +45,11 @@ int Render::RemoteWindow() {
     ImGui::Spacing();
     ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH);
     ImGui::SetWindowFontScale(1.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
     ImGui::InputText(
         "##remote_id_", remote_id_, IM_ARRAYSIZE(remote_id_),
         ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CharsNoBlank);
-
+    ImGui::PopStyleVar();
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 38)) || rejoin_) {
       connect_button_pressed_ = true;
@@ -75,8 +83,6 @@ int Render::RemoteWindow() {
     }
   }
   ImGui::EndChild();
-  ImGui::PopStyleVar();
-  ImGui::PopStyleColor();
   ImGui::EndChild();
   ImGui::PopStyleVar();
 
