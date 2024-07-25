@@ -122,6 +122,8 @@ class Render {
  private:
   int screen_width_ = 1280;
   int screen_height_ = 720;
+  int main_window_width_default_ = 960;
+  int main_window_height_default_ = 540;
   int main_window_width_ = 960;
   int main_window_height_ = 540;
   int main_window_width_last_ = 960;
@@ -160,6 +162,7 @@ class Render {
   SDL_Rect stream_render_rect_;
   uint32_t stream_pixformat_ = 0;
 
+  bool resizable_ = false;
   bool inited_ = false;
   bool exit_ = false;
   bool exit_video_window_ = false;

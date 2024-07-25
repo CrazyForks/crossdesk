@@ -218,11 +218,10 @@ int Render::Run() {
 #endif
 
   // Create main window with SDL_Renderer graphics context
-  SDL_WindowFlags window_flags =
-      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
-  main_window_ = SDL_CreateWindow("Remote Desk", SDL_WINDOWPOS_UNDEFINED,
-                                  SDL_WINDOWPOS_UNDEFINED, main_window_width_,
-                                  main_window_height_, window_flags);
+  SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI);
+  main_window_ = SDL_CreateWindow(
+      "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      main_window_width_default_, main_window_height_default_, window_flags);
 
   main_renderer_ = SDL_CreateRenderer(
       main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
@@ -408,8 +407,17 @@ int Render::Run() {
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     if (streaming_ && is_client_mode_) {
+      if (!resizable_) {
+        resizable_ = !resizable_;
+        SDL_SetWindowResizable(main_window_, SDL_TRUE);
+      }
+
       ControlWindow();
     } else {
+      if (resizable_) {
+        resizable_ = !resizable_;
+        SDL_SetWindowResizable(main_window_, SDL_FALSE);
+      }
       MainWindow();
     }
 
@@ -428,10 +436,8 @@ int Render::Run() {
           connection_established_ = false;
           received_frame_ = false;
           is_client_mode_ = false;
-          SDL_SetWindowSize(main_window_, main_window_width_last_,
-                            main_window_height_last_);
-          SDL_SetWindowPosition(main_window_, SDL_WINDOWPOS_CENTERED,
-                                SDL_WINDOWPOS_CENTERED);
+          SDL_SetWindowSize(main_window_, main_window_width_default_,
+                            main_window_height_default_);
           continue;
         } else {
           LOG_INFO("Quit program");
@@ -440,11 +446,6 @@ int Render::Run() {
       } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         SDL_GetWindowSize(main_window_, &main_window_width_,
                           &main_window_height_);
-        if (!streaming_) {
-          main_window_width_last_ = main_window_width_;
-          main_window_height_last_ = main_window_height_;
-        }
-
         if (main_window_width_ * 9 < main_window_height_ * 16) {
           stream_render_rect_.x = 0;
           stream_render_rect_.y =
@@ -463,7 +464,6 @@ int Render::Run() {
           stream_render_rect_.w = main_window_width_;
           stream_render_rect_.h = main_window_height_;
         }
-
       } else if (event.type == SDL_WINDOWEVENT &&
                  event.window.event == SDL_WINDOWEVENT_CLOSE) {
         if (connection_established_) {
