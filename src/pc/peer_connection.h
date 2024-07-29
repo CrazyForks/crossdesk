@@ -97,6 +97,7 @@ class PeerConnection {
   int turn_server_port_ = 0;
   bool hardware_acceleration_ = false;
   bool av1_encoding_ = false;
+  bool trickle_ice_ = true;
 
  private:
   std::shared_ptr<WsTransmission> ws_transport_ = nullptr;
@@ -109,6 +110,7 @@ class PeerConnection {
   SignalStatus signal_status_ = SignalStatus::SignalClosed;
   std::mutex signal_status_mutex_;
   std::atomic<bool> leave_{false};
+  std::string sdp_without_cands_ = "";
 
  private:
   std::map<std::string, std::unique_ptr<IceTransmission>>

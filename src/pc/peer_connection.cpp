@@ -361,7 +361,7 @@ int PeerConnection::Leave() {
 void PeerConnection::ProcessSignal(const std::string &signal) {
   auto j = json::parse(signal);
   std::string type = j["type"];
-  LOG_INFO("signal type: {}", type);
+  // LOG_INFO("signal type: {}", type);
   switch (HASH_STRING_PIECE(type.c_str())) {
     case "ws_connection_id"_H: {
       ws_connection_id_ = j["ws_connection_id"].get<unsigned int>();
@@ -425,9 +425,9 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
           //   continue;
           // }
           ice_transmission_list_[remote_user_id] =
-              std::make_unique<IceTransmission>(true, transmission_id, user_id_,
-                                                remote_user_id, ws_transport_,
-                                                on_ice_status_change_);
+              std::make_unique<IceTransmission>(
+                  trickle_ice_, true, transmission_id, user_id_, remote_user_id,
+                  ws_transport_, on_ice_status_change_);
 
           ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
               on_receive_video_);
@@ -463,85 +463,85 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
       break;
     }
     case "offer"_H: {
-      std::string remote_sdp = j["sdp"].get<std::string>();
+      std::string transmission_id = j["transmission_id"].get<std::string>();
+      std::string remote_user_id = j["remote_user_id"].get<std::string>();
+      LOG_INFO("[{}] receive offer from [{}]", user_id_, remote_user_id);
 
-      if (remote_sdp.empty()) {
-        LOG_INFO("Invalid remote sdp");
-      } else {
-        std::string transmission_id = j["transmission_id"].get<std::string>();
-        std::string sdp = j["sdp"].get<std::string>();
-        std::string remote_user_id = j["remote_user_id"].get<std::string>();
-        LOG_INFO("[{}] receive offer from [{}]", user_id_, remote_user_id);
-
-        if (0 != CreateVideoCodec(hardware_acceleration_)) {
-          LOG_ERROR("Create video codec failed");
-        }
-
-        if (0 != CreateAudioCodec()) {
-          LOG_ERROR("Create audio codec failed");
-        }
-
-        ice_transmission_list_[remote_user_id] =
-            std::make_unique<IceTransmission>(false, transmission_id, user_id_,
-                                              remote_user_id, ws_transport_,
-                                              on_ice_status_change_);
-
-        ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
-            on_receive_video_);
-        ice_transmission_list_[remote_user_id]->SetOnReceiveAudioFunc(
-            on_receive_audio_);
-        ice_transmission_list_[remote_user_id]->SetOnReceiveDataFunc(
-            on_receive_data_);
-        ice_transmission_list_[remote_user_id]->InitIceTransmission(
-            cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,
-            turn_server_port_, cfg_turn_server_username_,
-            cfg_turn_server_password_,
-            av1_encoding_ ? RtpPacket::AV1 : RtpPacket::H264);
-        ice_transmission_list_[remote_user_id]->SetTransmissionId(
-            transmission_id_);
-        ice_transmission_list_[remote_user_id]->SetRemoteSdp(remote_sdp);
-        ice_transmission_list_[remote_user_id]->GatherCandidates();
-        on_connection_status_(ConnectionStatus::Connecting, user_data_);
+      if (0 != CreateVideoCodec(hardware_acceleration_)) {
+        LOG_ERROR("Create video codec failed");
       }
+
+      if (0 != CreateAudioCodec()) {
+        LOG_ERROR("Create audio codec failed");
+      }
+
+      ice_transmission_list_[remote_user_id] =
+          std::make_unique<IceTransmission>(
+              trickle_ice_, false, transmission_id, user_id_, remote_user_id,
+              ws_transport_, on_ice_status_change_);
+
+      ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
+          on_receive_video_);
+      ice_transmission_list_[remote_user_id]->SetOnReceiveAudioFunc(
+          on_receive_audio_);
+      ice_transmission_list_[remote_user_id]->SetOnReceiveDataFunc(
+          on_receive_data_);
+      ice_transmission_list_[remote_user_id]->InitIceTransmission(
+          cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,
+          turn_server_port_, cfg_turn_server_username_,
+          cfg_turn_server_password_,
+          av1_encoding_ ? RtpPacket::AV1 : RtpPacket::H264);
+      ice_transmission_list_[remote_user_id]->SetTransmissionId(
+          transmission_id_);
+
+      if (j.contains("sdp")) {
+        on_connection_status_(ConnectionStatus::Connecting, user_data_);
+        std::string remote_sdp = j["sdp"].get<std::string>();
+        ice_transmission_list_[remote_user_id]->SetRemoteSdp(remote_sdp);
+        if (trickle_ice_) {
+          sdp_without_cands_ = remote_sdp;
+          ice_transmission_list_[remote_user_id]->SendAnswer();
+        }
+        ice_transmission_list_[remote_user_id]->GatherCandidates();
+      } else {
+        LOG_ERROR("Invalid offer msg");
+      }
+
       break;
     }
     case "answer"_H: {
-      std::string remote_sdp = j["sdp"].get<std::string>();
-      if (remote_sdp.empty()) {
-        LOG_INFO("remote_sdp is empty");
-      } else {
-        std::string transmission_id = j["transmission_id"].get<std::string>();
-        std::string sdp = j["sdp"].get<std::string>();
-        std::string remote_user_id = j["remote_user_id"].get<std::string>();
-
-        LOG_INFO("[{}] receive answer from [{}]", user_id_, remote_user_id);
-
+      on_connection_status_(ConnectionStatus::Connecting, user_data_);
+      std::string transmission_id = j["transmission_id"].get<std::string>();
+      std::string remote_user_id = j["remote_user_id"].get<std::string>();
+      if (j.contains("sdp")) {
+        std::string remote_sdp = j["sdp"].get<std::string>();
         if (ice_transmission_list_.find(remote_user_id) !=
             ice_transmission_list_.end()) {
           ice_transmission_list_[remote_user_id]->SetRemoteSdp(remote_sdp);
+          if (trickle_ice_) {
+            sdp_without_cands_ = remote_sdp;
+            ice_transmission_list_[remote_user_id]->GatherCandidates();
+          }
         }
-
-        on_connection_status_(ConnectionStatus::Connecting, user_data_);
+      } else {
+        LOG_ERROR("Invalid answer msg");
       }
+
       break;
     }
-    case "offer_candidate"_H: {
+    case "new_candidate"_H: {
       std::string transmission_id = j["transmission_id"].get<std::string>();
       std::string new_candidate = j["sdp"].get<std::string>();
       std::string remote_user_id = j["remote_user_id"].get<std::string>();
 
-      LOG_INFO("[{}] receive new candidate from [{}]", user_id_,
-               remote_user_id);
+      // LOG_INFO("[{}] receive new candidate from [{}]:[{}]", user_id_,
+      //          remote_user_id, new_candidate);
 
       if (ice_transmission_list_.find(remote_user_id) !=
           ice_transmission_list_.end()) {
-        ice_transmission_list_[remote_user_id]->AddCandidate(new_candidate);
+        ice_transmission_list_[remote_user_id]->SetRemoteSdp(
+            sdp_without_cands_ + new_candidate);
       }
-      break;
-    }
-    case "answer_candidate"_H: {
-      std::string transmission_id = j["transmission_id"].get<std::string>();
-      std::string new_candidate = j["sdp"].get<std::string>();
       break;
     }
     default: {

@@ -32,8 +32,9 @@ class IceTransmission {
   };
 
  public:
-  IceTransmission(bool offer_peer, std::string &transmission_id,
-                  std::string &user_id, std::string &remote_user_id,
+  IceTransmission(bool trickle_ice, bool offer_peer,
+                  std::string &transmission_id, std::string &user_id,
+                  std::string &remote_user_id,
                   std::shared_ptr<WsTransmission> ice_ws_transmission,
                   std::function<void(std::string)> on_ice_status_change);
   ~IceTransmission();
@@ -80,19 +81,11 @@ class IceTransmission {
  public:
   int GatherCandidates();
 
-  int SendLocalCredentials();
-
-  int GetLocalSdp();
+  int SendLocalStreamSdp();
 
   int SetRemoteSdp(const std::string &remote_sdp);
 
-  int AddCandidate(const std::string &candidate);
-
-  int CreateOffer();
-
   int SendOffer();
-
-  int CreateAnswer();
 
   int SendAnswer();
 

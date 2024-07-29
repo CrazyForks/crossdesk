@@ -12,11 +12,12 @@
 using nlohmann::json;
 
 IceTransmission::IceTransmission(
-    bool offer_peer, std::string &transmission_id, std::string &user_id,
-    std::string &remote_user_id,
+    bool trickle_ice, bool offer_peer, std::string &transmission_id,
+    std::string &user_id, std::string &remote_user_id,
     std::shared_ptr<WsTransmission> ice_ws_transmission,
     std::function<void(std::string)> on_ice_status_change)
-    : offer_peer_(offer_peer),
+    : trickle_ice_(trickle_ice),
+      offer_peer_(offer_peer),
       transmission_id_(transmission_id),
       user_id_(user_id),
       remote_user_id_(remote_user_id),
@@ -147,9 +148,9 @@ int IceTransmission::InitIceTransmission(
                          remote_user_id_.size());
       });
 
-  ice_agent_ =
-      std::make_unique<IceAgent>(offer_peer_, stun_ip, stun_port, turn_ip,
-                                 turn_port, turn_username, turn_password);
+  ice_agent_ = std::make_unique<IceAgent>(trickle_ice_, offer_peer_, stun_ip,
+                                          stun_port, turn_ip, turn_port,
+                                          turn_username, turn_password);
 
   ice_agent_->CreateIceAgent(
       [](NiceAgent *agent, guint stream_id, guint component_id,
@@ -180,16 +181,18 @@ int IceTransmission::InitIceTransmission(
             cand = (NiceCandidate *)i->data;
             if (g_strcmp0(cand->foundation, foundation) == 0) {
               ice_transmission_obj->new_local_candidate_ =
-                  nice_agent_generate_local_sdp(agent);
+                  nice_agent_generate_local_candidate_sdp(agent, cand);
 
               json message = {
-                  {"type", "offer_candidate"},
+                  {"type", "new_candidate"},
                   {"transmission_id", ice_transmission_obj->transmission_id_},
                   {"user_id", ice_transmission_obj->user_id_},
                   {"remote_user_id", ice_transmission_obj->remote_user_id_},
                   {"sdp", ice_transmission_obj->new_local_candidate_}};
-              LOG_INFO("Send new local candidate sdp:[{}]",
-                       ice_transmission_obj->new_local_candidate_);
+              // LOG_INFO("[{}] Send new candidate to [{}]]:[{}]",
+              //          ice_transmission_obj->user_id_,
+              //          ice_transmission_obj->remote_user_id_,
+              //          ice_transmission_obj->new_local_candidate_);
 
               if (ice_transmission_obj->ice_ws_transport_) {
                 ice_transmission_obj->ice_ws_transport_->Send(message.dump());
@@ -202,20 +205,19 @@ int IceTransmission::InitIceTransmission(
       },
       [](NiceAgent *agent, guint stream_id, gpointer user_ptr) {
         // non-trickle
-        // if (user_ptr) {
-        //   IceTransmission *ice_transmission_obj =
-        //       static_cast<IceTransmission *>(user_ptr);
-        //   LOG_INFO("[{}] gather_done", ice_transmission_obj->user_id_);
+        if (user_ptr) {
+          IceTransmission *ice_transmission_obj =
+              static_cast<IceTransmission *>(user_ptr);
+          LOG_INFO("[{}] gather_done", ice_transmission_obj->user_id_);
 
-        //   if (ice_transmission_obj->offer_peer_) {
-        //     ice_transmission_obj->GetLocalSdp();
-        //     ice_transmission_obj->SendOffer();
-
-        //   } else {
-        //     ice_transmission_obj->CreateAnswer();
-        //     ice_transmission_obj->SendAnswer();
-        //   }
-        // }
+          if (!ice_transmission_obj->trickle_ice_) {
+            if (ice_transmission_obj->offer_peer_) {
+              ice_transmission_obj->SendOffer();
+            } else {
+              ice_transmission_obj->SendAnswer();
+            }
+          }
+        }
       },
       [](NiceAgent *agent, guint stream_id, guint component_id,
          const char *lfoundation, const char *rfoundation, gpointer user_ptr) {
@@ -265,23 +267,19 @@ int IceTransmission::SetTransmissionId(const std::string &transmission_id) {
 int IceTransmission::JoinTransmission() {
   LOG_INFO("[{}] Join transmission", user_id_);
 
-  CreateOffer();
+  if (trickle_ice_) {
+    SendOffer();
+  } else {
+    GatherCandidates();
+  }
   return 0;
 }
 
 int IceTransmission::GatherCandidates() {
   int ret = ice_agent_->GatherCandidates();
-  while (ret) {
-    LOG_ERROR("Gather candidates failed, retry");
-    ret = ice_agent_->GatherCandidates();
+  if (ret < 0) {
+    LOG_ERROR("Gather candidates failed");
   }
-  LOG_INFO("[{}] Gather candidates", user_id_);
-  return 0;
-}
-
-int IceTransmission::GetLocalSdp() {
-  local_sdp_ = ice_agent_->GenerateLocalSdp();
-  LOG_INFO("[{}] generate local sdp", user_id_);
   return 0;
 }
 
@@ -292,47 +290,14 @@ int IceTransmission::SetRemoteSdp(const std::string &remote_sdp) {
   return 0;
 }
 
-int IceTransmission::AddCandidate(const std::string &candidate) {
-  ice_agent_->AddCandidate(candidate.c_str());
-  LOG_INFO("[{}] add candidate", user_id_);
-  return 0;
-}
-
-int IceTransmission::CreateOffer() {
-  LOG_INFO("[{}] create offer", user_id_);
-  GatherCandidates();
-
-  if (trickle_ice_) {
-    SendLocalCredentials();
-  }
-  return 0;
-}
-
-int IceTransmission::SendLocalCredentials() {
-  ice_agent_->GetLocalIceUfrag();
-  ice_agent_->GetLocalIcePassword();
-
-  json message = {{"type", "credentials"},
-                  {"transmission_id", transmission_id_},
-                  {"user_id", user_id_},
-                  {"remote_user_id", remote_user_id_},
-                  {"ufrag", ice_agent_->GetLocalIceUfrag()},
-                  {"password", ice_agent_->GetLocalIcePassword()}};
-  LOG_INFO("Send credentials:\n{}", message.dump());
-
-  if (ice_ws_transport_) {
-    ice_ws_transport_->Send(message.dump());
-  }
-  return 0;
-}
-
 int IceTransmission::SendOffer() {
   json message = {{"type", "offer"},
                   {"transmission_id", transmission_id_},
                   {"user_id", user_id_},
                   {"remote_user_id", remote_user_id_},
-                  {"sdp", local_sdp_}};
-  // LOG_INFO("Send offer:\n{}", message.dump());
+                  {"sdp", trickle_ice_ ? ice_agent_->GetLocalStreamSdp()
+                                       : ice_agent_->GenerateLocalSdp()}};
+  // LOG_INFO("Send offer with sdp:[{}]", message.dump());
 
   if (ice_ws_transport_) {
     ice_ws_transport_->Send(message.dump());
@@ -341,22 +306,19 @@ int IceTransmission::SendOffer() {
   return 0;
 }
 
-int IceTransmission::CreateAnswer() {
-  GetLocalSdp();
-  return 0;
-}
-
 int IceTransmission::SendAnswer() {
   json message = {{"type", "answer"},
                   {"transmission_id", transmission_id_},
-                  {"sdp", local_sdp_},
                   {"user_id", user_id_},
-                  {"remote_user_id", remote_user_id_}};
-
+                  {"remote_user_id", remote_user_id_},
+                  {"sdp", trickle_ice_ ? ice_agent_->GetLocalStreamSdp()
+                                       : ice_agent_->GenerateLocalSdp()}};
+  // LOG_INFO("Send answer with sdp:[{}]", message.dump());
   if (ice_ws_transport_) {
     ice_ws_transport_->Send(message.dump());
     LOG_INFO("[{}->{}] send answer", user_id_, remote_user_id_);
   }
+
   return 0;
 }
 

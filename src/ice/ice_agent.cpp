@@ -5,10 +5,11 @@
 
 #include "log.h"
 
-IceAgent::IceAgent(bool offer_peer, std::string &stun_ip, uint16_t stun_port,
-                   std::string &turn_ip, uint16_t turn_port,
+IceAgent::IceAgent(bool trickle_ice, bool offer_peer, std::string &stun_ip,
+                   uint16_t stun_port, std::string &turn_ip, uint16_t turn_port,
                    std::string &turn_username, std::string &turn_password)
-    : stun_ip_(stun_ip),
+    : trickle_ice_(trickle_ice),
+      stun_ip_(stun_ip),
       stun_port_(stun_port),
       turn_ip_(turn_ip),
       turn_port_(turn_port),
@@ -21,6 +22,9 @@ IceAgent::~IceAgent() {
     DestroyIceAgent();
   }
   g_object_unref(agent_);
+  g_free(ice_ufrag_);
+  g_free(ice_password_);
+  g_free(stream_sdp_);
 }
 
 int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
@@ -46,7 +50,9 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
 
     agent_ = nice_agent_new_full(
         g_main_loop_get_context(gloop_), NICE_COMPATIBILITY_RFC5245,
-        (NiceAgentOption)(NICE_AGENT_OPTION_ICE_TRICKLE));
+        (NiceAgentOption)(trickle_ice_ ? NICE_AGENT_OPTION_ICE_TRICKLE |
+                                             NICE_AGENT_OPTION_RELIABLE
+                                       : NICE_AGENT_OPTION_RELIABLE));
 
     if (agent_ == nullptr) {
       LOG_ERROR("Failed to create agent_");
@@ -55,7 +61,6 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
     g_object_set(agent_, "stun-server", stun_ip_.c_str(), nullptr);
     g_object_set(agent_, "stun-server-port", stun_port_, nullptr);
     g_object_set(agent_, "controlling-mode", controlling_, nullptr);
-    // g_object_set(agent_, "ice-trickle", true, nullptr);
 
     g_signal_connect(agent_, "candidate-gathering-done",
                      G_CALLBACK(on_gathering_done_), user_ptr_);
@@ -81,8 +86,6 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
     // g_object_set(agent_, "ice-tcp", false, "ice-udp", true, "force-relay",
     // true,
     //              NULL);
-
-    // nice_agent_set_remote_credentials(agent_, stream_id_, ufrag, password);
 
     nice_agent_attach_recv(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP,
                            g_main_loop_get_context(gloop_), on_recv_,
@@ -130,31 +133,10 @@ int IceAgent::DestroyIceAgent() {
   return 0;
 }
 
-int IceAgent::GetLocalCredentials() {
-  if (!nice_inited_) {
-    LOG_ERROR("Nice agent has not been initialized");
-    return -1;
-  }
-
-  if (nullptr == agent_) {
-    LOG_ERROR("Nice agent is nullptr");
-    return -1;
-  }
-
-  if (destroyed_) {
-    LOG_ERROR("Nice agent is destroyed");
-    return -1;
-  }
-
-  nice_agent_get_local_credentials(agent_, stream_id_, &ice_ufrag_,
-                                   &ice_password_);
-
-  return 0;
+char *IceAgent::GetLocalStreamSdp() {
+  stream_sdp_ = nice_agent_generate_local_stream_sdp(agent_, stream_id_, true);
+  return stream_sdp_;
 }
-
-char *IceAgent::GetLocalUfrag() { return ufrag_; }
-
-char *IceAgent::GetLocalPassword() { return password_; }
 
 char *IceAgent::GenerateLocalSdp() {
   if (!nice_inited_) {
@@ -195,39 +177,12 @@ int IceAgent::SetRemoteSdp(const char *remote_sdp) {
   }
 
   int ret = nice_agent_parse_remote_sdp(agent_, remote_sdp);
-  if (ret > 0) {
+  if (ret >= 0) {
     return 0;
   } else {
-    LOG_ERROR("Failed to parse remote data: [{}]", remote_sdp);
+    LOG_ERROR("Failed to parse remote sdp: [{}]", remote_sdp);
     return -1;
   }
-}
-
-int IceAgent::AddCandidate(const char *candidate) {
-  if (!nice_inited_) {
-    LOG_ERROR("Nice agent has not been initialized");
-    return -1;
-  }
-
-  if (nullptr == agent_) {
-    LOG_ERROR("Nice agent is nullptr");
-    return -1;
-  }
-
-  if (destroyed_) {
-    LOG_ERROR("Nice agent is destroyed");
-    return -1;
-  }
-
-  int ret = nice_agent_parse_remote_sdp(agent_, candidate);
-  if (ret > 0) {
-    return 0;
-  } else {
-    LOG_ERROR("Failed to parse remote candidate: [{}]", candidate);
-    return -1;
-  }
-
-  return 0;
 }
 
 int IceAgent::GatherCandidates() {
