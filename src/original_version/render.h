@@ -122,7 +122,7 @@ class Render {
   bool connect_button_pressed_ = false;
   bool fullscreen_button_pressed_ = false;
   bool mouse_control_button_pressed_ = false;
-  bool settings_button_pressed_ = false;
+  bool show_settings_window_ = false;
   bool received_frame_ = false;
   bool is_create_connection_ = false;
   bool audio_buffer_fresh_ = false;

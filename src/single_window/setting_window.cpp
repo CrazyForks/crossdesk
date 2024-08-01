@@ -4,22 +4,8 @@
 #include "rd_log.h"
 #include "render.h"
 
-int Render::SettingButton() {
-  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(255, 255, 255, 1));
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-                        ImVec4(104.0 / 255, 171.0 / 255, 251.0 / 255, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-
-  std::string gear = ICON_FA_GEAR;
-  if (ImGui::Button(gear.c_str(), ImVec2(40, 30))) {
-    settings_button_pressed_ = !settings_button_pressed_;
-    settings_window_pos_reset_ = true;
-  }
-
-  ImGui::PopStyleColor(4);
-
-  if (settings_button_pressed_) {
+int Render::SettingWindow() {
+  if (show_settings_window_) {
     if (settings_window_pos_reset_) {
       const ImGuiViewport *viewport = ImGui::GetMainViewport();
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
@@ -166,7 +152,7 @@ int Render::SettingButton() {
       // OK
       if (ImGui::Button(
               localization::ok[localization_language_index_].c_str())) {
-        settings_button_pressed_ = false;
+        show_settings_window_ = false;
 
         // Language
         if (language_button_value_ == 0) {
@@ -227,7 +213,7 @@ int Render::SettingButton() {
       // Cancel
       if (ImGui::Button(
               localization::cancel[localization_language_index_].c_str())) {
-        settings_button_pressed_ = false;
+        show_settings_window_ = false;
         if (language_button_value_ != language_button_value_last_) {
           language_button_value_ = language_button_value_last_;
         }

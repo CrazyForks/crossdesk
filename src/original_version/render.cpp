@@ -544,11 +544,11 @@ int Render::Run() {
       ImGui::Spacing();
 
       if (ImGui::Button(settings_button_label_.c_str())) {
-        settings_button_pressed_ = !settings_button_pressed_;
+        show_settings_window_ = !show_settings_window_;
         settings_window_pos_reset_ = true;
       }
 
-      if (settings_button_pressed_) {
+      if (show_settings_window_) {
         if (settings_window_pos_reset_) {
           const ImGuiViewport *viewport = ImGui::GetMainViewport();
           if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
@@ -690,7 +690,7 @@ int Render::Run() {
         // OK
         if (ImGui::Button(
                 localization::ok[localization_language_index_].c_str())) {
-          settings_button_pressed_ = false;
+          show_settings_window_ = false;
 
           // Language
           if (language_button_value_ == 0) {
@@ -751,7 +751,7 @@ int Render::Run() {
         // Cancel
         if (ImGui::Button(
                 localization::cancel[localization_language_index_].c_str())) {
-          settings_button_pressed_ = false;
+          show_settings_window_ = false;
           if (language_button_value_ != language_button_value_last_) {
             language_button_value_ = language_button_value_last_;
           }

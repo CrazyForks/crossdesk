@@ -5,7 +5,7 @@ int Render::MainWindow() {
   ImGui::SetNextWindowSize(
       ImVec2(main_window_width_default_, main_window_height_default_),
       ImGuiCond_Always);
-  MenuWindow();
+
   LocalWindow();
   RemoteWindow();
   StatusBar();

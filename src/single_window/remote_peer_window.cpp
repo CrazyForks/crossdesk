@@ -5,16 +5,15 @@
 #include "render.h"
 
 int Render::RemoteWindow() {
-  ImGui::SetNextWindowPos(
-      ImVec2(local_window_width_ - 1, menu_window_height_ + title_bar_height_),
-      ImGuiCond_Always);
+  ImGui::SetNextWindowPos(ImVec2(local_window_width_ - 1, title_bar_height_),
+                          ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::BeginChild("RemoteDesktopWindow",
                     ImVec2(main_window_width_ - local_window_width_ + 1,
                            main_window_height_default_ - title_bar_height_ -
-                               menu_window_height_ - status_bar_height_),
+                               status_bar_height_),
                     ImGuiChildFlags_Border,
                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |

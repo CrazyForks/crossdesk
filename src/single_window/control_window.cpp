@@ -3,7 +3,7 @@
 int Render::ControlWindow() {
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   static bool a, b, c, d, e;
-  ImGui::SetNextWindowPos(ImVec2(0, 0 + title_bar_height_), ImGuiCond_Always);
+  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_ + 2), ImGuiCond_Always);
   ImGui::SetWindowFontScale(0.5f);
 
   auto time_duration = ImGui::GetTime() - control_bar_button_pressed_time_;

@@ -7,7 +7,8 @@
 #include "IconsFontAwesome6.h"
 #include "OPPOSans_Regular.h"
 #include "device_controller_factory.h"
-#include "fa-solid-900.h"
+#include "fa_regular_400.h"
+#include "fa_solid_900.h"
 #include "layout_style.h"
 #include "localization.h"
 #include "platform.h"
@@ -18,44 +19,47 @@
 #define REFRESH_EVENT (SDL_USEREVENT + 1)
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
-#define MOUSE_GRAB_PADDING 10
+#define MOUSE_GRAB_PADDING 5
 
-SDL_HitTestResult HitTestCallback(SDL_Window *Window, const SDL_Point *Area,
-                                  void *Data) {
-  int Width, Height;
-  SDL_GetWindowSize(Window, &Width, &Height);
+SDL_HitTestResult Render::HitTestCallback(SDL_Window *window,
+                                          const SDL_Point *area, void *data) {
+  Render *render = (Render *)data;
 
-  if (Area->y < 30 && Area->x < 30) {
+  int window_width, window_height;
+  SDL_GetWindowSize(window, &window_width, &window_height);
+
+  if (area->y < 30 && area->y > MOUSE_GRAB_PADDING &&
+      area->x < window_width - 120 && area->x > MOUSE_GRAB_PADDING) {
     return SDL_HITTEST_DRAGGABLE;
-  } else {
+  }
+
+  if (!render->streaming_) {
     return SDL_HITTEST_NORMAL;
   }
 
-  // if (Area->y < MOUSE_GRAB_PADDING) {
-  //   if (Area->x < MOUSE_GRAB_PADDING) {
-  //     return SDL_HITTEST_RESIZE_TOPLEFT;
-  //   } else if (Area->x > Width - MOUSE_GRAB_PADDING) {
-  //     return SDL_HITTEST_RESIZE_TOPRIGHT;
-  //   } else {
-  //     return SDL_HITTEST_RESIZE_TOP;
-  //   }
-  // } else if (Area->y > Height - MOUSE_GRAB_PADDING) {
-  //   if (Area->x < MOUSE_GRAB_PADDING) {
-  //     return SDL_HITTEST_RESIZE_BOTTOMLEFT;
-  //   } else if (Area->x > Width - MOUSE_GRAB_PADDING) {
-  //     return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
-  //   } else {
-  //     return SDL_HITTEST_RESIZE_BOTTOM;
-  //   }
-  // } else if (Area->x < MOUSE_GRAB_PADDING) {
-  //   return SDL_HITTEST_RESIZE_LEFT;
-  // } else if (Area->x > Width - MOUSE_GRAB_PADDING) {
-  //   return SDL_HITTEST_RESIZE_RIGHT;
-  // } else if (Area->y < 70) {
-  //   return SDL_HITTEST_DRAGGABLE;
-  // }
+  if (area->y < MOUSE_GRAB_PADDING) {
+    if (area->x < MOUSE_GRAB_PADDING) {
+      return SDL_HITTEST_RESIZE_TOPLEFT;
+    } else if (area->x > window_width - MOUSE_GRAB_PADDING) {
+      return SDL_HITTEST_RESIZE_TOPRIGHT;
+    } else {
+      return SDL_HITTEST_RESIZE_TOP;
+    }
+  } else if (area->y > window_height - MOUSE_GRAB_PADDING) {
+    if (area->x < MOUSE_GRAB_PADDING) {
+      return SDL_HITTEST_RESIZE_BOTTOMLEFT;
+    } else if (area->x > window_width - MOUSE_GRAB_PADDING) {
+      return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+    } else {
+      return SDL_HITTEST_RESIZE_BOTTOM;
+    }
+  } else if (area->x < MOUSE_GRAB_PADDING) {
+    return SDL_HITTEST_RESIZE_LEFT;
+  } else if (area->x > window_width - MOUSE_GRAB_PADDING) {
+    return SDL_HITTEST_RESIZE_RIGHT;
+  }
 
-  // return SDL_HITTEST_DRAGGABLE;  // SDL_HITTEST_NORMAL <- Windows behaviour
+  return SDL_HITTEST_NORMAL;
 }
 
 Render::Render() {}
@@ -260,7 +264,7 @@ int Render::Run() {
       "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       main_window_width_default_, main_window_height_default_, window_flags);
 
-  SDL_SetWindowHitTest(main_window_, HitTestCallback, 0);
+  SDL_SetWindowHitTest(main_window_, HitTestCallback, this);
 
   main_renderer_ = SDL_CreateRenderer(
       main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
@@ -295,11 +299,11 @@ int Render::Run() {
   want_in.callback = SdlCaptureAudioIn;
   want_in.userdata = this;
 
-  input_dev_ = SDL_OpenAudioDevice(NULL, 1, &want_in, &have_in, 0);
-  if (input_dev_ == 0) {
-    SDL_Log("Failed to open input: %s", SDL_GetError());
-    // return 1;
-  }
+  // input_dev_ = SDL_OpenAudioDevice(NULL, 1, &want_in, &have_in, 0);
+  // if (input_dev_ == 0) {
+  //   SDL_Log("Failed to open input: %s", SDL_GetError());
+  //   // return 1;
+  // }
 
   SDL_zero(want_out);
   want_out.freq = 48000;
@@ -316,7 +320,7 @@ int Render::Run() {
     // return 1;
   }
 
-  SDL_PauseAudioDevice(input_dev_, 0);
+  // SDL_PauseAudioDevice(input_dev_, 0);
   SDL_PauseAudioDevice(output_dev_, 0);
 
   // Setup Dear ImGui context
@@ -339,6 +343,8 @@ int Render::Run() {
   config.GlyphMinAdvanceX =
       13.0f;  // Use if you want to make the icon monospaced
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+  io.Fonts->AddFontFromMemoryTTF(fa_regular_400_ttf, sizeof(fa_regular_400_ttf),
+                                 30.0f, &config, icon_ranges);
   io.Fonts->AddFontFromMemoryTTF(fa_solid_900_ttf, sizeof(fa_solid_900_ttf),
                                  30.0f, &config, icon_ranges);
 
@@ -432,20 +438,20 @@ int Render::Run() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    // ImGui::PushStyleColor(ImGuiCol_WindowBg,
-    //                       ImVec4(1.0f, 1.0f, 1.0f, streaming_ ? 0 : 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(
         ImVec2(main_window_width_,
-               streaming_ ? title_bar_height_ : main_window_height_default_),
+               streaming_ ? title_bar_height_ + control_window_height_
+                          : main_window_height_default_),
         ImGuiCond_Always);
     ImGui::Begin("Render", nullptr,
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
                      ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PopStyleVar();
-    // ImGui::PopStyleColor();
+    ImGui::PopStyleColor();
 
     TitleBar();
 
@@ -455,7 +461,7 @@ int Render::Run() {
         SDL_SetWindowResizable(main_window_, SDL_TRUE);
       }
 
-      // ControlWindow();
+      ControlWindow();
     } else {
       if (resizable_) {
         resizable_ = !resizable_;
@@ -489,23 +495,26 @@ int Render::Run() {
       } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
         SDL_GetWindowSize(main_window_, &main_window_width_,
                           &main_window_height_);
-        if (main_window_width_ * 9 < main_window_height_ * 16) {
+
+        int video_width = main_window_width_;
+        int video_height = main_window_height_ - title_bar_height_;
+
+        if (video_width * 9 < video_height * 16) {
           stream_render_rect_.x = 0;
           stream_render_rect_.y =
-              abs(main_window_height_ - main_window_width_ * 9 / 16) / 2;
-          stream_render_rect_.w = main_window_width_;
-          stream_render_rect_.h = main_window_width_ * 9 / 16;
-        } else if (main_window_width_ * 9 > main_window_height_ * 16) {
-          stream_render_rect_.x =
-              abs(main_window_width_ - main_window_height_ * 16 / 9) / 2;
-          stream_render_rect_.y = 0;
-          stream_render_rect_.w = main_window_height_ * 16 / 9;
-          stream_render_rect_.h = main_window_height_;
+              abs(video_height - video_width * 9 / 16) / 2 + title_bar_height_;
+          stream_render_rect_.w = video_width;
+          stream_render_rect_.h = video_width * 9 / 16;
+        } else if (video_width * 9 > video_height * 16) {
+          stream_render_rect_.x = abs(video_width - video_height * 16 / 9) / 2;
+          stream_render_rect_.y = title_bar_height_;
+          stream_render_rect_.w = video_height * 16 / 9;
+          stream_render_rect_.h = video_height;
         } else {
           stream_render_rect_.x = 0;
-          stream_render_rect_.y = 0;
-          stream_render_rect_.w = main_window_width_;
-          stream_render_rect_.h = main_window_height_;
+          stream_render_rect_.y = title_bar_height_;
+          stream_render_rect_.w = video_width;
+          stream_render_rect_.h = video_height;
         }
       } else if (event.type == SDL_WINDOWEVENT &&
                  event.window.event == SDL_WINDOWEVENT_CLOSE) {
@@ -566,7 +575,7 @@ int Render::Run() {
   }
 
   SDL_CloseAudioDevice(output_dev_);
-  SDL_CloseAudioDevice(input_dev_);
+  // SDL_CloseAudioDevice(input_dev_);
 
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();

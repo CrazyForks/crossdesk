@@ -28,7 +28,7 @@ static std::vector<std::string> exit_fullscreen = {u8" 退出全屏",
                                                    " Exit fullscreen"};
 static std::vector<std::string> control_mouse = {u8" 控制", " Control"};
 static std::vector<std::string> release_mouse = {u8" 释放", " Release"};
-static std::vector<std::string> settings = {u8" 设置", " Settings"};
+static std::vector<std::string> settings = {u8"设置", "Settings"};
 static std::vector<std::string> language = {u8"语言:", "Language:"};
 static std::vector<std::string> language_zh = {u8"中文", "Chinese"};
 static std::vector<std::string> language_en = {u8"英文", "English"};

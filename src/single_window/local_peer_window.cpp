@@ -7,19 +7,18 @@
 #include "render.h"
 
 int Render::LocalWindow() {
-  ImGui::SetNextWindowPos(ImVec2(0, menu_window_height_ + title_bar_height_),
-                          ImGuiCond_Always);
+  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_), ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-  ImGui::BeginChild("LocalDesktopWindow",
-                    ImVec2(local_window_width_,
-                           main_window_height_default_ - title_bar_height_ -
-                               menu_window_height_ - status_bar_height_),
-                    ImGuiChildFlags_Border,
-                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                        ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::BeginChild(
+      "LocalDesktopWindow",
+      ImVec2(local_window_width_, main_window_height_default_ -
+                                      title_bar_height_ - status_bar_height_),
+      ImGuiChildFlags_Border,
+      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+          ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PopStyleColor();
 
   ImGui::SetWindowFontScale(1.0f);

@@ -2,7 +2,7 @@
 #include "render.h"
 
 int Render::StatusBar() {
-  ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0, 0, 0, 1));
+  ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   static bool a, b, c, d, e;
   ImGui::SetNextWindowPos(
       ImVec2(0, main_window_height_default_ - status_bar_height_ - 1),

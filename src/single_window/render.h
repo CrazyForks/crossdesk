@@ -36,10 +36,9 @@ class Render {
   int MainWindow();
   int LocalWindow();
   int RemoteWindow();
-  int SettingButton();
+  int SettingWindow();
   int ControlWindow();
   int ControlBar();
-  int MenuWindow();
   int AboutWindow();
   int StatusBar();
   int ConnectionStatusWindow();
@@ -63,6 +62,9 @@ class Render {
 
   static void NetStatusReport(TraversalMode mode, const unsigned short send,
                               const unsigned short receive, void *user_ptr);
+
+  static SDL_HitTestResult HitTestCallback(SDL_Window *window,
+                                           const SDL_Point *area, void *data);
 
  private:
   int ProcessMouseKeyEven(SDL_Event &ev);
@@ -142,7 +144,6 @@ class Render {
   int main_window_height_before_fullscreen_ = 720;
   int main_window_width_before_maximized_ = 960;
   int main_window_height_before_maximized_ = 570;
-  int menu_window_height_ = 30;
   int control_window_min_width_ = 40;
   int control_window_height_ = 40;
   int local_window_width_ = 350;
@@ -182,7 +183,7 @@ class Render {
   bool control_bar_button_pressed_ = false;
   bool fullscreen_button_pressed_ = false;
   bool mouse_control_button_pressed_ = false;
-  bool settings_button_pressed_ = false;
+  bool show_settings_window_ = false;
   bool received_frame_ = false;
   bool is_create_connection_ = false;
   bool audio_buffer_fresh_ = false;
