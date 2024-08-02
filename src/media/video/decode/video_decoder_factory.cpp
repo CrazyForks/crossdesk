@@ -18,6 +18,7 @@ VideoDecoderFactory::~VideoDecoderFactory() {}
 std::unique_ptr<VideoDecoder> VideoDecoderFactory::CreateVideoDecoder(
     bool hardware_acceleration, bool av1_encoding) {
   if (av1_encoding) {
+    LOG_INFO("Use dav1d decoder");
     return std::make_unique<Dav1dAv1Decoder>(Dav1dAv1Decoder());
   } else {
 #if __APPLE__
@@ -25,11 +26,13 @@ std::unique_ptr<VideoDecoder> VideoDecoderFactory::CreateVideoDecoder(
 #else
     if (hardware_acceleration) {
       if (CheckIsHardwareAccerlerationSupported()) {
+        LOG_INFO("Use nvidia decoder");
         return std::make_unique<NvidiaVideoDecoder>(NvidiaVideoDecoder());
       } else {
         return nullptr;
       }
     } else {
+      LOG_INFO("Use openh264 decoder");
       return std::make_unique<OpenH264Decoder>(OpenH264Decoder());
     }
 #endif

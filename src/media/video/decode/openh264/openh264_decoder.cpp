@@ -39,6 +39,22 @@ void CopyYUVWithStride(uint8_t *srcY, uint8_t *srcU, uint8_t *srcV, int width,
   }
 }
 
+void ConvertYUV420toNV12(const unsigned char *yuvData, unsigned char *nv12Data,
+                         int width, int height) {
+  int ySize = width * height;
+  int uvSize = ySize / 4;
+  const unsigned char *yData = yuvData;
+  const unsigned char *uData = yData + ySize;
+  const unsigned char *vData = uData + uvSize;
+
+  std::memcpy(nv12Data, yData, ySize);
+
+  for (int i = 0; i < uvSize; i++) {
+    nv12Data[ySize + i * 2] = uData[i];
+    nv12Data[ySize + i * 2 + 1] = vData[i];
+  }
+}
+
 OpenH264Decoder::OpenH264Decoder() {}
 OpenH264Decoder::~OpenH264Decoder() {
   if (openh264_decoder_) {
@@ -138,15 +154,20 @@ int OpenH264Decoder::Decode(
                frame_width_ * frame_height_ * 3 / 2, nv12_stream_);
       }
 
-      libyuv::I420ToNV12(
-          (const uint8_t *)decoded_frame_, frame_width_,
-          (const uint8_t *)decoded_frame_ + frame_width_ * frame_height_,
-          frame_width_ / 2,
-          (const uint8_t *)decoded_frame_ +
-              frame_width_ * frame_height_ * 3 / 2,
-          frame_width_ / 2, nv12_frame_, frame_width_,
-          nv12_frame_ + frame_width_ * frame_height_, frame_width_,
-          frame_width_, frame_height_);
+      if (0) {
+        ConvertYUV420toNV12(decoded_frame_, nv12_frame_, frame_width_,
+                            frame_height_);
+      } else {
+        libyuv::I420ToNV12(
+            (const uint8_t *)decoded_frame_, frame_width_,
+            (const uint8_t *)decoded_frame_ + frame_width_ * frame_height_,
+            frame_width_ / 2,
+            (const uint8_t *)decoded_frame_ +
+                frame_width_ * frame_height_ * 5 / 4,
+            frame_width_ / 2, nv12_frame_, frame_width_,
+            nv12_frame_ + frame_width_ * frame_height_, frame_width_,
+            frame_width_, frame_height_);
+      }
 
       VideoFrame decoded_frame(nv12_frame_,
                                frame_width_ * frame_height_ * 3 / 2,

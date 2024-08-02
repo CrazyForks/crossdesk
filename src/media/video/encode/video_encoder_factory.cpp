@@ -18,6 +18,7 @@ VideoEncoderFactory::~VideoEncoderFactory() {}
 std::unique_ptr<VideoEncoder> VideoEncoderFactory::CreateVideoEncoder(
     bool hardware_acceleration, bool av1_encoding) {
   if (av1_encoding) {
+    LOG_INFO("Use AOM encoder");
     return std::make_unique<AomAv1Encoder>(AomAv1Encoder());
   } else {
 #if __APPLE__
@@ -25,11 +26,13 @@ std::unique_ptr<VideoEncoder> VideoEncoderFactory::CreateVideoEncoder(
 #else
     if (hardware_acceleration) {
       if (CheckIsHardwareAccerlerationSupported()) {
+        LOG_INFO("Use Nvidia encoder");
         return std::make_unique<NvidiaVideoEncoder>(NvidiaVideoEncoder());
       } else {
         return nullptr;
       }
     } else {
+      LOG_INFO("Use OpenH264 encoder");
       return std::make_unique<OpenH264Encoder>(OpenH264Encoder());
     }
 #endif
