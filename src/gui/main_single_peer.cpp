@@ -706,7 +706,8 @@ int main(int argc, char *argv[]) {
                   std::string user_id = "C-" + mac_addr_str;
                   ret = JoinConnection(peer_server, remote_id, client_password);
                   if (0 == ret) {
-                    // joined = true;
+                    is_client_mode_ = true;
+                    rejoin_ = false;
                   }
 #if CHINESE_FONT
                 } else if (strcmp(connect_label, u8"断开连接") == 0 && joined) {

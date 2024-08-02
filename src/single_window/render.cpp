@@ -501,22 +501,27 @@ int Render::Run() {
                           &main_window_height_);
 
         int video_width = main_window_width_;
-        int video_height = main_window_height_ - title_bar_height_;
+        int video_height = main_window_height_ -
+                           (fullscreen_button_pressed_ ? 0 : title_bar_height_);
 
         if (video_width * 9 < video_height * 16) {
           stream_render_rect_.x = 0;
-          stream_render_rect_.y =
-              abs(video_height - video_width * 9 / 16) / 2 + title_bar_height_;
+          stream_render_rect_.y = abs(video_height - video_width * 9 / 16) / 2 +
+                                          fullscreen_button_pressed_
+                                      ? 0
+                                      : title_bar_height_;
           stream_render_rect_.w = video_width;
           stream_render_rect_.h = video_width * 9 / 16;
         } else if (video_width * 9 > video_height * 16) {
           stream_render_rect_.x = abs(video_width - video_height * 16 / 9) / 2;
-          stream_render_rect_.y = title_bar_height_;
+          stream_render_rect_.y =
+              fullscreen_button_pressed_ ? 0 : title_bar_height_;
           stream_render_rect_.w = video_height * 16 / 9;
           stream_render_rect_.h = video_height;
         } else {
           stream_render_rect_.x = 0;
-          stream_render_rect_.y = title_bar_height_;
+          stream_render_rect_.y =
+              fullscreen_button_pressed_ ? 0 : title_bar_height_;
           stream_render_rect_.w = video_width;
           stream_render_rect_.h = video_height;
         }
