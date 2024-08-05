@@ -141,8 +141,9 @@ class Render {
   int stream_window_height_last_ = 720;
   int main_window_width_before_maximized_ = 960;
   int main_window_height_before_maximized_ = 570;
-  int control_window_min_width_ = 40;
+  int control_window_min_width_ = 20;
   int control_window_max_width_ = 150;
+  int control_window_width_ = 0;
   int control_window_height_ = 40;
   int local_window_width_ = 350;
   int status_bar_height_ = 20;
@@ -152,6 +153,9 @@ class Render {
   int notification_window_height_ = 80;
   int about_window_width_ = 200;
   int about_window_height_ = 150;
+
+  int control_bar_pos_x_ = 0;
+  int control_bar_pos_y_ = 30;
 
   int main_window_width_real_ = 960;
   int main_window_height_real_ = 540;
@@ -196,6 +200,8 @@ class Render {
   bool window_maximized_ = false;
   bool streaming_ = true;
   bool is_client_mode_ = true;
+  bool is_control_bar_in_left_ = true;
+  bool control_window_width_is_changing_ = false;
 
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;
