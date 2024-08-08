@@ -48,16 +48,17 @@ int Render::LocalWindow() {
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 
-      std::string client_id_show = "";
+      std::string client_id_display = "";
       for (int i = 0; i < sizeof(client_id_); i++) {
-        client_id_show += client_id_[i];
+        client_id_display += client_id_[i];
         if (i == 2 || i == 5) {
-          client_id_show += " ";
+          client_id_display += " ";
         }
       }
 
       ImGui::InputText(
-          "##local_id", (char *)client_id_show.c_str(), sizeof(client_id_show),
+          "##local_id", (char *)client_id_display.c_str(),
+          sizeof(client_id_display),
           ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_ReadOnly);
       ImGui::PopStyleVar();
 

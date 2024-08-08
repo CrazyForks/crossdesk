@@ -499,7 +499,8 @@ int Render::Run() {
           LOG_INFO("Return to main interface");
           streaming_ = false;
           LOG_INFO("[{}] Leave connection [{}]", client_id_, remote_id_);
-          LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_, remote_id_);
+          LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_,
+                          remote_id_.c_str());
           rejoin_ = false;
           memset(audio_buffer_, 0, 960);
           connection_established_ = false;

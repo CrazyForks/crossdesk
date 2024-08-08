@@ -4,6 +4,13 @@
 #include "rd_log.h"
 #include "render.h"
 
+static int InputTextCallback(ImGuiInputTextCallbackData *data) {
+  if (data->CursorPos == 3 || data->CursorPos == 7) {
+    data->InsertChars(data->CursorPos, " ");
+  }
+  return 0;
+}
+
 int Render::RemoteWindow() {
   ImGui::SetNextWindowPos(ImVec2(local_window_width_ - 1, title_bar_height_),
                           ImGuiCond_Always);
@@ -47,9 +54,12 @@ int Render::RemoteWindow() {
     ImGui::SetWindowFontScale(1.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
     bool enter_pressed = ImGui::InputText(
-        "##remote_id_", remote_id_, IM_ARRAYSIZE(remote_id_),
-        ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CharsNoBlank |
-            ImGuiInputTextFlags_EnterReturnsTrue);
+        "##remote_id_", remote_id_display_, IM_ARRAYSIZE(remote_id_display_),
+        ImGuiInputTextFlags_CharsUppercase |
+            ImGuiInputTextFlags_EnterReturnsTrue |
+            ImGuiInputTextFlags_CallbackEdit | ImGuiInputTextFlags_CharsNoBlank,
+        InputTextCallback);
+
     ImGui::PopStyleVar();
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ARROW_RIGHT_LONG, ImVec2(55, 38)) ||
@@ -59,7 +69,11 @@ int Render::RemoteWindow() {
       int ret = -1;
       if (signal_connected_) {
         if (!connection_established_) {
-          if (0 == strcmp(remote_id_, client_id_) && !peer_reserved_) {
+          remote_id_ = remote_id_display_;
+          remote_id_.erase(remove_if(remote_id_.begin(), remote_id_.end(),
+                                     static_cast<int (*)(int)>(&isspace)),
+                           remote_id_.end());
+          if (0 == strcmp(remote_id_.c_str(), client_id_) && !peer_reserved_) {
             peer_reserved_ = CreatePeer(&params_);
             if (peer_reserved_) {
               LOG_INFO("Create peer[reserved] instance successful");
@@ -72,7 +86,7 @@ int Render::RemoteWindow() {
             }
           }
           ret = JoinConnection(peer_reserved_ ? peer_reserved_ : peer_,
-                               remote_id_, remote_password_.c_str());
+                               remote_id_.c_str(), remote_password_.c_str());
           if (0 == ret) {
             is_client_mode_ = true;
             rejoin_ = false;

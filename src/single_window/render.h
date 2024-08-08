@@ -122,8 +122,8 @@ class Render {
   char input_password_[7] = "";
   std::string random_password_ = "";
   std::string remote_password_ = "";
-  std::string local_id_ = "";
-  char remote_id_[20] = "";
+  char remote_id_display_[12] = "";
+  std::string remote_id_ = "";
   char client_password_[20] = "";
 
  private:
