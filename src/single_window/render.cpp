@@ -67,6 +67,7 @@ Render::Render() {}
 Render::~Render() {}
 
 int Render::SaveSettingsIntoCacheFile() {
+  std::lock_guard<std::mutex> lock(cd_cache_mutex_);
   cd_cache_file_ = fopen("cache.cd", "w+");
   if (!cd_cache_file_) {
     return -1;
@@ -87,12 +88,13 @@ int Render::SaveSettingsIntoCacheFile() {
   fwrite(&cd_cache_, sizeof(cd_cache_), 1, cd_cache_file_);
   fclose(cd_cache_file_);
 
-  LOG_INFO("Save settings into cache file");
+  LOG_INFO("Save settings into cache file success");
 
   return 0;
 }
 
 int Render::LoadSettingsIntoCacheFile() {
+  std::lock_guard<std::mutex> lock(cd_cache_mutex_);
   cd_cache_file_ = fopen("cache.cd", "r+");
   if (!cd_cache_file_) {
     return -1;
@@ -116,7 +118,7 @@ int Render::LoadSettingsIntoCacheFile() {
       (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
   config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
 
-  LOG_INFO("Load settings into cache file");
+  LOG_INFO("Load settings from cache file");
 
   return 0;
 }
@@ -402,10 +404,10 @@ int Render::Run() {
   while (!exit_) {
     if (SignalStatus::SignalConnected == signal_status_ &&
         !is_create_connection_) {
+      LOG_INFO("Connected with signal server, create p2p connection");
       is_create_connection_ =
           CreateConnection(peer_, client_id_, password_saved_.c_str()) ? false
                                                                        : true;
-      LOG_INFO("Connected with signal server, create p2p connection");
     }
 
     if (!inited_ ||

@@ -60,7 +60,7 @@ class Render {
 
   static void OnConnectionStatusCb(ConnectionStatus status, void *user_data);
 
-  static void NetStatusReport(int TransmissionId, TraversalMode mode,
+  static void NetStatusReport(int client_id, TraversalMode mode,
                               const unsigned short send,
                               const unsigned short receive, void *user_data);
 
@@ -101,6 +101,7 @@ class Render {
  private:
   FILE *cd_cache_file_ = nullptr;
   CDCache cd_cache_;
+  std::mutex cd_cache_mutex_;
 
   ConfigCenter config_center_;
 
