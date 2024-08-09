@@ -89,7 +89,7 @@ int PeerConnection::Init(PeerConnectionParams params,
 
   LOG_INFO("Hardware accelerated codec [{}]",
            hardware_acceleration_ ? "ON" : "OFF");
-  LOG_INFO("AV1 encoding [{}]", av1_encoding_ ? "ON" : "OFF");
+  LOG_INFO("Video format [{}]", av1_encoding_ ? "AV1" : "H.264");
 
   on_receive_video_buffer_ = params.on_receive_video_buffer;
   on_receive_audio_buffer_ = params.on_receive_audio_buffer;

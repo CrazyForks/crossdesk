@@ -99,7 +99,7 @@ class PeerConnection {
   int turn_server_port_ = 0;
   bool hardware_acceleration_ = false;
   bool av1_encoding_ = false;
-  bool trickle_ice_ = false;
+  bool trickle_ice_ = true;
   TraversalMode mode_ = TraversalMode::P2P;
 
  private:

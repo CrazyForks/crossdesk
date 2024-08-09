@@ -79,6 +79,7 @@ int IceTransmission::InitIceTransmission(
         }
 
         if (state_ != NICE_COMPONENT_STATE_READY) {
+          LOG_ERROR("Ice is not ready");
           return -2;
         }
 
