@@ -5,9 +5,14 @@
 #include "render.h"
 
 static int InputTextCallback(ImGuiInputTextCallbackData *data) {
-  if (data->CursorPos == 3 || data->CursorPos == 7) {
-    data->InsertChars(data->CursorPos, " ");
+  if (data->BufTextLen > 3 && data->Buf[3] != ' ') {
+    data->InsertChars(3, " ");
   }
+
+  if (data->BufTextLen > 7 && data->Buf[7] != ' ') {
+    data->InsertChars(7, " ");
+  }
+
   return 0;
 }
 
