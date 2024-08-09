@@ -66,12 +66,12 @@ int Render::StartScreenCapture() {
   rect.top = 0;
   rect.right = screen_width_;
   rect.bottom = screen_height_;
-  last_frame_time_ = std::chrono::high_resolution_clock::now();
+  last_frame_time_ = std::chrono::steady_clock::now();
 
   int screen_capturer_init_ret = screen_capturer_->Init(
       rect, 60,
       [this](unsigned char *data, int size, int width, int height) -> void {
-        auto now_time = std::chrono::high_resolution_clock::now();
+        auto now_time = std::chrono::steady_clock::now();
         std::chrono::duration<double> duration = now_time - last_frame_time_;
         auto tc = duration.count() * 1000;
 

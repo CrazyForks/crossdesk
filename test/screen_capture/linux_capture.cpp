@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
   // Event Loop
   SDL_Event event;
 
-  last_frame_time = std::chrono::high_resolution_clock::now();
+  last_frame_time = std::chrono::steady_clock::now();
 
   for (;;) {
     // Wait
@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
           }
           printf("xxxxxxxxxxxxxxxxxxx\n");
           if (!got_picture) {
-            auto now_time = std::chrono::high_resolution_clock::now();
+            auto now_time = std::chrono::steady_clock::now();
             std::chrono::duration<double> duration = now_time - last_frame_time;
             auto tc = duration.count() * 1000;
             printf("duration: %f\n", tc);

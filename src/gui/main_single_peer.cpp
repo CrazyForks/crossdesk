@@ -320,7 +320,7 @@ int main(int argc, char *argv[]) {
 
   last_ts = static_cast<uint32_t>(
       std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::high_resolution_clock::now().time_since_epoch())
+          std::chrono::steady_clock::now().time_since_epoch())
           .count());
 
   cd_cache_file = fopen("cache.cd", "r+");
@@ -497,7 +497,7 @@ int main(int argc, char *argv[]) {
           screen_capturer_factory = new ScreenCapturerFactory();
           screen_capturer = (ScreenCapturer *)screen_capturer_factory->Create();
 
-          last_frame_time_ = std::chrono::high_resolution_clock::now();
+          last_frame_time_ = std::chrono::steady_clock::now();
           ScreenCapturer::RECORD_DESKTOP_RECT rect;
           rect.left = 0;
           rect.top = 0;
@@ -507,7 +507,7 @@ int main(int argc, char *argv[]) {
           int screen_capturer_init_ret = screen_capturer->Init(
               rect, 60,
               [](unsigned char *data, int size, int width, int height) -> void {
-                auto now_time = std::chrono::high_resolution_clock::now();
+                auto now_time = std::chrono::steady_clock::now();
                 std::chrono::duration<double> duration =
                     now_time - last_frame_time_;
                 auto tc = duration.count() * 1000;
