@@ -145,7 +145,7 @@ class Render {
   int main_window_height_before_maximized_ = 570;
   int control_window_min_width_ = 20;
   int control_window_max_width_ = 150;
-  int control_window_width_ = 20;
+  int control_window_width_ = 150;
   int control_window_height_ = 40;
   int local_window_width_ = 350;
   int status_bar_height_ = 20;
@@ -184,7 +184,7 @@ class Render {
   bool connect_button_pressed_ = false;
   bool password_validating_ = false;
   uint32_t password_validating_time_ = 0;
-  bool control_bar_button_pressed_ = false;
+  bool control_bar_expand_ = true;
   bool fullscreen_button_pressed_ = false;
   bool mouse_control_button_pressed_ = false;
   bool show_settings_window_ = false;

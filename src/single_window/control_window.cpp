@@ -4,7 +4,7 @@
 int Render::ControlWindow() {
   auto time_duration = ImGui::GetTime() - control_bar_button_pressed_time_;
   if (control_window_width_is_changing_) {
-    if (control_bar_button_pressed_) {
+    if (control_bar_expand_) {
       control_window_width_ =
           control_window_min_width_ +
           (control_window_max_width_ - control_window_min_width_) * 4 *
@@ -39,7 +39,7 @@ int Render::ControlWindow() {
                              ? title_bar_height_
                              : (main_window_height_ - control_window_height_));
 
-      if (control_bar_button_pressed_) {
+      if (control_bar_expand_) {
         if (control_window_width_ >= control_window_max_width_) {
           control_window_width_ = control_window_max_width_;
           control_window_width_is_changing_ = false;
@@ -66,7 +66,7 @@ int Render::ControlWindow() {
                              ? title_bar_height_
                              : (main_window_height_ - control_window_height_));
 
-      if (control_bar_button_pressed_) {
+      if (control_bar_expand_) {
         if (control_window_width_ >= control_window_max_width_) {
           control_window_width_ = control_window_max_width_;
           control_window_width_is_changing_ = false;

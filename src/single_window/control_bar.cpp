@@ -9,7 +9,7 @@ int Render::ControlBar() {
 
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
-  if (control_bar_button_pressed_) {
+  if (control_bar_expand_) {
     ImGui::SetCursorPosX(is_control_bar_in_left_ ? (control_window_width_ + 5)
                                                  : 87);
     // Mouse control
@@ -50,12 +50,12 @@ int Render::ControlBar() {
       is_control_bar_in_left_ ? (control_window_width_ * 2 - 18) : 3);
 
   std::string control_bar =
-      control_bar_button_pressed_
+      control_bar_expand_
           ? (is_control_bar_in_left_ ? ICON_FA_ANGLE_LEFT : ICON_FA_ANGLE_RIGHT)
           : (is_control_bar_in_left_ ? ICON_FA_ANGLE_RIGHT
                                      : ICON_FA_ANGLE_LEFT);
   if (ImGui::Button(control_bar.c_str(), ImVec2(15, 25))) {
-    control_bar_button_pressed_ = !control_bar_button_pressed_;
+    control_bar_expand_ = !control_bar_expand_;
     control_bar_button_pressed_time_ = ImGui::GetTime();
     control_window_width_is_changing_ = true;
   }
