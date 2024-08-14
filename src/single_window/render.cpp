@@ -525,6 +525,11 @@ int Render::Run() {
           LOG_INFO("[{}] Leave connection [{}]", client_id_, remote_id_);
           LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_,
                           remote_id_.c_str());
+          if (peer_reserved_) {
+            DestroyPeer(&peer_reserved_);
+            LOG_INFO("Destroy peer[reserved]");
+          }
+
           rejoin_ = false;
           memset(audio_buffer_, 0, 960);
           connection_established_ = false;
@@ -616,11 +621,11 @@ int Render::Run() {
   }
 
   if (peer_) {
-    DestroyPeer(peer_);
+    DestroyPeer(&peer_);
   }
 
   if (peer_reserved_) {
-    DestroyPeer(peer_reserved_);
+    DestroyPeer(&peer_reserved_);
   }
 
   SDL_CloseAudioDevice(output_dev_);
