@@ -168,7 +168,7 @@ int Render::StartScreenCapture() {
         std::chrono::duration<double> duration = now_time - last_frame_time_;
         auto tc = duration.count() * 1000;
 
-        if (tc >= 0) {
+        if (tc >= 0 && connection_established_) {
           SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
                    NV12_BUFFER_SIZE);
           last_frame_time_ = now_time;
@@ -203,7 +203,9 @@ int Render::StartSpeakerCapture() {
 
   int speaker_capturer_init_ret =
       speaker_capturer_->Init([this](unsigned char *data, size_t size) -> void {
-        SendData(peer_, DATA_TYPE::AUDIO, (const char *)data, size);
+        if (connection_established_) {
+          SendData(peer_, DATA_TYPE::AUDIO, (const char *)data, size);
+        }
       });
 
   if (0 == speaker_capturer_init_ret) {
@@ -421,13 +423,13 @@ int Render::Run() {
     screen_capturer_factory_ = new ScreenCapturerFactory();
 
     // Speaker capture
-    // speaker_capturer_factory_ = new SpeakerCapturerFactory();
+    speaker_capturer_factory_ = new SpeakerCapturerFactory();
 
     // Mouse control
     device_controller_factory_ = new DeviceControllerFactory();
   }
 
-  // StartSpeakerCapture();
+  StartSpeakerCapture();
 
   // Main loop
   while (!exit_) {

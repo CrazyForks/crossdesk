@@ -3,7 +3,6 @@ set_license("LGPL-3.0")
 
 set_version("0.0.1")
 add_defines("RD_VERSION=\"0.0.1\"");
-add_defines("MINIAUDIO_IMPLEMENTATION")
 
 add_rules("mode.release", "mode.debug")
 set_languages("c++17")
@@ -20,6 +19,7 @@ end
 add_requires("spdlog 1.14.1", {system = false})
 add_requires("imgui v1.91.0", {configs = {sdl2 = true, sdl2_renderer = true}})
 add_requires("libyuv")
+add_requires("miniaudio")
 
 if is_os("windows") then
     add_links("Shell32", "windowsapp", "dwmapi", "User32", "kernel32",
@@ -83,6 +83,7 @@ target("speaker_capturer")
     add_deps("rd_log")
     add_includedirs("src/speaker_capturer", {public = true})
     if is_os("windows") then
+        add_packages("miniaudio")
         add_files("src/speaker_capturer/windows/*.cpp")
         add_includedirs("src/speaker_capturer/windows", {public = true})
     elseif is_os("macosx") then

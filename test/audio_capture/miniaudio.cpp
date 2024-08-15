@@ -18,12 +18,16 @@ buffer in the callback will be null whereas the input buffer will be valid.
 #include <stdio.h>
 #include <stdlib.h>
 
+FILE* fp;
+
 void data_callback(ma_device* pDevice, void* pOutput, const void* pInput,
                    ma_uint32 frameCount) {
-  ma_encoder* pEncoder = (ma_encoder*)pDevice->pUserData;
-  MA_ASSERT(pEncoder != NULL);
+  // ma_encoder* pEncoder = (ma_encoder*)pDevice->pUserData;
+  // MA_ASSERT(pEncoder != NULL);
 
-  ma_encoder_write_pcm_frames(pEncoder, pInput, frameCount, NULL);
+  // ma_encoder_write_pcm_frames(pEncoder, pInput, frameCount, NULL);
+
+  fwrite(pInput, frameCount * ma_get_bytes_per_frame(ma_format_s16, 1), 1, fp);
 
   (void)pOutput;
 }
@@ -35,32 +39,36 @@ int main(int argc, char** argv) {
   ma_device_config deviceConfig;
   ma_device device;
 
+  fopen_s(&fp, "miniaudio.pcm", "wb");
+
   /* Loopback mode is currently only supported on WASAPI. */
   ma_backend backends[] = {ma_backend_wasapi};
 
-  if (argc < 2) {
-    printf("No output file.\n");
-    return -1;
-  }
+  // if (argc < 2) {
+  //   printf("No output file.\n");
+  //   return -1;
+  // }
 
-  encoderConfig =
-      ma_encoder_config_init(ma_encoding_format_wav, ma_format_s16, 1, 48000);
+  // encoderConfig =
+  //     ma_encoder_config_init(ma_encoding_format_wav, ma_format_s16, 1,
+  //     48000);
 
-  if (ma_encoder_init_file(argv[1], &encoderConfig, &encoder) != MA_SUCCESS) {
-    printf("Failed to initialize output file.\n");
-    return -1;
-  }
+  // if (ma_encoder_init_file(argv[1], &encoderConfig, &encoder) != MA_SUCCESS)
+  // {
+  //   printf("Failed to initialize output file.\n");
+  //   return -1;
+  // }
 
   deviceConfig = ma_device_config_init(ma_device_type_loopback);
   deviceConfig.capture.pDeviceID =
       NULL; /* Use default device for this example. Set this to the ID of a
                _playback_ device if you want to capture from a specific device.
              */
-  deviceConfig.capture.format = encoder.config.format;
-  deviceConfig.capture.channels = encoder.config.channels;
-  deviceConfig.sampleRate = encoder.config.sampleRate;
+  deviceConfig.capture.format = ma_format_s16;
+  deviceConfig.capture.channels = 1;
+  deviceConfig.sampleRate = 48000;
   deviceConfig.dataCallback = data_callback;
-  deviceConfig.pUserData = &encoder;
+  deviceConfig.pUserData = nullptr;
 
   result = ma_device_init_ex(backends, sizeof(backends) / sizeof(backends[0]),
                              NULL, &deviceConfig, &device);
@@ -79,8 +87,10 @@ int main(int argc, char** argv) {
   printf("Press Enter to stop recording...\n");
   getchar();
 
+  fclose(fp);
+
   ma_device_uninit(&device);
-  ma_encoder_uninit(&encoder);
+  // ma_encoder_uninit(&encoder);
 
   return 0;
 }

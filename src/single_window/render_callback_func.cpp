@@ -13,7 +13,7 @@
 #endif
 
 int Render::ProcessMouseKeyEven(SDL_Event &ev) {
-  if (!control_mouse_) {
+  if (!control_mouse_ || !connection_established_) {
     return 0;
   }
 
