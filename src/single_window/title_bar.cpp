@@ -14,6 +14,7 @@ int Render::TitleBar() {
                     ImGuiChildFlags_Border,
                     ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDecoration |
                         ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
   if (ImGui::BeginMenuBar()) {
     ImGui::SetCursorPosX(main_window_width_ - (streaming_
@@ -23,7 +24,10 @@ int Render::TitleBar() {
     ImGui::PushStyleColor(ImGuiCol_HeaderActive,
                           ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
     if (!streaming_) {
-      if (ImGui::BeginMenu(ICON_FA_BARS)) {
+      float bar_pos_x = ImGui::GetCursorPosX() + 7;
+      float bar_pos_y = ImGui::GetCursorPosY() + 15;
+      std::string menu_button = "    ";  // ICON_FA_BARS;
+      if (ImGui::BeginMenu(menu_button.c_str())) {
         ImGui::SetWindowFontScale(0.5f);
         if (ImGui::MenuItem(
                 localization::settings[localization_language_index_].c_str())) {
@@ -36,6 +40,15 @@ int Render::TitleBar() {
         ImGui::SetWindowFontScale(1.0f);
         ImGui::EndMenu();
       }
+      draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y - 6),
+                         ImVec2(bar_pos_x + 12, bar_pos_y - 6),
+                         IM_COL32(0, 0, 0, 255));
+      draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y),
+                         ImVec2(bar_pos_x + 12, bar_pos_y),
+                         IM_COL32(0, 0, 0, 255));
+      draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y + 6),
+                         ImVec2(bar_pos_x + 12, bar_pos_y + 6),
+                         IM_COL32(0, 0, 0, 255));
       ImGui::PopStyleColor(2);
 
       {
@@ -51,11 +64,17 @@ int Render::TitleBar() {
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0.1f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive,
                           ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-    std::string window_minimize_button = ICON_FA_MINUS;
+
+    float minimize_pos_x = ImGui::GetCursorPosX() + 12;
+    float minimize_pos_y = ImGui::GetCursorPosY() + 15;
+    std::string window_minimize_button = "##minimize";  // ICON_FA_MINUS;
     if (ImGui::Button(window_minimize_button.c_str(),
                       ImVec2(BUTTON_PADDING, 30))) {
       SDL_MinimizeWindow(main_window_);
     }
+    draw_list->AddLine(ImVec2(minimize_pos_x, minimize_pos_y),
+                       ImVec2(minimize_pos_x + 12, minimize_pos_y),
+                       IM_COL32(0, 0, 0, 255));
     ImGui::PopStyleColor(2);
 
     if (streaming_) {
@@ -65,19 +84,39 @@ int Render::TitleBar() {
                             ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
       if (window_maximized_) {
-        std::string window_restore_button = ICON_FA_WINDOW_RESTORE;
+        float pos_x_top = ImGui::GetCursorPosX() + 11;
+        float pos_y_top = ImGui::GetCursorPosY() + 11;
+        float pos_x_bottom = ImGui::GetCursorPosX() + 13;
+        float pos_y_bottom = ImGui::GetCursorPosY() + 9;
+        std::string window_restore_button =
+            "##restore";  // ICON_FA_WINDOW_RESTORE;
         if (ImGui::Button(window_restore_button.c_str(),
                           ImVec2(BUTTON_PADDING, 30))) {
           SDL_RestoreWindow(main_window_);
           window_maximized_ = !window_maximized_;
         }
+        draw_list->AddRect(ImVec2(pos_x_top, pos_y_top),
+                           ImVec2(pos_x_top + 12, pos_y_top + 12),
+                           IM_COL32(0, 0, 0, 255));
+        draw_list->AddRect(ImVec2(pos_x_bottom, pos_y_bottom),
+                           ImVec2(pos_x_bottom + 12, pos_y_bottom + 12),
+                           IM_COL32(0, 0, 0, 255));
+        draw_list->AddRectFilled(ImVec2(pos_x_top + 1, pos_y_top + 1),
+                                 ImVec2(pos_x_top + 11, pos_y_top + 11),
+                                 IM_COL32(255, 255, 255, 255));
       } else {
-        std::string window_maximize_button = ICON_FA_SQUARE_FULL;
+        float maximize_pos_x = ImGui::GetCursorPosX() + 12;
+        float maximize_pos_y = ImGui::GetCursorPosY() + 10;
+        std::string window_maximize_button =
+            "##maximize";  // ICON_FA_SQUARE_FULL;
         if (ImGui::Button(window_maximize_button.c_str(),
                           ImVec2(BUTTON_PADDING, 30))) {
           SDL_MaximizeWindow(main_window_);
           window_maximized_ = !window_maximized_;
         }
+        draw_list->AddRect(ImVec2(maximize_pos_x, maximize_pos_y),
+                           ImVec2(maximize_pos_x + 12, maximize_pos_y + 12),
+                           IM_COL32(0, 0, 0, 255));
       }
       ImGui::PopStyleColor(2);
     }
@@ -85,12 +124,27 @@ int Render::TitleBar() {
     ImGui::SetCursorPosX(main_window_width_ - BUTTON_PADDING);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0, 0, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0, 0, 0.5f));
-    std::string close_button = ICON_FA_XMARK;
+
+    float xmark_pos_x = ImGui::GetCursorPosX() + 18;
+    float xmark_pos_y = ImGui::GetCursorPosY() + 16;
+    float xmark_size = 12.0f;
+    std::string close_button = "##xmark";  // ICON_FA_XMARK;
     if (ImGui::Button(close_button.c_str(), ImVec2(BUTTON_PADDING, 30))) {
       SDL_Event event;
       event.type = SDL_QUIT;
       SDL_PushEvent(&event);
     }
+    draw_list->AddLine(ImVec2(xmark_pos_x - xmark_size / 2 - 0.25f,
+                              xmark_pos_y - xmark_size / 2 + 0.75f),
+                       ImVec2(xmark_pos_x + xmark_size / 2 - 1.5f,
+                              xmark_pos_y + xmark_size / 2 - 0.5f),
+                       IM_COL32(0, 0, 0, 255));
+    draw_list->AddLine(ImVec2(xmark_pos_x + xmark_size / 2 - 1.75f,
+                              xmark_pos_y - xmark_size / 2 + 0.75f),
+                       ImVec2(xmark_pos_x - xmark_size / 2,
+                              xmark_pos_y + xmark_size / 2 - 1.0f),
+                       IM_COL32(0, 0, 0, 255));
+
     ImGui::PopStyleColor(2);
 
     ImGui::PopStyleColor(1);

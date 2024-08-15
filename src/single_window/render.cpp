@@ -327,8 +327,9 @@ int Render::Run() {
   config.GlyphMinAdvanceX =
       13.0f;  // Use if you want to make the icon monospaced
   static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-  io.Fonts->AddFontFromMemoryTTF(fa_regular_400_ttf, sizeof(fa_regular_400_ttf),
-                                 30.0f, &config, icon_ranges);
+  // io.Fonts->AddFontFromMemoryTTF(fa_regular_400_ttf,
+  // sizeof(fa_regular_400_ttf),
+  //                                30.0f, &config, icon_ranges);
   io.Fonts->AddFontFromMemoryTTF(fa_solid_900_ttf, sizeof(fa_solid_900_ttf),
                                  30.0f, &config, icon_ranges);
 
@@ -424,15 +425,21 @@ int Render::Run() {
           connect_button_pressed_
               ? localization::disconnect[localization_language_index_]
               : localization::connect[localization_language_index_];
-      fullscreen_button_label_ =
-          fullscreen_button_pressed_
-              ? localization::exit_fullscreen[localization_language_index_]
-              : localization::fullscreen[localization_language_index_];
 
       mouse_control_button_label_ =
           mouse_control_button_pressed_
               ? localization::release_mouse[localization_language_index_]
               : localization::control_mouse[localization_language_index_];
+
+      audio_capture_button_label_ =
+          audio_capture_button_pressed_
+              ? localization::mute[localization_language_index_]
+              : localization::audio_capture[localization_language_index_];
+
+      fullscreen_button_label_ =
+          fullscreen_button_pressed_
+              ? localization::exit_fullscreen[localization_language_index_]
+              : localization::fullscreen[localization_language_index_];
 
       settings_button_label_ =
           localization::settings[localization_language_index_];
@@ -519,6 +526,7 @@ int Render::Run() {
           connection_established_ = false;
           received_frame_ = false;
           is_client_mode_ = false;
+          audio_capture_button_pressed_ = false;
           SDL_RestoreWindow(main_window_);
           continue;
         } else {

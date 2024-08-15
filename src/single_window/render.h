@@ -185,7 +185,7 @@ class Render {
   bool control_bar_expand_ = true;
   bool fullscreen_button_pressed_ = false;
   bool mouse_control_button_pressed_ = false;
-  bool audio_capture_button_pressed_ = true;
+  bool audio_capture_button_pressed_ = false;
   bool show_settings_window_ = false;
   bool received_frame_ = false;
   bool is_create_connection_ = false;

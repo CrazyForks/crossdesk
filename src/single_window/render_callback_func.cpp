@@ -205,6 +205,11 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     render->start_mouse_control_ = false;
     render->connection_established_ = false;
     render->control_mouse_ = false;
+    if (render->audio_capture_) {
+      render->StopSpeakerCapture();
+      render->audio_capture_ = false;
+      render->audio_capture_button_pressed_ = false;
+    }
     render->exit_video_window_ = false;
     render->remote_password_.clear();
     if (render->dst_buffer_) {

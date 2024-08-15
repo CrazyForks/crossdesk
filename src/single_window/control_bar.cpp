@@ -13,41 +13,36 @@ int Render::ControlBar() {
     ImGui::SetCursorPosX(is_control_bar_in_left_ ? (control_window_width_ + 5)
                                                  : 53);
     // Mouse control
-    std::string mouse = ICON_FA_COMPUTER_MOUSE;
+    std::string mouse =
+        mouse_control_button_pressed_ ? ICON_FA_HAND_BACK_FIST : ICON_FA_HAND;
     if (ImGui::Button(mouse.c_str(), ImVec2(25, 25))) {
-      if (mouse_control_button_label_ ==
-              localization::control_mouse[localization_language_index_] &&
-          connection_established_) {
-        mouse_control_button_pressed_ = true;
+      if (connection_established_) {
         control_mouse_ = true;
-        mouse_control_button_label_ =
-            localization::release_mouse[localization_language_index_];
       } else {
         control_mouse_ = false;
-        mouse_control_button_label_ =
-            localization::control_mouse[localization_language_index_];
       }
       mouse_control_button_pressed_ = !mouse_control_button_pressed_;
+      mouse_control_button_label_ =
+          mouse_control_button_pressed_
+              ? localization::release_mouse[localization_language_index_]
+              : localization::control_mouse[localization_language_index_];
     }
 
     ImGui::SameLine();
     // Audio capture
-    std::string audio = audio_capture_button_pressed_ ? ICON_FA_VOLUME_HIGH
-                                                      : ICON_FA_VOLUME_XMARK;
+    std::string audio = audio_capture_button_pressed_ ? ICON_FA_VOLUME_XMARK
+                                                      : ICON_FA_VOLUME_HIGH;
     if (ImGui::Button(audio.c_str(), ImVec2(25, 25))) {
-      if (mouse_control_button_label_ ==
-              localization::audio_capture[localization_language_index_] &&
-          connection_established_) {
-        audio_capture_button_pressed_ = true;
+      if (connection_established_) {
         audio_capture_ = true;
-        audio_capture_button_label_ =
-            localization::mute[localization_language_index_];
       } else {
-        control_mouse_ = false;
-        audio_capture_button_label_ =
-            localization::audio_capture[localization_language_index_];
+        audio_capture_ = false;
       }
       audio_capture_button_pressed_ = !audio_capture_button_pressed_;
+      audio_capture_button_label_ =
+          audio_capture_button_pressed_
+              ? localization::audio_capture[localization_language_index_]
+              : localization::mute[localization_language_index_];
 
       RemoteAction remote_action;
       remote_action.type = ControlType::audio_capture;
@@ -62,6 +57,10 @@ int Render::ControlBar() {
         fullscreen_button_pressed_ ? ICON_FA_COMPRESS : ICON_FA_EXPAND;
     if (ImGui::Button(fullscreen.c_str(), ImVec2(25, 25))) {
       fullscreen_button_pressed_ = !fullscreen_button_pressed_;
+      fullscreen_button_label_ =
+          fullscreen_button_pressed_
+              ? localization::exit_fullscreen[localization_language_index_]
+              : localization::fullscreen[localization_language_index_];
       if (fullscreen_button_pressed_) {
         SDL_SetWindowFullscreen(main_window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
       } else {
