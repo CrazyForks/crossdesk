@@ -152,7 +152,69 @@ int Render::LoadSettingsFromCacheFile() {
   return 0;
 }
 
+int Render::StartScreenCapture() {
+  screen_capturer_ = (ScreenCapturer *)screen_capturer_factory_->Create();
+  ScreenCapturer::RECORD_DESKTOP_RECT rect;
+  rect.left = 0;
+  rect.top = 0;
+  rect.right = screen_width_;
+  rect.bottom = screen_height_;
+  last_frame_time_ = std::chrono::steady_clock::now();
+
+  int screen_capturer_init_ret = screen_capturer_->Init(
+      rect, 60,
+      [this](unsigned char *data, int size, int width, int height) -> void {
+        auto now_time = std::chrono::steady_clock::now();
+        std::chrono::duration<double> duration = now_time - last_frame_time_;
+        auto tc = duration.count() * 1000;
+
+        if (tc >= 0 && connection_established_) {
+          SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
+                   NV12_BUFFER_SIZE);
+          last_frame_time_ = now_time;
+        }
+      });
+
+  if (0 == screen_capturer_init_ret) {
+    screen_capturer_->Start();
+  } else {
+    screen_capturer_->Destroy();
+    delete screen_capturer_;
+    screen_capturer_ = nullptr;
+  }
+
+  return 0;
+}
+
+int Render::StopScreenCapture() {
+  if (screen_capturer_) {
+    LOG_INFO("Stop screen capturer")
+    screen_capturer_->Stop();
+    screen_capturer_->Destroy();
+    delete screen_capturer_;
+    screen_capturer_ = nullptr;
+  }
+
+  return 0;
+}
+
 int Render::StartSpeakerCapture() {
+  if (!speaker_capturer_) {
+    speaker_capturer_ = (SpeakerCapturer *)speaker_capturer_factory_->Create();
+    int speaker_capturer_init_ret = speaker_capturer_->Init(
+        [this](unsigned char *data, size_t size) -> void {
+          if (connection_established_) {
+            SendData(peer_, DATA_TYPE::AUDIO, (const char *)data, size);
+          }
+        });
+
+    if (0 != speaker_capturer_init_ret) {
+      speaker_capturer_->Destroy();
+      delete speaker_capturer_;
+      speaker_capturer_ = nullptr;
+    }
+  }
+
   if (speaker_capturer_) {
     speaker_capturer_->Start();
   }
@@ -359,51 +421,9 @@ int Render::Run() {
 
     // Screen capture init
     screen_capturer_factory_ = new ScreenCapturerFactory();
-    screen_capturer_ = (ScreenCapturer *)screen_capturer_factory_->Create();
-    ScreenCapturer::RECORD_DESKTOP_RECT rect;
-    rect.left = 0;
-    rect.top = 0;
-    rect.right = screen_width_;
-    rect.bottom = screen_height_;
-    last_frame_time_ = std::chrono::steady_clock::now();
-
-    int screen_capturer_init_ret = screen_capturer_->Init(
-        rect, 60,
-        [this](unsigned char *data, int size, int width, int height) -> void {
-          auto now_time = std::chrono::steady_clock::now();
-          std::chrono::duration<double> duration = now_time - last_frame_time_;
-          auto tc = duration.count() * 1000;
-
-          if (tc >= 0 && connection_established_) {
-            SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
-                     NV12_BUFFER_SIZE);
-            last_frame_time_ = now_time;
-          }
-        });
-
-    if (0 == screen_capturer_init_ret) {
-      screen_capturer_->Start();
-    } else {
-      screen_capturer_->Destroy();
-      delete screen_capturer_;
-      screen_capturer_ = nullptr;
-    }
 
     // Speaker capture init
     speaker_capturer_factory_ = new SpeakerCapturerFactory();
-    speaker_capturer_ = (SpeakerCapturer *)speaker_capturer_factory_->Create();
-    int speaker_capturer_init_ret = speaker_capturer_->Init(
-        [this](unsigned char *data, size_t size) -> void {
-          if (connection_established_) {
-            SendData(peer_, DATA_TYPE::AUDIO, (const char *)data, size);
-          }
-        });
-
-    if (0 != speaker_capturer_init_ret) {
-      speaker_capturer_->Destroy();
-      delete speaker_capturer_;
-      speaker_capturer_ = nullptr;
-    }
 
     // Mouse control
     device_controller_factory_ = new DeviceControllerFactory();
@@ -447,13 +467,13 @@ int Render::Run() {
       localization_language_index_last_ = localization_language_index_;
     }
 
-    // if (start_screen_capture_ && !screen_capture_is_started_) {
-    //   StartScreenCapture();
-    //   screen_capture_is_started_ = true;
-    // } else if (!start_screen_capture_ && screen_capture_is_started_) {
-    //   StopScreenCapture();
-    //   screen_capture_is_started_ = false;
-    // }
+    if (start_screen_capture_ && !screen_capture_is_started_) {
+      StartScreenCapture();
+      screen_capture_is_started_ = true;
+    } else if (!start_screen_capture_ && screen_capture_is_started_) {
+      StopScreenCapture();
+      screen_capture_is_started_ = false;
+    }
 
     if (start_mouse_control_ && !mouse_control_is_started_) {
       StartMouseControl();

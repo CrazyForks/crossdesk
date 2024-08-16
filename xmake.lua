@@ -119,17 +119,6 @@ target("localization")
     set_kind("headeronly")
     add_includedirs("src/localization", {public = true})
 
-target("original_version")
-    set_kind("object")
-    add_deps("rd_log", "common", "localization", "config_center", "projectx", "screen_capturer", "device_controller")
-    if is_os("macosx") then
-        add_packages("ffmpeg")
-    elseif is_os("linux") then
-        add_packages("ffmpeg")
-    end
-    add_files("src/original_version/*.cpp")
-    add_includedirs("src/original_version", {public = true})
-
 target("single_window")
     set_kind("object")
     add_deps("rd_log", "common", "localization", "config_center", "projectx", "screen_capturer", "speaker_capturer", "device_controller")
@@ -154,18 +143,12 @@ target("remote_desk")
     end
     add_files("src/gui/main.cpp")
 
-target("ra")
-    set_kind("binary")
-    if is_os("windows") then
-        add_files("test/audio_capture/audio_capture_wasapi.cpp")
-    end
-
-target("m")
-    set_kind("binary")
-    add_packages("miniaudio")
-    if is_os("windows") then
-        add_files("test/audio_capture/miniaudio.cpp")
-    end
+-- target("miniaudio_capture")
+--     set_kind("binary")
+--     add_packages("miniaudio")
+--     if is_os("windows") then
+--         add_files("test/audio_capture/miniaudio.cpp")
+--     end
 
 -- target("screen_capturer")
 --     set_kind("binary")

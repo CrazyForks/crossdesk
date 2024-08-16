@@ -77,6 +77,9 @@ class Render {
   int SaveSettingsIntoCacheFile();
   int LoadSettingsFromCacheFile();
 
+  int StartScreenCapture();
+  int StopScreenCapture();
+
   int StartSpeakerCapture();
   int StopSpeakerCapture();
 
