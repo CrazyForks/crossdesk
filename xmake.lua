@@ -18,10 +18,10 @@ end
 
 add_requires("spdlog 1.14.1", {system = false})
 add_requires("imgui v1.91.0", {configs = {sdl2 = true, sdl2_renderer = true}})
-add_requires("libyuv")
 add_requires("miniaudio 0.11.21")
 
 if is_os("windows") then
+    add_requires("libyuv")
     add_links("Shell32", "windowsapp", "dwmapi", "User32", "kernel32",
         "SDL2-static", "SDL2main", "gdi32", "winmm", "setupapi", "version",
         "Imm32", "iphlpapi")
@@ -63,9 +63,9 @@ target("common")
 target("screen_capturer")
     set_kind("object")
     add_deps("rd_log")
-    add_packages("libyuv")
     add_includedirs("src/screen_capturer", {public = true})
     if is_os("windows") then
+        add_packages("libyuv")
         add_files("src/screen_capturer/windows/*.cpp")
         add_includedirs("src/screen_capturer/windows", {public = true})
     elseif is_os("macosx") then
@@ -138,6 +138,8 @@ target("remote_desk")
         add_files("icon/app.rc")
     elseif is_os("macosx") then
         add_packages("ffmpeg")
+        add_rules("xcode.application")
+        add_files("Info.plist")
     elseif is_os("linux") then
         add_packages("ffmpeg")
     end
