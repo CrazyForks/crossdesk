@@ -24,7 +24,7 @@ int Render::TitleBar() {
     ImGui::PushStyleColor(ImGuiCol_HeaderActive,
                           ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
     if (!streaming_) {
-      float bar_pos_x = ImGui::GetCursorPosX() + 7;
+      float bar_pos_x = ImGui::GetCursorPosX() + 6;
       float bar_pos_y = ImGui::GetCursorPosY() + 15;
       std::string menu_button = "    ";  // ICON_FA_BARS;
       if (ImGui::BeginMenu(menu_button.c_str())) {
@@ -40,14 +40,15 @@ int Render::TitleBar() {
         ImGui::SetWindowFontScale(1.0f);
         ImGui::EndMenu();
       }
+      float menu_bar_line_size = 15.0f;
       draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y - 6),
-                         ImVec2(bar_pos_x + 12, bar_pos_y - 6),
+                         ImVec2(bar_pos_x + menu_bar_line_size, bar_pos_y - 6),
                          IM_COL32(0, 0, 0, 255));
       draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y),
-                         ImVec2(bar_pos_x + 12, bar_pos_y),
+                         ImVec2(bar_pos_x + menu_bar_line_size, bar_pos_y),
                          IM_COL32(0, 0, 0, 255));
       draw_list->AddLine(ImVec2(bar_pos_x, bar_pos_y + 6),
-                         ImVec2(bar_pos_x + 12, bar_pos_y + 6),
+                         ImVec2(bar_pos_x + menu_bar_line_size, bar_pos_y + 6),
                          IM_COL32(0, 0, 0, 255));
       ImGui::PopStyleColor(2);
 
