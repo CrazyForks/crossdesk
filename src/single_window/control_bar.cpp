@@ -20,15 +20,13 @@ int Render::ControlBar() {
                                                       : ICON_FA_COMPUTER_MOUSE;
     if (ImGui::Button(mouse.c_str(), ImVec2(25, 25))) {
       if (connection_established_) {
-        control_mouse_ = true;
-      } else {
-        control_mouse_ = false;
+        control_mouse_ = !control_mouse_;
+        mouse_control_button_pressed_ = !mouse_control_button_pressed_;
+        mouse_control_button_label_ =
+            mouse_control_button_pressed_
+                ? localization::release_mouse[localization_language_index_]
+                : localization::control_mouse[localization_language_index_];
       }
-      mouse_control_button_pressed_ = !mouse_control_button_pressed_;
-      mouse_control_button_label_ =
-          mouse_control_button_pressed_
-              ? localization::release_mouse[localization_language_index_]
-              : localization::control_mouse[localization_language_index_];
     }
     if (!mouse_control_button_pressed_) {
       draw_list->AddLine(
@@ -53,21 +51,19 @@ int Render::ControlBar() {
                                                       : ICON_FA_VOLUME_HIGH;
     if (ImGui::Button(audio.c_str(), ImVec2(25, 25))) {
       if (connection_established_) {
-        audio_capture_ = true;
-      } else {
-        audio_capture_ = false;
-      }
-      audio_capture_button_pressed_ = !audio_capture_button_pressed_;
-      audio_capture_button_label_ =
-          audio_capture_button_pressed_
-              ? localization::audio_capture[localization_language_index_]
-              : localization::mute[localization_language_index_];
+        audio_capture_ = !audio_capture_;
+        audio_capture_button_pressed_ = !audio_capture_button_pressed_;
+        audio_capture_button_label_ =
+            audio_capture_button_pressed_
+                ? localization::audio_capture[localization_language_index_]
+                : localization::mute[localization_language_index_];
 
-      RemoteAction remote_action;
-      remote_action.type = ControlType::audio_capture;
-      remote_action.a = audio_capture_button_pressed_;
-      SendData(peer_, DATA_TYPE::DATA, (const char*)&remote_action,
-               sizeof(remote_action));
+        RemoteAction remote_action;
+        remote_action.type = ControlType::audio_capture;
+        remote_action.a = audio_capture_button_pressed_;
+        SendData(peer_, DATA_TYPE::DATA, (const char*)&remote_action,
+                 sizeof(remote_action));
+      }
     }
     if (!audio_capture_button_pressed_) {
       draw_list->AddLine(
