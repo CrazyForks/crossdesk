@@ -75,6 +75,7 @@ int PeerConnection::Init(PeerConnectionParams params,
     cfg_turn_server_password_ = params.turn_server_password;
     hardware_acceleration_ = params.hardware_acceleration;
     av1_encoding_ = params.av1_encoding;
+    enable_turn_ = params.enable_turn;
 
     cfg_signal_server_port_ = std::to_string(signal_server_port_);
     cfg_stun_server_port_ = std::to_string(stun_server_port_);
@@ -185,6 +186,10 @@ int PeerConnection::Init(PeerConnectionParams params,
       ice_ready_ = false;
       on_connection_status_(ConnectionStatus::Closed, user_data_);
       LOG_INFO("Ice closed");
+    } else if ("failed" == ice_status) {
+      ice_ready_ = false;
+      on_connection_status_(ConnectionStatus::Failed, user_data_);
+      LOG_INFO("Ice failed");
     } else {
       ice_ready_ = false;
     }
@@ -469,8 +474,8 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
           // }
           ice_transmission_list_[remote_user_id] =
               std::make_unique<IceTransmission>(
-                  trickle_ice_, true, transmission_id, user_id_, remote_user_id,
-                  ws_transport_, on_ice_status_change_);
+                  enable_turn_, trickle_ice_, true, transmission_id, user_id_,
+                  remote_user_id, ws_transport_, on_ice_status_change_);
 
           ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
               on_receive_video_);
@@ -522,8 +527,8 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
 
       ice_transmission_list_[remote_user_id] =
           std::make_unique<IceTransmission>(
-              trickle_ice_, false, transmission_id, user_id_, remote_user_id,
-              ws_transport_, on_ice_status_change_);
+              enable_turn_, trickle_ice_, false, transmission_id, user_id_,
+              remote_user_id, ws_transport_, on_ice_status_change_);
 
       ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
           on_receive_video_);

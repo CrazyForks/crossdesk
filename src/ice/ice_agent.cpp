@@ -5,10 +5,12 @@
 
 #include "log.h"
 
-IceAgent::IceAgent(bool trickle_ice, bool offer_peer, std::string &stun_ip,
-                   uint16_t stun_port, std::string &turn_ip, uint16_t turn_port,
+IceAgent::IceAgent(bool enable_turn, bool trickle_ice, bool offer_peer,
+                   std::string &stun_ip, uint16_t stun_port,
+                   std::string &turn_ip, uint16_t turn_port,
                    std::string &turn_username, std::string &turn_password)
-    : trickle_ice_(trickle_ice),
+    : enable_turn_(enable_turn),
+      trickle_ice_(trickle_ice),
       stun_ip_(stun_ip),
       stun_port_(stun_port),
       turn_ip_(turn_ip),
@@ -50,9 +52,12 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
 
     agent_ = nice_agent_new_full(
         g_main_loop_get_context(gloop_), NICE_COMPATIBILITY_RFC5245,
-        (NiceAgentOption)(trickle_ice_ ? NICE_AGENT_OPTION_ICE_TRICKLE |
-                                             NICE_AGENT_OPTION_NONE
-                                       : NICE_AGENT_OPTION_NONE));
+        (NiceAgentOption)(trickle_ice_
+                              ? NICE_AGENT_OPTION_ICE_TRICKLE |
+                                    (enable_turn_ ? NICE_AGENT_OPTION_NONE
+                                                  : NICE_AGENT_OPTION_RELIABLE)
+                              : (enable_turn_ ? NICE_AGENT_OPTION_NONE
+                                              : NICE_AGENT_OPTION_RELIABLE)));
 
     if (agent_ == nullptr) {
       LOG_ERROR("Failed to create agent_");
@@ -78,10 +83,12 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
 
     nice_agent_set_stream_name(agent_, stream_id_, "video");
 
-    nice_agent_set_relay_info(agent_, stream_id_, n_components_,
-                              turn_ip_.c_str(), turn_port_,
-                              turn_username_.c_str(), turn_password_.c_str(),
-                              NICE_RELAY_TYPE_TURN_UDP);
+    if (enable_turn_) {
+      nice_agent_set_relay_info(agent_, stream_id_, n_components_,
+                                turn_ip_.c_str(), turn_port_,
+                                turn_username_.c_str(), turn_password_.c_str(),
+                                NICE_RELAY_TYPE_TURN_TCP);
+    }
 
     // g_object_set(agent_, "force-relay", true, NULL);
 

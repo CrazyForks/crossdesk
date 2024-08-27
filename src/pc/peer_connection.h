@@ -37,6 +37,7 @@ typedef struct {
   const char *turn_server_password;
   bool hardware_acceleration;
   bool av1_encoding;
+  bool enable_turn;
 
   OnReceiveBuffer on_receive_video_buffer;
   OnReceiveBuffer on_receive_audio_buffer;
@@ -99,6 +100,7 @@ class PeerConnection {
   int turn_server_port_ = 0;
   bool hardware_acceleration_ = false;
   bool av1_encoding_ = false;
+  bool enable_turn_ = false;
   bool trickle_ice_ = true;
   TraversalMode mode_ = TraversalMode::P2P;
 

@@ -34,7 +34,7 @@ class IceTransmission {
   enum TraversalType { TP2P = 0, TRelay = 1, TUnknown = 2 };
 
  public:
-  IceTransmission(bool trickle_ice, bool offer_peer,
+  IceTransmission(bool enable_turn, bool trickle_ice, bool offer_peer,
                   std::string &transmission_id, std::string &user_id,
                   std::string &remote_user_id,
                   std::shared_ptr<WsTransmission> ice_ws_transmission,
@@ -105,6 +105,7 @@ class IceTransmission {
   uint8_t CheckIsDataPacket(const char *buffer, size_t size);
 
  private:
+  bool enable_turn_ = false;
   bool trickle_ice_ = true;
   std::string local_sdp_;
   std::string remote_sdp_;

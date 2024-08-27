@@ -29,9 +29,10 @@ typedef void (*nice_cb_recv_t)(NiceAgent* agent, guint stream_id,
 
 class IceAgent {
  public:
-  IceAgent(bool trickle_ice, bool offer_peer, std::string& stun_ip,
-           uint16_t stun_port, std::string& turn_ip, uint16_t turn_port,
-           std::string& turn_username, std::string& turn_password);
+  IceAgent(bool enable_turn, bool trickle_ice, bool offer_peer,
+           std::string& stun_ip, uint16_t stun_port, std::string& turn_ip,
+           uint16_t turn_port, std::string& turn_username,
+           std::string& turn_password);
   ~IceAgent();
 
   int CreateIceAgent(nice_cb_state_changed_t on_state_changed,
@@ -57,6 +58,7 @@ class IceAgent {
   int Send(const char* data, size_t size);
 
  public:
+  bool enable_turn_ = false;
   std::string stun_ip_ = "";
   uint16_t stun_port_ = 0;
   std::string turn_ip_ = "";

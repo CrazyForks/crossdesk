@@ -12,11 +12,13 @@
 using nlohmann::json;
 
 IceTransmission::IceTransmission(
-    bool trickle_ice, bool offer_peer, std::string &transmission_id,
-    std::string &user_id, std::string &remote_user_id,
+    bool enable_turn, bool trickle_ice, bool offer_peer,
+    std::string &transmission_id, std::string &user_id,
+    std::string &remote_user_id,
     std::shared_ptr<WsTransmission> ice_ws_transmission,
     std::function<void(std::string)> on_ice_status_change)
-    : trickle_ice_(trickle_ice),
+    : enable_turn_(enable_turn),
+      trickle_ice_(trickle_ice),
       offer_peer_(offer_peer),
       transmission_id_(transmission_id),
       user_id_(user_id),
@@ -163,9 +165,9 @@ int IceTransmission::InitIceTransmission(
                          remote_user_id_.size());
       });
 
-  ice_agent_ = std::make_unique<IceAgent>(trickle_ice_, offer_peer_, stun_ip,
-                                          stun_port, turn_ip, turn_port,
-                                          turn_username, turn_password);
+  ice_agent_ = std::make_unique<IceAgent>(
+      enable_turn_, trickle_ice_, offer_peer_, stun_ip, stun_port, turn_ip,
+      turn_port, turn_username, turn_password);
 
   ice_agent_->CreateIceAgent(
       [](NiceAgent *agent, guint stream_id, guint component_id,

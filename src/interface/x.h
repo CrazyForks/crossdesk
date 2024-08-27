@@ -63,6 +63,7 @@ typedef struct {
   const char* turn_server_password;
   bool hardware_acceleration;
   bool av1_encoding;
+  bool enable_turn;
 
   OnReceiveBuffer on_receive_video_buffer;
   OnReceiveBuffer on_receive_audio_buffer;
