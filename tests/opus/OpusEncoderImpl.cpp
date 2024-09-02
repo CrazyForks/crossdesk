@@ -56,7 +56,7 @@ bool OpusEncoderImpl::PopFrame(StreamInfo &info) {
 
 // 48000 sample rate£¬48 samples/ms * 20ms * 2 channel = 1920
 void OpusEncoderImpl::EncodeRun() {
-  m_thread = std::make_unique<std::thread>([this]() {
+  m_thread = std::thread([this]() {
     const int frame_size = 48 * 20;  // 1920
     int input_len = sizeof(opus_int16) * frame_size * channel_num;
 

@@ -227,7 +227,8 @@ int IceTransmission::InitIceTransmission(
         if (user_ptr) {
           IceTransmission *ice_transmission_obj =
               static_cast<IceTransmission *>(user_ptr);
-          LOG_INFO("[{}] gather_done", ice_transmission_obj->user_id_);
+          LOG_INFO("[{}->{}] gather_done", ice_transmission_obj->user_id_,
+                   ice_transmission_obj->remote_user_id_);
 
           if (!ice_transmission_obj->trickle_ice_) {
             if (ice_transmission_obj->offer_peer_) {
@@ -323,7 +324,7 @@ int IceTransmission::GatherCandidates() {
 
 int IceTransmission::SetRemoteSdp(const std::string &remote_sdp) {
   ice_agent_->SetRemoteSdp(remote_sdp.c_str());
-  LOG_INFO("[{}] set remote sdp", user_id_);
+  // LOG_INFO("[{}] set remote sdp", user_id_);
   remote_ice_username_ = GetIceUsername(remote_sdp);
   return 0;
 }

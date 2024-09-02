@@ -66,7 +66,7 @@ class IceAgent {
   std::string turn_username_ = "";
   std::string turn_password_ = "";
 
-  std::unique_ptr<std::thread> nice_thread_;
+  std::thread nice_thread_;
   std::atomic<NiceAgent*> agent_{nullptr};
   std::atomic<GMainLoop*> gloop_{nullptr};
   std::atomic<bool> nice_inited_{false};

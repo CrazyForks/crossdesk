@@ -20,7 +20,7 @@ class OpusEncoderImpl {
   std::mutex mutex;
   bool isRuning = true;
   std::mutex access_mutex;
-  std::unique_ptr<std::thread> m_thread;
+  std::thread > m_thread;
 
   OpusDecoderImpl *decoder = nullptr;
 

@@ -47,7 +47,7 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
 
   exit_nice_thread_ = false;
 
-  nice_thread_.reset(new std::thread([this]() {
+  nice_thread_ = std::thread([this]() {
     gloop_ = g_main_loop_new(nullptr, false);
 
     agent_ = nice_agent_new_full(
@@ -97,10 +97,9 @@ int IceAgent::CreateIceAgent(nice_cb_state_changed_t on_state_changed,
                            user_ptr_);
 
     nice_inited_ = true;
-
     g_main_loop_run(gloop_);
     exit_nice_thread_ = true;
-  }));
+  });
 
   do {
     g_usleep(1000);
@@ -130,8 +129,8 @@ int IceAgent::DestroyIceAgent() {
   destroyed_ = true;
   g_main_loop_quit(gloop_);
 
-  if (nice_thread_->joinable()) {
-    nice_thread_->join();
+  if (nice_thread_.joinable()) {
+    nice_thread_.join();
   }
 
   LOG_INFO("Destroy nice agent success");

@@ -129,6 +129,7 @@ class PeerConnection {
   bool enable_turn_ = false;
   bool trickle_ice_ = true;
   TraversalMode mode_ = TraversalMode::P2P;
+  bool try_rejoin_with_turn_ = false;
 
  private:
   std::shared_ptr<WsTransmission> ws_transport_ = nullptr;
@@ -187,7 +188,7 @@ class PeerConnection {
   bool audio_codec_inited_ = false;
 
  private:
-  std::unique_ptr<std::thread> ice_worker_ = nullptr;
+  std::thread ice_worker_;
   std::atomic<bool> ice_worker_running_{true};
   std::queue<IceWorkMsg> ice_work_msg_queue_;
   std::condition_variable ice_work_cv_;

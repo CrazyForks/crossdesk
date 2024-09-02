@@ -182,12 +182,29 @@ int PeerConnection::Init(PeerConnectionParams params,
       LOG_INFO("Ice finish");
     } else if ("closed" == ice_status) {
       ice_ready_ = false;
-      on_connection_status_(ConnectionStatus::Closed, user_data_);
-      LOG_INFO("Ice closed");
+      if (!try_rejoin_with_turn_) {
+        on_connection_status_(ConnectionStatus::Closed, user_data_);
+        LOG_INFO("Ice closed");
+      }
     } else if ("failed" == ice_status) {
       ice_ready_ = false;
-      on_connection_status_(ConnectionStatus::Failed, user_data_);
-      enable_turn_ = true;
+      try_rejoin_with_turn_ = true;
+      if (try_rejoin_with_turn_) {
+        enable_turn_ = true;
+        LOG_INFO("Ice failed, destroy ice agent");
+
+        IceWorkMsg msg;
+        msg.type = IceWorkMsg::Type::Destroy;
+        PushIceWorkMsg(msg);
+
+        LOG_INFO("Create ice agent with TURN");
+        msg.type = IceWorkMsg::Type::UserIdList;
+        msg.transmission_id = remote_transmission_id_;
+        msg.user_id_list = user_id_list_;
+        PushIceWorkMsg(msg);
+      } else {
+        LOG_INFO("Unknown ice state");
+      }
     } else {
       ice_ready_ = false;
     }
@@ -376,7 +393,7 @@ int PeerConnection::Join(const std::string &transmission_id,
   leave_ = false;
 
   remote_transmission_id_ = transmission_id;
-  ret = RequestTransmissionMemberList(remote_transmission_id_, password);
+  ret = RequestTransmissionMemberList(remote_transmission_id_, password_);
   return ret;
 }
 
@@ -647,25 +664,37 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
 }
 
 void PeerConnection::StartIceWorker() {
-  ice_worker_.reset(new std::thread([this]() {
-    while (ice_worker_running_) {
+  LOG_INFO("Start ice worker");
+  ice_worker_ = std::thread([this]() {
+    while (true) {
       std::unique_lock<std::mutex> lck(ice_work_mutex_);
-      while (ice_work_msg_queue_.empty()) {
-        ice_work_cv_.wait(lck, [this] { return !ice_work_msg_queue_.empty(); });
+      while (ice_work_msg_queue_.empty() && ice_worker_running_) {
+        ice_work_cv_.wait(lck, [this] {
+          return !ice_work_msg_queue_.empty() || !ice_worker_running_;
+        });
       }
+
+      if (!ice_worker_running_) {
+        LOG_INFO("Exit ice worker");
+        break;
+      }
+
       IceWorkMsg msg = ice_work_msg_queue_.front();
       ice_work_msg_queue_.pop();
+      lck.unlock();
       ProcessIceWorkMsg(msg);
     }
     std::queue<IceWorkMsg> empty_queue;
     std::swap(ice_work_msg_queue_, empty_queue);
-  }));
+  });
 }
 
 void PeerConnection::StopIceWorker() {
+  LOG_INFO("Stop ice worker");
   ice_worker_running_ = false;
-  if (ice_worker_->joinable()) {
-    ice_worker_->join();
+  ice_work_cv_.notify_one();
+  if (ice_worker_.joinable()) {
+    ice_worker_.join();
   }
 }
 

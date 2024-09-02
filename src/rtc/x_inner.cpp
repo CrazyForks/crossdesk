@@ -90,8 +90,8 @@ int LeaveConnection(PeerPtr *peer_ptr, const char *transmission_id) {
     return -1;
   }
 
-  peer_ptr->peer_connection->Leave(transmission_id);
   LOG_INFO("LeaveConnection");
+  peer_ptr->peer_connection->Leave(transmission_id);
   return 0;
 }
 
