@@ -191,17 +191,19 @@ int PeerConnection::Init(PeerConnectionParams params,
       try_rejoin_with_turn_ = true;
       if (try_rejoin_with_turn_) {
         enable_turn_ = true;
-        LOG_INFO("Ice failed, destroy ice agent");
+        LOG_INFO(
+            "Ice failed, destroy ice agent and rereate it with TURN enabled");
 
         IceWorkMsg msg;
         msg.type = IceWorkMsg::Type::Destroy;
         PushIceWorkMsg(msg);
 
-        LOG_INFO("Create ice agent with TURN");
-        msg.type = IceWorkMsg::Type::UserIdList;
-        msg.transmission_id = remote_transmission_id_;
-        msg.user_id_list = user_id_list_;
-        PushIceWorkMsg(msg);
+        if (offer_peer_) {
+          msg.type = IceWorkMsg::Type::UserIdList;
+          msg.transmission_id = remote_transmission_id_;
+          msg.user_id_list = user_id_list_;
+          PushIceWorkMsg(msg);
+        }
       } else {
         LOG_INFO("Unknown ice state");
       }
@@ -389,6 +391,7 @@ int PeerConnection::Join(const std::string &transmission_id,
 
   int ret = 0;
 
+  offer_peer_ = true;
   password_ = password;
   leave_ = false;
 

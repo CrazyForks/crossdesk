@@ -136,6 +136,7 @@ class PeerConnection {
   std::function<void(const std::string &)> on_receive_ws_msg_ = nullptr;
   std::function<void(WsStatus)> on_ws_status_ = nullptr;
   unsigned int ws_connection_id_ = 0;
+  bool offer_peer_ = false;
   std::string user_id_ = "";
   std::string local_transmission_id_ = "";
   std::string remote_transmission_id_ = "";
