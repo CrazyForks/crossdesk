@@ -32,7 +32,7 @@ class SpeakerCapturerLinux : public SpeakerCapturer {
  private:
   bool inited_ = false;
   // thread
-  std::unique_ptr<std::thread> capture_thread_ = nullptr;
+  std::thread capture_thread_;
 };
 
 #endif

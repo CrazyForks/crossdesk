@@ -10,8 +10,8 @@ unsigned char nv12_buffer_[NV12_BUFFER_SIZE];
 ScreenCapturerAvf::ScreenCapturerAvf() {}
 
 ScreenCapturerAvf::~ScreenCapturerAvf() {
-  if (inited_ && capture_thread_->joinable()) {
-    capture_thread_->join();
+  if (inited_ && capture_thread_.joinable()) {
+    capture_thread_.join();
     inited_ = false;
   }
 }
@@ -113,7 +113,7 @@ int ScreenCapturerAvf::Start() {
   }
 
   running_ = true;
-  capture_thread_.reset(new std::thread([this]() {
+  capture_thread_ = std::thread([this]() {
     while (running_) {
       if (av_read_frame(pFormatCtx_, packet_) >= 0) {
         if (packet_->stream_index == videoindex_) {
@@ -137,7 +137,7 @@ int ScreenCapturerAvf::Start() {
         }
       }
     }
-  }));
+  });
 
   return 0;
 }

@@ -275,7 +275,7 @@ int Render::CreateConnectionPeer() {
                                  ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
                              ? true
                              : false;
-  params_.enable_turn = true;
+  params_.enable_turn = false;
   params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
   params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
   params_.on_receive_data_buffer = OnReceiveDataBufferCb;
@@ -444,20 +444,6 @@ int Render::Run() {
       is_create_connection_ =
           CreateConnection(peer_, client_id_, password_saved_.c_str()) ? false
                                                                        : true;
-    }
-
-    if (!is_create_connection_ && rejoin_ &&
-        "Failed" == connection_status_str_) {
-      LeaveConnection(peer_, client_id_);
-      DestroyPeer(&peer_);
-      peer_ = CreatePeer(&params_);
-      if (peer_) {
-        LOG_INFO("[{}] Create peer instance successful", client_id_);
-        Init(peer_, client_id_);
-        LOG_INFO("[{}] Peer init finish", client_id_);
-      } else {
-        LOG_INFO("Create peer instance failed");
-      }
     }
 
     if (!inited_ ||

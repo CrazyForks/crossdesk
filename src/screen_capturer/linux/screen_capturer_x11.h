@@ -77,7 +77,7 @@ class ScreenCapturerX11 : public ScreenCapturer {
   struct SwsContext *img_convert_ctx_ = nullptr;
 
   // thread
-  std::unique_ptr<std::thread> capture_thread_ = nullptr;
+  std::thread capture_thread_;
   std::atomic_bool running_;
 };
 

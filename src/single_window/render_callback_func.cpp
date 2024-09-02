@@ -198,9 +198,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
   } else if (ConnectionStatus::Failed == status) {
     render->connection_status_str_ = "Failed";
     render->password_validating_time_ = 0;
-    render->is_create_connection_ = false;
-    render->params_.enable_turn = true;
-    render->rejoin_ = true;
   } else if (ConnectionStatus::Closed == status) {
     render->connection_status_str_ = "Closed";
     render->password_validating_time_ = 0;
