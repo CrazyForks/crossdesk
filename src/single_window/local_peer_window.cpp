@@ -49,7 +49,7 @@ int Render::LocalWindow() {
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 
       char client_id_display[12] = "";
-      for (int i = 0, j = 0; i < sizeof(client_id_) + 2; i++, j++) {
+      for (int i = 0, j = 0; i < sizeof(client_id_); i++, j++) {
         client_id_display[j] = client_id_[i];
         if (i == 2 || i == 5) {
           client_id_display[++j] = ' ';
