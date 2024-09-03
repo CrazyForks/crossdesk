@@ -129,7 +129,7 @@ class PeerConnection {
   bool enable_turn_ = false;
   bool trickle_ice_ = true;
   TraversalMode mode_ = TraversalMode::P2P;
-  bool try_rejoin_with_turn_ = false;
+  bool try_rejoin_with_turn_ = true;
 
  private:
   std::shared_ptr<WsTransmission> ws_transport_ = nullptr;

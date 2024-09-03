@@ -169,6 +169,8 @@ int PeerConnection::Init(PeerConnectionParams params,
   on_ice_status_change_ = [this](std::string ice_status) {
     if ("connecting" == ice_status) {
       on_connection_status_(ConnectionStatus::Connecting, user_data_);
+    } else if ("gathering" == ice_status) {
+      on_connection_status_(ConnectionStatus::Gathering, user_data_);
     } else if ("disconnected" == ice_status) {
       on_connection_status_(ConnectionStatus::Disconnected, user_data_);
     } else if ("connected" == ice_status) {
@@ -179,17 +181,13 @@ int PeerConnection::Init(PeerConnectionParams params,
     } else if ("ready" == ice_status) {
       ice_ready_ = true;
       on_connection_status_(ConnectionStatus::Connected, user_data_);
-      LOG_INFO("Ice finish");
     } else if ("closed" == ice_status) {
       ice_ready_ = false;
-      if (!try_rejoin_with_turn_) {
-        on_connection_status_(ConnectionStatus::Closed, user_data_);
-        LOG_INFO("Ice closed");
-      }
+      LOG_INFO("Ice closed");
+      on_connection_status_(ConnectionStatus::Closed, user_data_);
     } else if ("failed" == ice_status) {
       ice_ready_ = false;
-      try_rejoin_with_turn_ = true;
-      if (try_rejoin_with_turn_) {
+      if (offer_peer_ && try_rejoin_with_turn_) {
         enable_turn_ = true;
         LOG_INFO(
             "Ice failed, destroy ice agent and rereate it with TURN enabled");
@@ -205,10 +203,12 @@ int PeerConnection::Init(PeerConnectionParams params,
           PushIceWorkMsg(msg);
         }
       } else {
-        LOG_INFO("Unknown ice state");
+        LOG_INFO("Ice failed");
+        on_connection_status_(ConnectionStatus::Failed, user_data_);
       }
     } else {
       ice_ready_ = false;
+      LOG_INFO("Unknown ice state [{}]", ice_status);
     }
   };
 
@@ -770,27 +770,31 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
     case IceWorkMsg::Type::Offer: {
       std::string transmission_id = msg.transmission_id;
       std::string remote_user_id = msg.remote_user_id;
-      ice_transmission_list_[remote_user_id] =
-          std::make_unique<IceTransmission>(
-              enable_turn_, trickle_ice_, false, transmission_id, user_id_,
-              remote_user_id, ws_transport_, on_ice_status_change_);
+      if (ice_transmission_list_.end() ==
+          ice_transmission_list_.find(remote_user_id)) {
+        // Enable TURN for answer peer by default
+        ice_transmission_list_[remote_user_id] =
+            std::make_unique<IceTransmission>(
+                true, trickle_ice_, false, transmission_id, user_id_,
+                remote_user_id, ws_transport_, on_ice_status_change_);
 
-      ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
-          on_receive_video_);
-      ice_transmission_list_[remote_user_id]->SetOnReceiveAudioFunc(
-          on_receive_audio_);
-      ice_transmission_list_[remote_user_id]->SetOnReceiveDataFunc(
-          on_receive_data_);
-      ice_transmission_list_[remote_user_id]->SetOnReceiveNetStatusReportFunc(
-          on_net_status_report_);
+        ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
+            on_receive_video_);
+        ice_transmission_list_[remote_user_id]->SetOnReceiveAudioFunc(
+            on_receive_audio_);
+        ice_transmission_list_[remote_user_id]->SetOnReceiveDataFunc(
+            on_receive_data_);
+        ice_transmission_list_[remote_user_id]->SetOnReceiveNetStatusReportFunc(
+            on_net_status_report_);
 
-      ice_transmission_list_[remote_user_id]->InitIceTransmission(
-          cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,
-          turn_server_port_, cfg_turn_server_username_,
-          cfg_turn_server_password_,
-          av1_encoding_ ? RtpPacket::AV1 : RtpPacket::H264);
-      ice_transmission_list_[remote_user_id]->SetTransmissionId(
-          transmission_id);
+        ice_transmission_list_[remote_user_id]->InitIceTransmission(
+            cfg_stun_server_ip_, stun_server_port_, cfg_turn_server_ip_,
+            turn_server_port_, cfg_turn_server_username_,
+            cfg_turn_server_password_,
+            av1_encoding_ ? RtpPacket::AV1 : RtpPacket::H264);
+        ice_transmission_list_[remote_user_id]->SetTransmissionId(
+            transmission_id);
+      }
 
       std::string remote_sdp = msg.remote_sdp;
       ice_transmission_list_[remote_user_id]->SetRemoteSdp(remote_sdp);

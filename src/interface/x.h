@@ -16,6 +16,7 @@ enum DATA_TYPE { VIDEO = 0, AUDIO, DATA };
 enum ConnectionStatus {
   Connecting = 0,
   Connected,
+  Gathering,
   Disconnected,
   Failed,
   Closed,
