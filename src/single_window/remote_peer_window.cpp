@@ -91,7 +91,7 @@ int Render::RemoteWindow() {
             }
           }
           ret = JoinConnection(peer_reserved_ ? peer_reserved_ : peer_,
-                               remote_id_.c_str(), remote_password_.c_str());
+                               remote_id_.c_str(), remote_password_);
           if (0 == ret) {
             is_client_mode_ = true;
             rejoin_ = false;

@@ -183,15 +183,15 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
   render->show_connection_status_window_ = true;
   if (ConnectionStatus::Connecting == status) {
     render->connection_status_str_ = "Connecting";
+  } else if (ConnectionStatus::Gathering == status) {
+    render->connection_status_str_ = "Gathering";
   } else if (ConnectionStatus::Connected == status) {
     render->connection_status_str_ = "Connected";
     render->connection_established_ = true;
-
     if (render->peer_reserved_ || !render->is_client_mode_) {
       render->start_screen_capture_ = true;
       render->start_mouse_control_ = true;
     }
-
   } else if (ConnectionStatus::Disconnected == status) {
     render->connection_status_str_ = "Disconnected";
     render->password_validating_time_ = 0;
@@ -212,7 +212,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, void *user_data) {
     }
     render->exit_video_window_ = false;
     if (!render->rejoin_) {
-      render->remote_password_.clear();
+      memset(render->remote_password_, 0, sizeof(render->remote_password_));
     }
     if (render->dst_buffer_) {
       memset(render->dst_buffer_, 0, 1280 * 720 * 3);

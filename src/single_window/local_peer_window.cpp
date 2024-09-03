@@ -48,17 +48,16 @@ int Render::LocalWindow() {
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 
-      std::string client_id_display = "";
-      for (int i = 0; i < sizeof(client_id_); i++) {
-        client_id_display += client_id_[i];
+      char client_id_display[12] = "";
+      for (int i = 0, j = 0; i < sizeof(client_id_) + 2; i++, j++) {
+        client_id_display[j] = client_id_[i];
         if (i == 2 || i == 5) {
-          client_id_display += " ";
+          client_id_display[++j] = ' ';
         }
       }
 
       ImGui::InputText(
-          "##local_id", (char *)client_id_display.c_str(),
-          sizeof(client_id_display),
+          "##local_id", client_id_display, IM_ARRAYSIZE(client_id_display),
           ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_ReadOnly);
       ImGui::PopStyleVar();
 
@@ -142,8 +141,9 @@ int Render::LocalWindow() {
           random_password_ += a[distribution(generator)];
         }
         password_inited_ = true;
-        if (random_password_ != password_saved_) {
-          password_saved_ = random_password_;
+        if (0 != strcmp(random_password_.c_str(), password_saved_)) {
+          strncpy(password_saved_, random_password_.c_str(),
+                  sizeof(password_saved_));
           LOG_INFO("Generate new password and save into cache file");
           SaveSettingsIntoCacheFile();
         }
@@ -154,10 +154,12 @@ int Render::LocalWindow() {
       ImGui::InputTextWithHint(
           "##server_pwd",
           localization::max_password_len[localization_language_index_].c_str(),
-          (char *)password_saved_.c_str(), password_saved_.length() + 1,
-          show_password_ ? ImGuiInputTextFlags_CharsNoBlank
-                         : ImGuiInputTextFlags_CharsNoBlank |
-                               ImGuiInputTextFlags_Password);
+          password_saved_, IM_ARRAYSIZE(password_saved_),
+          show_password_
+              ? ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_ReadOnly
+              : ImGuiInputTextFlags_CharsNoBlank |
+                    ImGuiInputTextFlags_Password |
+                    ImGuiInputTextFlags_ReadOnly);
       ImGui::PopStyleVar();
 
       ImGui::SameLine();
@@ -166,20 +168,27 @@ int Render::LocalWindow() {
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
 
       ImGui::SetWindowFontScale(0.5f);
-      if (ImGui::Button(show_password_ ? ICON_FA_EYE : ICON_FA_EYE_SLASH,
-                        ImVec2(35, 38))) {
+      auto l_x = ImGui::GetCursorScreenPos().x;
+      auto l_y = ImGui::GetCursorScreenPos().y;
+      if (ImGui::Button(ICON_FA_EYE, ImVec2(22, 38))) {
         show_password_ = !show_password_;
       }
-      ImGui::PopStyleColor(3);
+
+      if (!show_password_) {
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        draw_list->AddLine(ImVec2(l_x + 3.0f, l_y + 12.5f),
+                           ImVec2(l_x + 20.3f, l_y + 26.5f),
+                           IM_COL32(239, 240, 242, 255), 2.0f);
+        draw_list->AddLine(ImVec2(l_x + 3.0f, l_y + 11.0f),
+                           ImVec2(l_x + 20.3f, l_y + 25.0f),
+                           IM_COL32(0, 0, 0, 255), 1.5f);
+      }
 
       ImGui::SameLine();
-      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
-      ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
 
       if (ImGui::Button(
               regenerate_password_ ? ICON_FA_SPINNER : ICON_FA_ARROWS_ROTATE,
-              ImVec2(35, 38))) {
+              ImVec2(22, 38))) {
         regenerate_password_ = true;
         password_inited_ = false;
         regenerate_password_start_time_ = ImGui::GetTime();
@@ -190,11 +199,104 @@ int Render::LocalWindow() {
         regenerate_password_ = false;
       }
 
+      ImGui::SameLine();
+
+      if (ImGui::Button(ICON_FA_PEN, ImVec2(22, 38))) {
+        show_reset_password_window_ = true;
+      }
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PopStyleColor(3);
+
+      if (show_reset_password_window_) {
+        const ImGuiViewport *viewport = ImGui::GetMainViewport();
+
+        ImGui::SetNextWindowPos(
+            ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
+                    connection_status_window_width_) /
+                       2,
+                   (viewport->WorkSize.y - viewport->WorkPos.y -
+                    connection_status_window_height_) /
+                       2));
+
+        ImGui::SetNextWindowSize(ImVec2(connection_status_window_width_,
+                                        connection_status_window_height_));
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0, 1.0, 1.0, 1.0));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
+
+        ImGui::Begin("ResetPasswordWindow", nullptr,
+                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                         ImGuiWindowFlags_NoSavedSettings);
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor();
+
+        auto window_width = ImGui::GetWindowSize().x;
+        auto window_height = ImGui::GetWindowSize().y;
+        std::string text =
+            localization::new_password[localization_language_index_];
+        auto text_width = ImGui::CalcTextSize(text.c_str()).x;
+        ImGui::SetWindowFontScale(0.5f);
+        ImGui::SetCursorPosX((window_width - text_width / 2) * 0.5f);
+        ImGui::SetCursorPosY(window_height * 0.2f);
+        ImGui::Text("%s", text.c_str());
+
+        ImGui::SetCursorPosX((window_width - IPUT_WINDOW_WIDTH / 2) * 0.5f);
+        ImGui::SetCursorPosY(window_height * 0.4f);
+        ImGui::SetNextItemWidth(IPUT_WINDOW_WIDTH / 2);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+
+        if (focus_on_input_widget_) {
+          ImGui::SetKeyboardFocusHere();
+          focus_on_input_widget_ = false;
+        }
+
+        bool enter_pressed = ImGui::InputText(
+            "##new_password", new_password_, IM_ARRAYSIZE(new_password_),
+            ImGuiInputTextFlags_CharsNoBlank |
+                ImGuiInputTextFlags_EnterReturnsTrue);
+
+        ImGui::PopStyleVar();
+
+        ImGui::SetCursorPosX(window_width * 0.315f);
+        ImGui::SetCursorPosY(window_height * 0.75f);
+
+        // OK
+        if (enter_pressed ||
+            ImGui::Button(
+                localization::ok[localization_language_index_].c_str())) {
+          show_reset_password_window_ = false;
+          LOG_INFO("Generate new password and save into cache file");
+          strncpy(password_saved_, new_password_, sizeof(password_saved_));
+          memset(new_password_, 0, sizeof(new_password_));
+          SaveSettingsIntoCacheFile();
+          LeaveConnection(peer_, client_id_);
+          is_create_connection_ = false;
+          focus_on_input_widget_ = true;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button(
+                localization::cancel[localization_language_index_].c_str())) {
+          show_reset_password_window_ = false;
+          focus_on_input_widget_ = true;
+          memset(new_password_, 0, sizeof(new_password_));
+        }
+
+        ImGui::SetWindowFontScale(1.0f);
+
+        ImGui::End();
+        ImGui::PopStyleVar();
+      }
     }
 
     ImGui::EndChild();
+    ImGui::PopStyleVar();
   }
 
   ImGui::EndChild();

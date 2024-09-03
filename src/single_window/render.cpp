@@ -77,8 +77,7 @@ int Render::SaveSettingsIntoCacheFile() {
   memset(&cd_cache_.client_id, 0, sizeof(cd_cache_.client_id));
   strncpy(cd_cache_.client_id, client_id_, sizeof(client_id_));
   memset(&cd_cache_.password, 0, sizeof(cd_cache_.password));
-  strncpy(cd_cache_.password, password_saved_.c_str(),
-          password_saved_.length());
+  strncpy(cd_cache_.password, password_saved_, sizeof(password_saved_));
   memcpy(&cd_cache_.language, &language_button_value_,
          sizeof(language_button_value_));
   memcpy(&cd_cache_.video_quality, &video_quality_button_value_,
@@ -107,7 +106,7 @@ int Render::LoadSettingsFromCacheFile() {
   cd_cache_file_ = fopen("cache.cd", "r+");
   if (!cd_cache_file_) {
     LOG_INFO("Init cache file by using default settings");
-    password_saved_ = "";
+    memset(password_saved_, 0, sizeof(password_saved_));
     language_button_value_ = 0;
     video_quality_button_value_ = 0;
     video_encode_format_button_value_ = 1;
@@ -129,8 +128,8 @@ int Render::LoadSettingsFromCacheFile() {
 
   memset(&client_id_, 0, sizeof(client_id_));
   strncpy(client_id_, cd_cache_.client_id, sizeof(client_id_));
-  password_saved_ = cd_cache_.password;
-  if (!password_saved_.empty() && 6 == password_saved_.length()) {
+  strncpy(password_saved_, cd_cache_.password, sizeof(password_saved_));
+  if (0 != strcmp(password_saved_, "") && 7 == sizeof(password_saved_)) {
     password_inited_ = true;
   }
   language_button_value_ = cd_cache_.language;
@@ -442,8 +441,7 @@ int Render::Run() {
         "Failed" != connection_status_str_) {
       LOG_INFO("Connected with signal server, create p2p connection");
       is_create_connection_ =
-          CreateConnection(peer_, client_id_, password_saved_.c_str()) ? false
-                                                                       : true;
+          CreateConnection(peer_, client_id_, password_saved_) ? false : true;
     }
 
     if (!inited_ ||

@@ -122,7 +122,8 @@ class Render {
   char input_password_tmp_[7] = "";
   char input_password_[7] = "";
   std::string random_password_ = "";
-  std::string remote_password_ = "";
+  char remote_password_[7] = "";
+  char new_password_[7] = "";
   char remote_id_display_[12] = "";
   std::string remote_id_ = "";
   char client_password_[20] = "";
@@ -202,6 +203,7 @@ class Render {
   bool regenerate_password_ = false;
   bool show_about_window_ = false;
   bool show_connection_status_window_ = false;
+  bool show_reset_password_window_ = false;
   bool focus_on_input_widget_ = true;
   bool window_maximized_ = false;
   bool streaming_ = false;
@@ -253,7 +255,7 @@ class Render {
 
  private:
   char client_id_[10] = "";
-  std::string password_saved_ = "";
+  char password_saved_[7] = "";
   int language_button_value_ = 0;
   int video_quality_button_value_ = 0;
   int video_encode_format_button_value_ = 0;

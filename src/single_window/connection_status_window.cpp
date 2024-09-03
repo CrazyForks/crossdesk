@@ -86,10 +86,10 @@ int Render::ConnectionStatusWindow() {
           ImGui::SetKeyboardFocusHere();
           focus_on_input_widget_ = false;
         }
-        bool enter_pressed =
-            ImGui::InputText("##password", (char *)remote_password_.c_str(), 7,
-                             ImGuiInputTextFlags_CharsNoBlank |
-                                 ImGuiInputTextFlags_EnterReturnsTrue);
+        bool enter_pressed = ImGui::InputText(
+            "##password", remote_password_, IM_ARRAYSIZE(remote_password_),
+            ImGuiInputTextFlags_CharsNoBlank |
+                ImGuiInputTextFlags_EnterReturnsTrue);
 
         ImGui::PopStyleVar();
 
@@ -109,7 +109,7 @@ int Render::ConnectionStatusWindow() {
 
         if (ImGui::Button(
                 localization::cancel[localization_language_index_].c_str())) {
-          remote_password_ = "";
+          memset(remote_password_, 0, sizeof(remote_password_));
           show_connection_status_window_ = false;
           focus_on_input_widget_ = true;
         }
