@@ -19,8 +19,7 @@ class ScreenCapturerWgc : public ScreenCapturer,
  public:
   bool IsWgcSupported();
 
-  virtual int Init(const RECORD_DESKTOP_RECT &rect, const int fps,
-                   cb_desktop_data cb);
+  virtual int Init(const int fps, cb_desktop_data cb);
   virtual int Destroy();
 
   virtual int Start();
@@ -44,8 +43,6 @@ class ScreenCapturerWgc : public ScreenCapturer,
   std::thread _thread;
 
   std::string _device_name;
-
-  RECORD_DESKTOP_RECT _rect;
 
   int _fps;
 

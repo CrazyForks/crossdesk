@@ -156,25 +156,27 @@ int Render::LoadSettingsFromCacheFile() {
 
 int Render::StartScreenCapture() {
   screen_capturer_ = (ScreenCapturer *)screen_capturer_factory_->Create();
-  ScreenCapturer::RECORD_DESKTOP_RECT rect;
-  rect.left = 0;
-  rect.top = 0;
-  rect.right = screen_width_;
-  rect.bottom = screen_height_;
   last_frame_time_ = std::chrono::duration_cast<std::chrono::milliseconds>(
                          std::chrono::steady_clock::now().time_since_epoch())
                          .count();
 
   int screen_capturer_init_ret = screen_capturer_->Init(
-      rect, 60,
-      [this](unsigned char *data, int size, int width, int height) -> void {
+      60, [this](unsigned char *data, int size, int width, int height) -> void {
         auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
         auto duration = now_time - last_frame_time_;
         if (duration >= 0 && connection_established_) {
-          SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
-                   NV12_BUFFER_SIZE);
+          // SendData(peer_, DATA_TYPE::VIDEO, (const char *)data,
+          //          NV12_BUFFER_SIZE);
+
+          XVideoFrame frame;
+          frame.data = (const char *)data;
+          frame.size = size;
+          frame.width = width;
+          frame.height = height;
+
+          SendVideoFrame(peer_, &frame);
           last_frame_time_ = now_time;
         }
       });
@@ -275,9 +277,12 @@ int Render::CreateConnectionPeer() {
                              ? true
                              : false;
   params_.enable_turn = config_center_.IsEnableTurn();
-  params_.on_receive_video_buffer = OnReceiveVideoBufferCb;
+  params_.on_receive_video_buffer = nullptr;
   params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
   params_.on_receive_data_buffer = OnReceiveDataBufferCb;
+
+  params_.on_receive_video_frame = OnReceiveVideoBufferCb;
+
   params_.on_signal_status = OnSignalStatusCb;
   params_.on_connection_status = OnConnectionStatusCb;
   params_.net_status_report = NetStatusReport;
@@ -596,7 +601,15 @@ int Render::Run() {
         }
       } else if (event.type == REFRESH_EVENT) {
         if (stream_texture_)
-          SDL_UpdateTexture(stream_texture_, NULL, dst_buffer_, 1280);
+          if (video_width_ != texture_width_) {
+            texture_width_ = video_width_;
+            texture_height_ = video_height_;
+
+            stream_texture_ = SDL_CreateTexture(
+                main_renderer_, stream_pixformat_, SDL_TEXTUREACCESS_STREAMING,
+                texture_width_, texture_height_);
+          }
+        SDL_UpdateTexture(stream_texture_, NULL, dst_buffer_, texture_width_);
       } else {
         if (connection_established_) {
           ProcessMouseKeyEven(event);

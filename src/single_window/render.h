@@ -44,7 +44,7 @@ class Render {
   int ConnectionStatusWindow();
 
  public:
-  static void OnReceiveVideoBufferCb(const char *data, size_t size,
+  static void OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
                                      const char *user_id, size_t user_id_size,
                                      void *user_data);
 
@@ -169,6 +169,9 @@ class Render {
   int texture_width_ = 1280;
   int texture_height_ = 720;
 
+  int video_width_ = 1280;
+  int video_height_ = 720;
+
   SDL_Window *main_window_;
   SDL_Renderer *main_renderer_ = nullptr;
 
@@ -242,7 +245,8 @@ class Render {
   unsigned char audio_buffer_[960];
   int audio_len_ = 0;
   char *nv12_buffer_ = nullptr;
-  unsigned char *dst_buffer_ = new unsigned char[1280 * 720 * 3];
+  unsigned char *dst_buffer_ = nullptr;
+  int dst_buffer_capacity_ = 0;
 
  private:
   ScreenCapturerFactory *screen_capturer_factory_ = nullptr;

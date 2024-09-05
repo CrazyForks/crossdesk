@@ -62,16 +62,12 @@ bool ScreenCapturerWgc::IsWgcSupported() {
   }
 }
 
-int ScreenCapturerWgc::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
-                            cb_desktop_data cb) {
+int ScreenCapturerWgc::Init(const int fps, cb_desktop_data cb) {
   int error = 0;
   if (_inited == true) return error;
 
-  int r = rect.right;
-  int b = rect.bottom;
-
-  nv12_frame_ = new unsigned char[rect.right * rect.bottom * 3 / 2];
-  nv12_frame_scaled_ = new unsigned char[1280 * 720 * 3 / 2];
+  // nv12_frame_ = new unsigned char[rect.right * rect.bottom * 3 / 2];
+  // nv12_frame_scaled_ = new unsigned char[1280 * 720 * 3 / 2];
 
   _fps = fps;
 
@@ -175,22 +171,20 @@ void ConvertBGRAtoABGR(const uint8_t *bgra_data, uint8_t *abgr_data, int width,
 
 void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame) {
   if (_on_data) {
-    int width = 1280;
-    int height = 720;
+    // int width = 1280;
+    // int height = 720;
+
+    if (!nv12_frame_) {
+      nv12_frame_ = new unsigned char[frame.width * frame.height * 3 / 2];
+    }
 
     libyuv::ARGBToNV12((const uint8_t *)frame.data, frame.width * 4,
                        (uint8_t *)nv12_frame_, frame.width,
                        (uint8_t *)(nv12_frame_ + frame.width * frame.height),
                        frame.width, frame.width, frame.height);
 
-    libyuv::NV12Scale(
-        (const uint8_t *)nv12_frame_, frame.width,
-        (const uint8_t *)(nv12_frame_ + frame.width * frame.height),
-        frame.width, frame.width, frame.height, (uint8_t *)nv12_frame_scaled_,
-        width, (uint8_t *)(nv12_frame_scaled_ + width * height), width, width,
-        height, libyuv::FilterMode::kFilterLinear);
-
-    _on_data(nv12_frame_scaled_, width * height * 3 / 2, width, height);
+    _on_data(nv12_frame_, frame.width * frame.height * 3 / 2, frame.width,
+             frame.height);
   }
 }
 

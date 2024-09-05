@@ -115,12 +115,26 @@ void Render::SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len) {
   // render->audio_buffer_fresh_ = false;
 }
 
-void Render::OnReceiveVideoBufferCb(const char *data, size_t size,
+void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
                                     const char *user_id, size_t user_id_size,
                                     void *user_data) {
   Render *render = (Render *)user_data;
   if (render->connection_established_) {
-    memcpy(render->dst_buffer_, data, size);
+    if (!render->dst_buffer_) {
+      render->dst_buffer_capacity_ = video_frame->size;
+      render->dst_buffer_ = new unsigned char[video_frame->size];
+    }
+
+    if (render->dst_buffer_capacity_ < video_frame->size) {
+      delete render->dst_buffer_;
+      render->dst_buffer_capacity_ = video_frame->size;
+      render->dst_buffer_ = new unsigned char[video_frame->size];
+    }
+
+    memcpy(render->dst_buffer_, video_frame->data, video_frame->size);
+    render->video_width_ = video_frame->width;
+    render->video_height_ = video_frame->height;
+
     SDL_Event event;
     event.type = REFRESH_EVENT;
     SDL_PushEvent(&event);

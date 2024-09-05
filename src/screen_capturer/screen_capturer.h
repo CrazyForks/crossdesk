@@ -11,20 +11,13 @@
 
 class ScreenCapturer {
  public:
-  typedef struct {
-    int left;
-    int top;
-    int right;
-    int bottom;
-  } RECORD_DESKTOP_RECT;
   typedef std::function<void(unsigned char *, int, int, int)> cb_desktop_data;
 
  public:
   virtual ~ScreenCapturer() {}
 
  public:
-  virtual int Init(const RECORD_DESKTOP_RECT &rect, const int fps,
-                   cb_desktop_data cb) = 0;
+  virtual int Init(const int fps, cb_desktop_data cb) = 0;
   virtual int Destroy() = 0;
 
   virtual int Start() = 0;
