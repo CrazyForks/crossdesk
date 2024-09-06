@@ -123,6 +123,11 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
     if (!render->dst_buffer_) {
       render->dst_buffer_capacity_ = video_frame->size;
       render->dst_buffer_ = new unsigned char[video_frame->size];
+      // Adapt stream_render_rect_ to the video resolution
+      SDL_Event event;
+      event.type = SDL_WINDOWEVENT;
+      event.window.event = SDL_WINDOWEVENT_SIZE_CHANGED;
+      SDL_PushEvent(&event);
     }
 
     if (render->dst_buffer_capacity_ < video_frame->size) {

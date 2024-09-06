@@ -568,29 +568,36 @@ int Render::Run() {
         SDL_GetWindowSize(main_window_, &main_window_width_,
                           &main_window_height_);
 
-        int video_width = main_window_width_;
-        int video_height = main_window_height_ -
-                           (fullscreen_button_pressed_ ? 0 : title_bar_height_);
+        float video_ratio = (float)video_width_ / (float)video_height_;
+        float video_ratio_reverse = (float)video_height_ / (float)video_width_;
 
-        if (video_width * 9 < video_height * 16) {
+        int render_area_width = main_window_width_;
+        int render_area_height =
+            main_window_height_ -
+            (fullscreen_button_pressed_ ? 0 : title_bar_height_);
+
+        if (render_area_width < render_area_height * video_ratio) {
           stream_render_rect_.x = 0;
           stream_render_rect_.y =
-              abs(video_height - video_width * 9 / 16) / 2 +
+              abs(render_area_height -
+                  render_area_width * video_ratio_reverse) /
+                  2 +
               (fullscreen_button_pressed_ ? 0 : title_bar_height_);
-          stream_render_rect_.w = video_width;
-          stream_render_rect_.h = video_width * 9 / 16;
-        } else if (video_width * 9 > video_height * 16) {
-          stream_render_rect_.x = abs(video_width - video_height * 16 / 9) / 2;
+          stream_render_rect_.w = render_area_width;
+          stream_render_rect_.h = render_area_width * video_ratio_reverse;
+        } else if (render_area_width > render_area_height * video_ratio) {
+          stream_render_rect_.x =
+              abs(render_area_width - render_area_height * video_ratio) / 2;
           stream_render_rect_.y =
               fullscreen_button_pressed_ ? 0 : title_bar_height_;
-          stream_render_rect_.w = video_height * 16 / 9;
-          stream_render_rect_.h = video_height;
+          stream_render_rect_.w = render_area_height * video_ratio;
+          stream_render_rect_.h = render_area_height;
         } else {
           stream_render_rect_.x = 0;
           stream_render_rect_.y =
               fullscreen_button_pressed_ ? 0 : title_bar_height_;
-          stream_render_rect_.w = video_width;
-          stream_render_rect_.h = video_height;
+          stream_render_rect_.w = render_area_width;
+          stream_render_rect_.h = render_area_height;
         }
       } else if (event.type == SDL_WINDOWEVENT &&
                  event.window.event == SDL_WINDOWEVENT_CLOSE) {
