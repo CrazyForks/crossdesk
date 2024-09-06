@@ -8,9 +8,6 @@
 #define SAVE_RECEIVED_NV12_STREAM 0
 #define SAVE_ENCODED_H264_STREAM 0
 
-#define YUV420P_BUFFER_SIZE 1280 * 720 * 3 / 2
-static unsigned char yuv420p_frame_[YUV420P_BUFFER_SIZE];
-
 void Nv12ToI420(unsigned char *Src_data, int src_width, int src_height,
                 unsigned char *Dst_data) {
   // NV12 video size
@@ -58,6 +55,11 @@ OpenH264Encoder::~OpenH264Encoder() {
     file_h264_ = nullptr;
   }
 
+  if (yuv420p_frame_) {
+    delete[] yuv420p_frame_;
+    yuv420p_frame_ = nullptr;
+  }
+
   if (encoded_frame_) {
     delete[] encoded_frame_;
     encoded_frame_ = nullptr;
@@ -66,7 +68,7 @@ OpenH264Encoder::~OpenH264Encoder() {
   Release();
 }
 
-int OpenH264Encoder::InitEncoderParams() {
+int OpenH264Encoder::InitEncoderParams(int width, int height) {
   int ret = 0;
 
   if (!openh264_encoder_) {
@@ -81,8 +83,8 @@ int OpenH264Encoder::InitEncoderParams() {
   // encoder_params_.iUsageType = SCREEN_CONTENT_REAL_TIME;
   // }
 
-  encoder_params_.iPicWidth = frame_width_;
-  encoder_params_.iPicHeight = frame_height_;
+  encoder_params_.iPicWidth = width;
+  encoder_params_.iPicHeight = height;
   encoder_params_.iTargetBitrate = target_bitrate_;
   encoder_params_.iMaxBitrate = max_bitrate_;
   encoder_params_.iRCMode = RC_BITRATE_MODE;
@@ -123,11 +125,13 @@ int OpenH264Encoder::ResetEncodeResolution(unsigned int width,
   frame_width_ = width;
   frame_height_ = height;
 
-  encoder_params_.iPicWidth = width;
-  encoder_params_.iPicHeight = height;
+  if (0 != InitEncoderParams(width, height)) {
+    LOG_ERROR("Reset encoder params [{}x{}] failed", width, height);
+    return -1;
+  }
 
-  if (openh264_encoder_->InitializeExt(&encoder_params_) != 0) {
-    LOG_ERROR("Failed to initialize OpenH264 encoder");
+  if (0 != openh264_encoder_->InitializeExt(&encoder_params_)) {
+    LOG_ERROR("Reset encoder resolution [{}x{}] failed", width, height);
     return -1;
   }
 
@@ -145,7 +149,7 @@ int OpenH264Encoder::Init() {
   openh264_encoder_->SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level);
 
   // Create encoder parameters based on the layer configuration.
-  InitEncoderParams();
+  InitEncoderParams(frame_width_, frame_height_);
 
   if (openh264_encoder_->InitializeExt(&encoder_params_) != 0) {
     LOG_ERROR("Failed to initialize OpenH264 encoder");
@@ -153,8 +157,8 @@ int OpenH264Encoder::Init() {
     return -1;
   }
 
-  int video_format = EVideoFormatType::videoFormatI420;
-  openh264_encoder_->SetOption(ENCODER_OPTION_DATAFORMAT, &video_format);
+  video_format_ = EVideoFormatType::videoFormatI420;
+  openh264_encoder_->SetOption(ENCODER_OPTION_DATAFORMAT, &video_format_);
 
   if (SAVE_RECEIVED_NV12_STREAM) {
     file_nv12_ = fopen("received_nv12_stream.yuv", "w+b");
@@ -228,7 +232,7 @@ int OpenH264Encoder::Encode(
   raw_frame_ = {0};
   raw_frame_.iPicWidth = video_frame->width;
   raw_frame_.iPicHeight = video_frame->height;
-  raw_frame_.iColorFormat = EVideoFormatType::videoFormatI420;
+  raw_frame_.iColorFormat = video_format_;
   raw_frame_.uiTimeStamp =
       std::chrono::system_clock::now().time_since_epoch().count();
 
@@ -362,6 +366,7 @@ void OpenH264Encoder::ForceIdr() {
 
 int OpenH264Encoder::Release() {
   if (openh264_encoder_) {
+    openh264_encoder_->Uninitialize();
     WelsDestroySVCEncoder(openh264_encoder_);
   }
 

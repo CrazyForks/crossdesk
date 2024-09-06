@@ -40,7 +40,7 @@ class OpenH264Encoder : public VideoEncoder {
   void ForceIdr();
 
  private:
-  int InitEncoderParams();
+  int InitEncoderParams(int width, int height);
   int ResetEncodeResolution(unsigned int width, unsigned int height);
 
   int Release();
@@ -63,6 +63,7 @@ class OpenH264Encoder : public VideoEncoder {
   // openh264
   ISVCEncoder* openh264_encoder_ = nullptr;
   SEncParamExt encoder_params_;
+  int video_format_;
   SSourcePicture raw_frame_;
   unsigned char* yuv420p_frame_ = nullptr;
   int yuv420p_frame_capacity_ = 0;

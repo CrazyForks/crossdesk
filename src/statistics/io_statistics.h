@@ -11,6 +11,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <thread>
 
 class IOStatistics {
  public:
