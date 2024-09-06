@@ -39,14 +39,16 @@ class AomAv1Encoder : public VideoEncoder {
   int Encode(const uint8_t* pData, int nSize,
              std::function<int(char* encoded_packets, size_t size,
                                VideoFrameType frame_type)>
-                 on_encoded_image);
+                 on_encoded_image) {
+    return 0;
+  }
 
   int Encode(const XVideoFrame* video_frame,
              std::function<int(char* encoded_packets, size_t size,
                                VideoFrameType frame_type)>
                  on_encoded_image);
 
-  virtual int OnEncodedImage(char* encoded_packets, size_t size);
+  int OnEncodedImage(char* encoded_packets, size_t size);
 
   void ForceIdr();
 

@@ -8,50 +8,45 @@
 #define SAVE_NV12_STREAM 0
 #define SAVE_H264_STREAM 0
 
-static const int YUV420P_BUFFER_SIZE = 1280 * 720 * 3 / 2;
+void CopyYuvWithStride(uint8_t *src_y, uint8_t *src_u, uint8_t *src_v,
+                       int width, int height, int stride_y, int stride_u,
+                       int stride_v, uint8_t *yuv420p_frame) {
+  int actual_stride_y = width;
+  int actual_stride_u = width / 2;
+  int actual_stride_v = width / 2;
 
-void CopyYUVWithStride(uint8_t *srcY, uint8_t *srcU, uint8_t *srcV, int width,
-                       int height, int strideY, int strideU, int strideV,
-                       uint8_t *yuv_data_) {
-  int actualWidth = width;
-  int actualHeight = height;
-
-  int actualStrideY = actualWidth;
-  int actualStrideU = actualWidth / 2;
-  int actualStrideV = actualWidth / 2;
-
-  for (int row = 0; row < actualHeight; row++) {
-    memcpy(yuv_data_, srcY, actualStrideY);
-    srcY += strideY;
-    yuv_data_ += actualStrideY;
+  for (int row = 0; row < height; row++) {
+    memcpy(yuv420p_frame, src_y, actual_stride_y);
+    src_y += stride_y;
+    yuv420p_frame += actual_stride_y;
   }
 
-  for (int row = 0; row < actualHeight / 2; row++) {
-    memcpy(yuv_data_, srcU, actualStrideU);
-    srcU += strideU;
-    yuv_data_ += actualStrideU;
+  for (int row = 0; row < height / 2; row++) {
+    memcpy(yuv420p_frame, src_u, actual_stride_u);
+    src_u += stride_u;
+    yuv420p_frame += actual_stride_u;
   }
 
-  for (int row = 0; row < actualHeight / 2; row++) {
-    memcpy(yuv_data_, srcV, actualStrideV);
-    srcV += strideV;
-    yuv_data_ += actualStrideV;
+  for (int row = 0; row < height / 2; row++) {
+    memcpy(yuv420p_frame, src_v, actual_stride_v);
+    src_v += stride_v;
+    yuv420p_frame += actual_stride_v;
   }
 }
 
-void ConvertYUV420toNV12(const unsigned char *yuvData, unsigned char *nv12Data,
-                         int width, int height) {
-  int ySize = width * height;
-  int uvSize = ySize / 4;
-  const unsigned char *yData = yuvData;
-  const unsigned char *uData = yData + ySize;
-  const unsigned char *vData = uData + uvSize;
+void ConvertYuv420pToNv12(const unsigned char *yuv_data,
+                          unsigned char *nv12_data, int width, int height) {
+  int y_size = width * height;
+  int uv_size = y_size / 4;
+  const unsigned char *y_data = yuv_data;
+  const unsigned char *u_data = y_data + y_size;
+  const unsigned char *v_data = u_data + uv_size;
 
-  std::memcpy(nv12Data, yData, ySize);
+  std::memcpy(nv12_data, y_data, y_size);
 
-  for (int i = 0; i < uvSize; i++) {
-    nv12Data[ySize + i * 2] = uData[i];
-    nv12Data[ySize + i * 2 + 1] = vData[i];
+  for (int i = 0; i < uv_size; i++) {
+    nv12_data[y_size + i * 2] = u_data[i];
+    nv12_data[y_size + i * 2 + 1] = v_data[i];
   }
 }
 
@@ -64,6 +59,10 @@ OpenH264Decoder::~OpenH264Decoder() {
 
   if (nv12_frame_) {
     delete nv12_frame_;
+  }
+
+  if (yuv420p_frame_) {
+    delete[] yuv420p_frame_;
   }
 
   if (SAVE_H264_STREAM && h264_stream_) {
@@ -94,10 +93,6 @@ int OpenH264Decoder::Init() {
 
   frame_width_ = 1280;
   frame_height_ = 720;
-
-  decoded_frame_size_ = YUV420P_BUFFER_SIZE;
-  decoded_frame_ = new uint8_t[YUV420P_BUFFER_SIZE];
-  nv12_frame_ = new uint8_t[YUV420P_BUFFER_SIZE];
 
   if (WelsCreateDecoder(&openh264_decoder_) != 0) {
     LOG_ERROR("Failed to create OpenH264 decoder");
@@ -137,45 +132,76 @@ int OpenH264Decoder::Decode(
   SBufferInfo sDstBufInfo;
   memset(&sDstBufInfo, 0, sizeof(SBufferInfo));
 
-  openh264_decoder_->DecodeFrameNoDelay(data, size, yuv_data_, &sDstBufInfo);
+  openh264_decoder_->DecodeFrameNoDelay(data, size, yuv420p_planes_,
+                                        &sDstBufInfo);
+
+  frame_width_ = sDstBufInfo.UsrData.sSystemBuffer.iWidth;
+  frame_height_ = sDstBufInfo.UsrData.sSystemBuffer.iHeight;
+  yuv420p_frame_size_ = frame_width_ * frame_height_ * 3 / 2;
+  nv12_frame_size_ = frame_width_ * frame_height_ * 3 / 2;
+
+  if (!yuv420p_frame_) {
+    yuv420p_frame_capacity_ = yuv420p_frame_size_;
+    yuv420p_frame_ = new unsigned char[yuv420p_frame_capacity_];
+  }
+
+  if (yuv420p_frame_capacity_ < yuv420p_frame_size_) {
+    yuv420p_frame_capacity_ = yuv420p_frame_size_;
+    delete[] yuv420p_frame_;
+    yuv420p_frame_ = new unsigned char[yuv420p_frame_capacity_];
+  }
+
+  if (!nv12_frame_) {
+    nv12_frame_capacity_ = yuv420p_frame_size_;
+    nv12_frame_ =
+        new VideoFrame(nv12_frame_capacity_, frame_width_, frame_height_);
+  }
+
+  if (nv12_frame_capacity_ < yuv420p_frame_size_) {
+    nv12_frame_capacity_ = yuv420p_frame_size_;
+    delete nv12_frame_;
+    nv12_frame_ =
+        new VideoFrame(nv12_frame_capacity_, frame_width_, frame_height_);
+  }
+
+  if (nv12_frame_->Size() != nv12_frame_size_ ||
+      nv12_frame_->Width() != frame_width_ ||
+      nv12_frame_->Height() != frame_height_) {
+    nv12_frame_->SetSize(nv12_frame_size_);
+    nv12_frame_->SetWidth(frame_width_);
+    nv12_frame_->SetHeight(frame_height_);
+  }
 
   if (sDstBufInfo.iBufferStatus == 1) {
     if (on_receive_decoded_frame) {
-      CopyYUVWithStride(yuv_data_[0], yuv_data_[1], yuv_data_[2],
-                        sDstBufInfo.UsrData.sSystemBuffer.iWidth,
-                        sDstBufInfo.UsrData.sSystemBuffer.iHeight,
-                        sDstBufInfo.UsrData.sSystemBuffer.iStride[0],
-                        sDstBufInfo.UsrData.sSystemBuffer.iStride[1],
-                        sDstBufInfo.UsrData.sSystemBuffer.iStride[1],
-                        decoded_frame_);
-
-      if (SAVE_NV12_STREAM) {
-        fwrite((unsigned char *)decoded_frame_, 1,
-               frame_width_ * frame_height_ * 3 / 2, nv12_stream_);
-      }
+      CopyYuvWithStride(
+          yuv420p_planes_[0], yuv420p_planes_[1], yuv420p_planes_[2],
+          sDstBufInfo.UsrData.sSystemBuffer.iWidth,
+          sDstBufInfo.UsrData.sSystemBuffer.iHeight,
+          sDstBufInfo.UsrData.sSystemBuffer.iStride[0],
+          sDstBufInfo.UsrData.sSystemBuffer.iStride[1],
+          sDstBufInfo.UsrData.sSystemBuffer.iStride[1], yuv420p_frame_);
 
       if (0) {
-        ConvertYUV420toNV12(decoded_frame_, nv12_frame_, frame_width_,
-                            frame_height_);
+        ConvertYuv420pToNv12(yuv420p_frame_,
+                             (unsigned char *)nv12_frame_->Buffer(),
+                             frame_width_, frame_height_);
       } else {
         libyuv::I420ToNV12(
-            (const uint8_t *)decoded_frame_, frame_width_,
-            (const uint8_t *)decoded_frame_ + frame_width_ * frame_height_,
+            (const uint8_t *)yuv420p_frame_, frame_width_,
+            (const uint8_t *)yuv420p_frame_ + frame_width_ * frame_height_,
             frame_width_ / 2,
-            (const uint8_t *)decoded_frame_ +
+            (const uint8_t *)yuv420p_frame_ +
                 frame_width_ * frame_height_ * 5 / 4,
-            frame_width_ / 2, nv12_frame_, frame_width_,
-            nv12_frame_ + frame_width_ * frame_height_, frame_width_,
-            frame_width_, frame_height_);
+            frame_width_ / 2, (uint8_t *)nv12_frame_->Buffer(), frame_width_,
+            (uint8_t *)nv12_frame_->Buffer() + frame_width_ * frame_height_,
+            frame_width_, frame_width_, frame_height_);
       }
 
-      VideoFrame decoded_frame(nv12_frame_,
-                               frame_width_ * frame_height_ * 3 / 2,
-                               frame_width_, frame_height_);
+      on_receive_decoded_frame(*nv12_frame_);
 
-      on_receive_decoded_frame(decoded_frame);
       if (SAVE_NV12_STREAM) {
-        fwrite((unsigned char *)decoded_frame.Buffer(), 1, decoded_frame.Size(),
+        fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
                nv12_stream_);
       }
     }

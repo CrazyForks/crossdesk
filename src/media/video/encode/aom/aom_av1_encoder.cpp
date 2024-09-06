@@ -266,74 +266,6 @@ int AomAv1Encoder::Init() {
   return 0;
 }
 
-int AomAv1Encoder::Encode(const uint8_t *pData, int nSize,
-                          std::function<int(char *encoded_packets, size_t size,
-                                            VideoFrameType frame_type)>
-                              on_encoded_image) {
-  if (SAVE_RECEIVED_NV12_STREAM) {
-    fwrite(pData, 1, nSize, file_nv12_);
-  }
-
-  const uint32_t duration =
-      kRtpTicksPerSecond / static_cast<float>(max_frame_rate_);
-  timestamp_ += duration;
-
-  frame_for_encode_->planes[AOM_PLANE_Y] = const_cast<unsigned char *>(pData);
-  frame_for_encode_->planes[AOM_PLANE_U] =
-      const_cast<unsigned char *>(pData + frame_width_ * frame_height_);
-  frame_for_encode_->planes[AOM_PLANE_V] = nullptr;
-  frame_for_encode_->stride[AOM_PLANE_Y] = frame_width_;
-  frame_for_encode_->stride[AOM_PLANE_U] = frame_width_;
-  frame_for_encode_->stride[AOM_PLANE_V] = 0;
-
-  VideoFrameType frame_type;
-  if (0 == seq_++ % 300) {
-    force_i_frame_flags_ = AOM_EFLAG_FORCE_KF;
-    frame_type = VideoFrameType::kVideoFrameKey;
-  } else {
-    force_i_frame_flags_ = 0;
-    frame_type = VideoFrameType::kVideoFrameDelta;
-  }
-
-  // Encode a frame. The presentation timestamp `pts` should not use real
-  // timestamps from frames or the wall clock, as that can cause the rate
-  // controller to misbehave.
-  aom_codec_err_t ret =
-      aom_codec_encode(&aom_av1_encoder_ctx_, frame_for_encode_, timestamp_,
-                       duration, force_i_frame_flags_);
-  if (ret != AOM_CODEC_OK) {
-    LOG_ERROR("AomAv1Encoder::Encode returned {} on aom_codec_encode",
-              (int)ret);
-    return -1;
-  }
-
-  aom_codec_iter_t iter = nullptr;
-  int data_pkt_count = 0;
-  while (const aom_codec_cx_pkt_t *pkt =
-             aom_codec_get_cx_data(&aom_av1_encoder_ctx_, &iter)) {
-    if (pkt->kind == AOM_CODEC_CX_FRAME_PKT && pkt->data.frame.sz > 0) {
-      memcpy(encoded_frame_, pkt->data.frame.buf, pkt->data.frame.sz);
-      encoded_frame_size_ = pkt->data.frame.sz;
-
-      int qp = -1;
-      SET_ENCODER_PARAM_OR_RETURN_ERROR(AOME_GET_LAST_QUANTIZER, &qp);
-      // LOG_INFO("Encoded frame qp = {}", qp);
-
-      if (on_encoded_image) {
-        on_encoded_image((char *)encoded_frame_, encoded_frame_size_,
-                         frame_type);
-        if (SAVE_ENCODED_AV1_STREAM) {
-          fwrite(encoded_frame_, 1, encoded_frame_size_, file_av1_);
-        }
-      } else {
-        OnEncodedImage((char *)encoded_frame_, encoded_frame_size_);
-      }
-    }
-  }
-
-  return 0;
-}
-
 int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
                           std::function<int(char *encoded_packets, size_t size,
                                             VideoFrameType frame_type)>
@@ -345,18 +277,18 @@ int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
   aom_codec_err_t ret = AOM_CODEC_OK;
 
   if (!encoded_frame_) {
-    encoded_frame_ = new uint8_t[video_frame->size];
     encoded_frame_capacity_ = video_frame->size;
+    encoded_frame_ = new uint8_t[encoded_frame_capacity_];
   }
 
   if (encoded_frame_capacity_ < video_frame->size) {
     encoded_frame_capacity_ = video_frame->size;
     delete[] encoded_frame_;
-    encoded_frame_ = new uint8_t[video_frame->size];
+    encoded_frame_ = new uint8_t[encoded_frame_capacity_];
   }
 
-  if (frame_width_ != video_frame->width ||
-      frame_height_ != video_frame->height) {
+  if (video_frame->width != frame_width_ ||
+      video_frame->height != frame_height_) {
     if (AOM_CODEC_OK !=
         ResetEncodeResolution(video_frame->width, video_frame->height)) {
       LOG_ERROR("Reset encode resolution failed");

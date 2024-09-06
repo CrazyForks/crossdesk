@@ -26,21 +26,23 @@ class OpenH264Encoder : public VideoEncoder {
   int Encode(const uint8_t* pData, int nSize,
              std::function<int(char* encoded_packets, size_t size,
                                VideoFrameType frame_type)>
-                 on_encoded_image);
-
-  int Encode(const XVideoFrame* video_frame,
-             std::function<int(char* encoded_packets, size_t size,
-                               VideoFrameType frame_type)>
                  on_encoded_image) {
     return 0;
   }
 
-  virtual int OnEncodedImage(char* encoded_packets, size_t size);
+  int Encode(const XVideoFrame* video_frame,
+             std::function<int(char* encoded_packets, size_t size,
+                               VideoFrameType frame_type)>
+                 on_encoded_image);
+
+  int OnEncodedImage(char* encoded_packets, size_t size);
 
   void ForceIdr();
 
  private:
-  SEncParamExt CreateEncoderParams() const;
+  int InitEncoderParams();
+  int ResetEncodeResolution(unsigned int width, unsigned int height);
+
   int Release();
 
  private:
@@ -60,8 +62,12 @@ class OpenH264Encoder : public VideoEncoder {
 
   // openh264
   ISVCEncoder* openh264_encoder_ = nullptr;
+  SEncParamExt encoder_params_;
   SSourcePicture raw_frame_;
+  unsigned char* yuv420p_frame_ = nullptr;
+  int yuv420p_frame_capacity_ = 0;
   uint8_t* encoded_frame_ = nullptr;
+  int encoded_frame_capacity_ = 0;
   int encoded_frame_size_ = 0;
   bool got_output = false;
   bool is_keyframe = false;

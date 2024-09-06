@@ -30,6 +30,17 @@ class ScopedDav1dData {
 // Calling `dav1d_data_wrap` requires a `free_callback` to be registered.
 void NullFreeCallback(const uint8_t *buffer, void *opaque) {}
 
+void Yuv420pToNv12(unsigned char *SrcY, unsigned char *SrcU,
+                   unsigned char *SrcV, unsigned char *Dst, int Width,
+                   int Height) {
+  memcpy(Dst, SrcY, Width * Height);
+  unsigned char *DstU = Dst + Width * Height;
+  for (int i = 0; i < Width * Height / 4; i++) {
+    (*DstU++) = (*SrcU++);
+    (*DstU++) = (*SrcV++);
+  }
+}
+
 Dav1dAv1Decoder::Dav1dAv1Decoder() {}
 
 Dav1dAv1Decoder::~Dav1dAv1Decoder() {
@@ -45,14 +56,9 @@ Dav1dAv1Decoder::~Dav1dAv1Decoder() {
     file_nv12_ = nullptr;
   }
 
-  if (decoded_frame_yuv_) {
-    delete decoded_frame_yuv_;
-    decoded_frame_yuv_ = nullptr;
-  }
-
-  if (decoded_frame_nv12_) {
-    delete decoded_frame_nv12_;
-    decoded_frame_nv12_ = nullptr;
+  if (nv12_frame_) {
+    delete nv12_frame_;
+    nv12_frame_ = nullptr;
   }
 }
 
@@ -72,9 +78,6 @@ int Dav1dAv1Decoder::Init() {
     LOG_ERROR("Dav1d AV1 decoder open failed");
   }
 
-  decoded_frame_yuv_ = new VideoFrame(1280 * 720 * 3 / 2);
-  // decoded_frame_nv12_ = new VideoFrame(1280 * 720 * 3 / 2);
-
   if (SAVE_RECEIVED_AV1_STREAM) {
     file_av1_ = fopen("received_av1_stream.ivf", "w+b");
     if (!file_av1_) {
@@ -90,17 +93,6 @@ int Dav1dAv1Decoder::Init() {
   }
 
   return 0;
-}
-
-void YUV420PtoNV12(unsigned char *SrcY, unsigned char *SrcU,
-                   unsigned char *SrcV, unsigned char *Dst, int Width,
-                   int Height) {
-  memcpy(Dst, SrcY, Width * Height);
-  unsigned char *DstU = Dst + Width * Height;
-  for (int i = 0; i < Width * Height / 4; i++) {
-    (*DstU++) = (*SrcU++);
-    (*DstU++) = (*SrcV++);
-  }
 }
 
 int Dav1dAv1Decoder::Decode(
@@ -150,43 +142,52 @@ int Dav1dAv1Decoder::Decode(
     return -1;
   }
 
+  frame_width_ = dav1d_picture.p.w;
+  frame_height_ = dav1d_picture.p.h;
+  nv12_frame_size_ = dav1d_picture.p.w * dav1d_picture.p.h * 3 / 2;
+
+  if (!nv12_frame_) {
+    nv12_frame_capacity_ = nv12_frame_size_;
+    nv12_frame_ =
+        new VideoFrame(nv12_frame_capacity_, frame_width_, frame_height_);
+  }
+
+  if (nv12_frame_capacity_ < nv12_frame_size_) {
+    nv12_frame_capacity_ = nv12_frame_size_;
+    delete nv12_frame_;
+    nv12_frame_ =
+        new VideoFrame(nv12_frame_capacity_, frame_width_, frame_height_);
+  }
+
+  if (nv12_frame_->Size() != nv12_frame_size_ ||
+      nv12_frame_->Width() != frame_width_ ||
+      nv12_frame_->Height() != frame_height_) {
+    nv12_frame_->SetSize(nv12_frame_size_);
+    nv12_frame_->SetWidth(frame_width_);
+    nv12_frame_->SetHeight(frame_height_);
+  }
+
   if (0) {
-    YUV420PtoNV12((unsigned char *)dav1d_picture.data[0],
+    Yuv420pToNv12((unsigned char *)dav1d_picture.data[0],
                   (unsigned char *)dav1d_picture.data[1],
                   (unsigned char *)dav1d_picture.data[2],
-                  decoded_frame_nv12_->GetBuffer(), dav1d_picture.p.w,
-                  dav1d_picture.p.h);
+                  (unsigned char *)nv12_frame_->Buffer(), frame_width_,
+                  frame_height_);
   } else {
-    if (!decoded_frame_nv12_) {
-      decoded_frame_nv12_capacity_ =
-          dav1d_picture.p.w * dav1d_picture.p.h * 3 / 2;
-      decoded_frame_nv12_ = new VideoFrame(
-          decoded_frame_nv12_capacity_, dav1d_picture.p.w, dav1d_picture.p.h);
-    }
-
-    if (decoded_frame_nv12_capacity_ <
-        dav1d_picture.p.w * dav1d_picture.p.h * 3 / 2) {
-      delete decoded_frame_nv12_;
-      decoded_frame_nv12_capacity_ =
-          dav1d_picture.p.w * dav1d_picture.p.h * 3 / 2;
-      decoded_frame_nv12_ = new VideoFrame(
-          decoded_frame_nv12_capacity_, dav1d_picture.p.w, dav1d_picture.p.h);
-    }
-
     libyuv::I420ToNV12(
         (const uint8_t *)dav1d_picture.data[0], dav1d_picture.p.w,
         (const uint8_t *)dav1d_picture.data[1], dav1d_picture.p.w / 2,
         (const uint8_t *)dav1d_picture.data[2], dav1d_picture.p.w / 2,
-        decoded_frame_nv12_->GetBuffer(), dav1d_picture.p.w,
-        decoded_frame_nv12_->GetBuffer() +
-            dav1d_picture.p.w * dav1d_picture.p.h,
-        dav1d_picture.p.w, dav1d_picture.p.w, dav1d_picture.p.h);
+        (uint8_t *)nv12_frame_->Buffer(), frame_width_,
+        (uint8_t *)nv12_frame_->Buffer() + frame_width_ * frame_height_,
+        frame_width_, frame_width_, frame_height_);
   }
 
-  on_receive_decoded_frame(*decoded_frame_nv12_);
+  on_receive_decoded_frame(*nv12_frame_);
+
   if (SAVE_DECODED_NV12_STREAM) {
-    fwrite((unsigned char *)decoded_frame_nv12_->Buffer(), 1,
-           decoded_frame_nv12_->Size(), file_nv12_);
+    fwrite((unsigned char *)nv12_frame_->Buffer(), 1, nv12_frame_->Size(),
+           file_nv12_);
   }
 
   return 0;

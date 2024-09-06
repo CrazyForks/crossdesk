@@ -149,8 +149,8 @@ int PeerConnection::Init(PeerConnectionParams params,
           if (on_receive_video_frame_) {
             XVideoFrame x_video_frame;
             x_video_frame.data = (const char *)video_frame.Buffer();
-            x_video_frame.width = video_frame.GetWidth();
-            x_video_frame.height = video_frame.GetHeight();
+            x_video_frame.width = video_frame.Width();
+            x_video_frame.height = video_frame.Height();
             x_video_frame.size = video_frame.Size();
             on_receive_video_frame_(&x_video_frame, user_id, user_id_size,
                                     user_data_);

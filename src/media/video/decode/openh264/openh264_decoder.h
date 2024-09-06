@@ -34,10 +34,17 @@ class OpenH264Decoder : public VideoDecoder {
   FILE* h264_stream_ = nullptr;
   uint8_t* decoded_frame_ = nullptr;
   int decoded_frame_size_ = 0;
-  uint8_t* nv12_frame_ = nullptr;
   int frame_width_ = 1280;
   int frame_height_ = 720;
-  unsigned char* yuv_data_[3];
+
+  unsigned char* yuv420p_planes_[3] = {nullptr, nullptr, nullptr};
+  unsigned char* yuv420p_frame_ = nullptr;
+  int yuv420p_frame_capacity_ = 0;
+  int yuv420p_frame_size_ = 0;
+
+  VideoFrame* nv12_frame_ = 0;
+  int nv12_frame_capacity_ = 0;
+  int nv12_frame_size_ = 0;
 };
 
 #endif

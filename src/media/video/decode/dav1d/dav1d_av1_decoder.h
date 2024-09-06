@@ -23,9 +23,12 @@ class Dav1dAv1Decoder : public VideoDecoder {
              std::function<void(VideoFrame)> on_receive_decoded_frame);
 
  private:
-  VideoFrame *decoded_frame_yuv_ = nullptr;
-  VideoFrame *decoded_frame_nv12_ = nullptr;
-  int decoded_frame_nv12_capacity_ = 0;
+  VideoFrame *nv12_frame_ = 0;
+  int nv12_frame_capacity_ = 0;
+  int nv12_frame_size_ = 0;
+
+  int frame_width_ = 0;
+  int frame_height_ = 0;
 
   FILE *file_av1_ = nullptr;
   FILE *file_nv12_ = nullptr;

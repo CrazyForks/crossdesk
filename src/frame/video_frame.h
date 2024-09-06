@@ -27,11 +27,12 @@ class VideoFrame {
  public:
   const uint8_t *Buffer() { return buffer_; }
   size_t Size() { return size_; }
+  size_t Width() { return width_; }
+  size_t Height() { return height_; }
 
-  uint8_t *GetBuffer() { return buffer_; }
-
-  size_t GetWidth() { return width_; }
-  size_t GetHeight() { return height_; }
+  void SetSize(size_t size) { size_ = size; }
+  void SetWidth(size_t width) { width_ = width; }
+  void SetHeight(size_t height) { height_ = height; }
 
  private:
   uint8_t *buffer_ = nullptr;

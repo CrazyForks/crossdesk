@@ -9,9 +9,9 @@
 #define SAVE_ENCODED_H264_STREAM 0
 
 #define YUV420P_BUFFER_SIZE 1280 * 720 * 3 / 2
-static unsigned char yuv420p_buffer[YUV420P_BUFFER_SIZE];
+static unsigned char yuv420p_frame_[YUV420P_BUFFER_SIZE];
 
-void nv12ToI420(unsigned char *Src_data, int src_width, int src_height,
+void Nv12ToI420(unsigned char *Src_data, int src_width, int src_height,
                 unsigned char *Dst_data) {
   // NV12 video size
   int NV12_Size = src_width * src_height * 3 / 2;
@@ -57,54 +57,81 @@ OpenH264Encoder::~OpenH264Encoder() {
     fclose(file_h264_);
     file_h264_ = nullptr;
   }
-  delete encoded_frame_;
+
+  if (encoded_frame_) {
+    delete[] encoded_frame_;
+    encoded_frame_ = nullptr;
+  }
+
   Release();
 }
 
-SEncParamExt OpenH264Encoder::CreateEncoderParams() const {
-  SEncParamExt encoder_params;
-  openh264_encoder_->GetDefaultParams(&encoder_params);
+int OpenH264Encoder::InitEncoderParams() {
+  int ret = 0;
+
+  if (!openh264_encoder_) {
+    LOG_ERROR("Invalid openh264 encoder");
+    return -1;
+  }
+
+  ret = openh264_encoder_->GetDefaultParams(&encoder_params_);
   // if (codec_.mode == VideoCodecMode::kRealtimeVideo) {  //
-  encoder_params.iUsageType = CAMERA_VIDEO_REAL_TIME;
+  encoder_params_.iUsageType = CAMERA_VIDEO_REAL_TIME;
   // } else if (codec_.mode == VideoCodecMode::kScreensharing) {
-  // encoder_params.iUsageType = SCREEN_CONTENT_REAL_TIME;
+  // encoder_params_.iUsageType = SCREEN_CONTENT_REAL_TIME;
   // }
 
-  encoder_params.iPicWidth = frame_width_;
-  encoder_params.iPicHeight = frame_height_;
-  encoder_params.iTargetBitrate = target_bitrate_;
-  encoder_params.iMaxBitrate = max_bitrate_;
-  encoder_params.iRCMode = RC_BITRATE_MODE;
-  encoder_params.fMaxFrameRate = 60;
-  encoder_params.bEnableFrameSkip = false;
-  encoder_params.uiIntraPeriod = key_frame_interval_;
-  encoder_params.uiMaxNalSize = 0;
-  encoder_params.iMaxQp = 38;
-  encoder_params.iMinQp = 16;
+  encoder_params_.iPicWidth = frame_width_;
+  encoder_params_.iPicHeight = frame_height_;
+  encoder_params_.iTargetBitrate = target_bitrate_;
+  encoder_params_.iMaxBitrate = max_bitrate_;
+  encoder_params_.iRCMode = RC_BITRATE_MODE;
+  encoder_params_.fMaxFrameRate = 60;
+  encoder_params_.bEnableFrameSkip = false;
+  encoder_params_.uiIntraPeriod = key_frame_interval_;
+  encoder_params_.uiMaxNalSize = 0;
+  encoder_params_.iMaxQp = 38;
+  encoder_params_.iMinQp = 16;
   // Threading model: use auto.
   //  0: auto (dynamic imp. internal encoder)
   //  1: single thread (default value)
   // >1: number of threads
-  encoder_params.iMultipleThreadIdc = 1;
+  encoder_params_.iMultipleThreadIdc = 1;
   // The base spatial layer 0 is the only one we use.
-  encoder_params.sSpatialLayers[0].iVideoWidth = encoder_params.iPicWidth;
-  encoder_params.sSpatialLayers[0].iVideoHeight = encoder_params.iPicHeight;
-  encoder_params.sSpatialLayers[0].fFrameRate = encoder_params.fMaxFrameRate;
-  encoder_params.sSpatialLayers[0].iSpatialBitrate =
-      encoder_params.iTargetBitrate;
-  encoder_params.sSpatialLayers[0].iMaxSpatialBitrate =
-      encoder_params.iMaxBitrate;
+  encoder_params_.sSpatialLayers[0].iVideoWidth = encoder_params_.iPicWidth;
+  encoder_params_.sSpatialLayers[0].iVideoHeight = encoder_params_.iPicHeight;
+  encoder_params_.sSpatialLayers[0].fFrameRate = encoder_params_.fMaxFrameRate;
+  encoder_params_.sSpatialLayers[0].iSpatialBitrate =
+      encoder_params_.iTargetBitrate;
+  encoder_params_.sSpatialLayers[0].iMaxSpatialBitrate =
+      encoder_params_.iMaxBitrate;
 
   // SingleNalUnit
-  encoder_params.sSpatialLayers[0].sSliceArgument.uiSliceNum = 1;
-  encoder_params.sSpatialLayers[0].sSliceArgument.uiSliceMode =
+  encoder_params_.sSpatialLayers[0].sSliceArgument.uiSliceNum = 1;
+  encoder_params_.sSpatialLayers[0].sSliceArgument.uiSliceMode =
       SM_SIZELIMITED_SLICE;
-  encoder_params.sSpatialLayers[0].sSliceArgument.uiSliceSizeConstraint =
+  encoder_params_.sSpatialLayers[0].sSliceArgument.uiSliceSizeConstraint =
       static_cast<unsigned int>(max_payload_size_);
   LOG_INFO("Encoder is configured with NALU constraint: {} bytes",
            max_payload_size_);
 
-  return encoder_params;
+  return ret;
+}
+
+int OpenH264Encoder::ResetEncodeResolution(unsigned int width,
+                                           unsigned int height) {
+  frame_width_ = width;
+  frame_height_ = height;
+
+  encoder_params_.iPicWidth = width;
+  encoder_params_.iPicHeight = height;
+
+  if (openh264_encoder_->InitializeExt(&encoder_params_) != 0) {
+    LOG_ERROR("Failed to initialize OpenH264 encoder");
+    return -1;
+  }
+
+  return 0;
 }
 
 int OpenH264Encoder::Init() {
@@ -114,15 +141,13 @@ int OpenH264Encoder::Init() {
     return -1;
   }
 
-  encoded_frame_ = new uint8_t[YUV420P_BUFFER_SIZE];
-
   int trace_level = WELS_LOG_QUIET;
   openh264_encoder_->SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level);
 
   // Create encoder parameters based on the layer configuration.
-  SEncParamExt encoder_params = CreateEncoderParams();
+  InitEncoderParams();
 
-  if (openh264_encoder_->InitializeExt(&encoder_params) != 0) {
+  if (openh264_encoder_->InitializeExt(&encoder_params_) != 0) {
     LOG_ERROR("Failed to initialize OpenH264 encoder");
     // Release();
     return -1;
@@ -147,8 +172,9 @@ int OpenH264Encoder::Init() {
 
   return 0;
 }
+
 int OpenH264Encoder::Encode(
-    const uint8_t *pData, int nSize,
+    const XVideoFrame *video_frame,
     std::function<int(char *encoded_packets, size_t size,
                       VideoFrameType frame_type)>
         on_encoded_image) {
@@ -158,8 +184,38 @@ int OpenH264Encoder::Encode(
   }
 
   if (SAVE_RECEIVED_NV12_STREAM) {
-    fwrite(pData, 1, nSize, file_nv12_);
+    fwrite(video_frame->data, 1, video_frame->size, file_nv12_);
   }
+
+  if (!yuv420p_frame_) {
+    yuv420p_frame_capacity_ = video_frame->size;
+    yuv420p_frame_ = new unsigned char[yuv420p_frame_capacity_];
+  }
+
+  if (yuv420p_frame_capacity_ < video_frame->size) {
+    yuv420p_frame_capacity_ = video_frame->size;
+    delete[] yuv420p_frame_;
+    yuv420p_frame_ = new unsigned char[yuv420p_frame_capacity_];
+  }
+
+  if (!encoded_frame_) {
+    encoded_frame_capacity_ = video_frame->size;
+    encoded_frame_ = new unsigned char[encoded_frame_capacity_];
+  }
+
+  if (encoded_frame_capacity_ < video_frame->size) {
+    encoded_frame_capacity_ = video_frame->size;
+    delete[] encoded_frame_;
+    encoded_frame_ = new unsigned char[encoded_frame_capacity_];
+  }
+
+  if (video_frame->width != frame_width_ ||
+      video_frame->height != frame_height_) {
+    ResetEncodeResolution(video_frame->width, video_frame->height);
+  }
+
+  Nv12ToI420((unsigned char *)video_frame->data, video_frame->width,
+             video_frame->height, yuv420p_frame_);
 
   VideoFrameType frame_type;
   if (0 == seq_++ % 300) {
@@ -169,23 +225,21 @@ int OpenH264Encoder::Encode(
     frame_type = VideoFrameType::kVideoFrameDelta;
   }
 
-  nv12ToI420((unsigned char *)pData, frame_width_, frame_height_,
-             yuv420p_buffer);
-
   raw_frame_ = {0};
-  raw_frame_.iPicWidth = frame_width_;
-  raw_frame_.iPicHeight = frame_height_;
+  raw_frame_.iPicWidth = video_frame->width;
+  raw_frame_.iPicHeight = video_frame->height;
   raw_frame_.iColorFormat = EVideoFormatType::videoFormatI420;
   raw_frame_.uiTimeStamp =
       std::chrono::system_clock::now().time_since_epoch().count();
 
-  raw_frame_.iStride[0] = frame_width_;
-  raw_frame_.iStride[1] = frame_width_ >> 1;
-  raw_frame_.iStride[2] = frame_width_ >> 1;
-  raw_frame_.pData[0] = (unsigned char *)yuv420p_buffer;
-  raw_frame_.pData[1] = raw_frame_.pData[0] + frame_width_ * frame_height_;
+  raw_frame_.iStride[0] = video_frame->width;
+  raw_frame_.iStride[1] = video_frame->width >> 1;
+  raw_frame_.iStride[2] = video_frame->width >> 1;
+  raw_frame_.pData[0] = (unsigned char *)yuv420p_frame_;
+  raw_frame_.pData[1] =
+      raw_frame_.pData[0] + video_frame->width * video_frame->height;
   raw_frame_.pData[2] =
-      raw_frame_.pData[1] + (frame_width_ * frame_height_ >> 2);
+      raw_frame_.pData[1] + (video_frame->width * video_frame->height >> 2);
 
   SFrameBSInfo info;
   memset(&info, 0, sizeof(SFrameBSInfo));
