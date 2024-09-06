@@ -4,9 +4,6 @@
 
 #include "rd_log.h"
 
-#define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
-unsigned char nv12_buffer_[NV12_BUFFER_SIZE];
-
 ScreenCapturerAvf::ScreenCapturerAvf() {}
 
 ScreenCapturerAvf::~ScreenCapturerAvf() {
@@ -14,10 +11,39 @@ ScreenCapturerAvf::~ScreenCapturerAvf() {
     capture_thread_.join();
     inited_ = false;
   }
+
+  if (nv12_frame_) {
+    delete[] nv12_frame_;
+    nv12_frame_ = nullptr;
+  }
+
+  if (pFormatCtx_) {
+    avformat_close_input(&pFormatCtx_);
+    pFormatCtx_ = nullptr;
+  }
+
+  if (pCodecCtx_) {
+    avcodec_free_context(&pCodecCtx_);
+    pCodecCtx_ = nullptr;
+  }
+
+  if (options_) {
+    av_dict_free(&options_);
+    options_ = nullptr;
+  }
+
+  if (pFrame_) {
+    av_frame_free(&pFrame_);
+    pFrame_ = nullptr;
+  }
+
+  if (packet_) {
+    av_packet_free(&packet_);
+    packet_ = nullptr;
+  }
 }
 
-int ScreenCapturerAvf::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
-                            cb_desktop_data cb) {
+int ScreenCapturerAvf::Init(const int fps, cb_desktop_data cb) {
   if (cb) {
     _on_data = cb;
   }
@@ -84,18 +110,15 @@ int ScreenCapturerAvf::Init(const RECORD_DESKTOP_RECT &rect, const int fps,
   const int screen_h = pFormatCtx_->streams[videoindex_]->codecpar->height;
 
   pFrame_ = av_frame_alloc();
-  pFrameNv12_ = av_frame_alloc();
 
   pFrame_->width = screen_w;
   pFrame_->height = screen_h;
-  pFrameNv12_->width = 1280;
-  pFrameNv12_->height = 720;
+
+  if (!nv12_frame_) {
+    nv12_frame_ = new unsigned char[screen_w * screen_h * 3 / 2];
+  }
 
   packet_ = (AVPacket *)av_malloc(sizeof(AVPacket));
-
-  img_convert_ctx_ = sws_getContext(
-      pFrame_->width, pFrame_->height, pCodecCtx_->pix_fmt, pFrameNv12_->width,
-      pFrameNv12_->height, AV_PIX_FMT_NV12, SWS_BICUBIC, NULL, NULL, NULL);
 
   inited_ = true;
 
@@ -122,17 +145,15 @@ int ScreenCapturerAvf::Start() {
           got_picture_ = avcodec_receive_frame(pCodecCtx_, pFrame_);
 
           if (!got_picture_) {
-            av_image_fill_arrays(pFrameNv12_->data, pFrameNv12_->linesize,
-                                 nv12_buffer_, AV_PIX_FMT_NV12,
-                                 pFrameNv12_->width, pFrameNv12_->height, 1);
+            memcpy(nv12_frame_, pFrame_->data[0],
+                   pFrame_->linesize[0] * pFrame_->height);
+            memcpy(nv12_frame_ + pFrame_->linesize[0] * pFrame_->height,
+                   pFrame_->data[1],
+                   pFrame_->linesize[1] * pFrame_->height / 2);
 
-            sws_scale(img_convert_ctx_, pFrame_->data, pFrame_->linesize, 0,
-                      pFrame_->height, pFrameNv12_->data,
-                      pFrameNv12_->linesize);
-
-            _on_data((unsigned char *)nv12_buffer_,
-                     pFrameNv12_->width * pFrameNv12_->height * 3 / 2,
-                     pFrameNv12_->width, pFrameNv12_->height);
+            _on_data((unsigned char *)nv12_frame_,
+                     pFrame_->width * pFrame_->height * 3 / 2, pFrame_->width,
+                     pFrame_->height);
           }
         }
       }

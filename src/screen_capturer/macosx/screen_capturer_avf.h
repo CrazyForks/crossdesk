@@ -32,8 +32,8 @@ class ScreenCapturerAvf : public ScreenCapturer {
   ~ScreenCapturerAvf();
 
  public:
-  virtual int Init(const RECORD_DESKTOP_RECT &rect, const int fps,
-                   cb_desktop_data cb);
+  virtual int Init(const int fps, cb_desktop_data cb);
+
   virtual int Destroy();
 
   virtual int Start();
@@ -57,8 +57,6 @@ class ScreenCapturerAvf : public ScreenCapturer {
 
   std::string _device_name;
 
-  RECORD_DESKTOP_RECT _rect;
-
   int _fps;
 
   cb_desktop_data _on_data;
@@ -77,9 +75,8 @@ class ScreenCapturerAvf : public ScreenCapturer {
   AVDictionary *options_ = nullptr;
   AVInputFormat *ifmt_ = nullptr;
   AVFrame *pFrame_ = nullptr;
-  AVFrame *pFrameNv12_ = nullptr;
   AVPacket *packet_ = nullptr;
-  struct SwsContext *img_convert_ctx_ = nullptr;
+  unsigned char *nv12_frame_ = nullptr;
 
   // thread
   std::thread capture_thread_;
