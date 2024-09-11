@@ -616,6 +616,7 @@ int Render::Run() {
             texture_width_ = video_width_;
             texture_height_ = video_height_;
 
+            SDL_DestroyTexture(stream_texture_);
             stream_texture_ = SDL_CreateTexture(
                 main_renderer_, stream_pixformat_, SDL_TEXTUREACCESS_STREAMING,
                 texture_width_, texture_height_);
@@ -708,6 +709,7 @@ int Render::Run() {
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
 
+  SDL_DestroyTexture(stream_texture_);
   SDL_DestroyRenderer(main_renderer_);
   SDL_DestroyWindow(main_window_);
 
