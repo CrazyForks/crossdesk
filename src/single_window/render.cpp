@@ -303,55 +303,7 @@ int Render::CreateConnectionPeer() {
   return 0;
 }
 
-int Render::Run() {
-  LoadSettingsFromCacheFile();
-
-  localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
-  localization_language_index_ = language_button_value_;
-
-  // Setup SDL
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER |
-               SDL_INIT_GAMECONTROLLER) != 0) {
-    printf("Error: %s\n", SDL_GetError());
-    return -1;
-  }
-
-  // use linear filtering to render textures otherwise the graphics will be
-  // blurry
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
-
-  // create main window with SDL_Renderer graphics context
-  SDL_WindowFlags window_flags =
-      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
-  main_window_ = SDL_CreateWindow(
-      "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      main_window_width_default_, main_window_height_default_, window_flags);
-
-  SDL_SetWindowHitTest(main_window_, HitTestCallback, this);
-
-  main_renderer_ = SDL_CreateRenderer(
-      main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-  if (main_renderer_ == nullptr) {
-    LOG_ERROR("1 Error creating SDL_Renderer");
-    return 0;
-  }
-
-  stream_pixformat_ = SDL_PIXELFORMAT_NV12;
-
-  stream_texture_ = SDL_CreateTexture(main_renderer_, stream_pixformat_,
-                                      SDL_TEXTUREACCESS_STREAMING,
-                                      texture_width_, texture_height_);
-
-  stream_render_rect_.x = 0;
-  stream_render_rect_.y = title_bar_height_;
-  stream_render_rect_.w = main_window_width_;
-  stream_render_rect_.h = main_window_height_ - title_bar_height_;
-
-  SDL_DisplayMode DM;
-  SDL_GetCurrentDisplayMode(0, &DM);
-  screen_width_ = DM.w;
-  screen_height_ = DM.h;
-
+int Render::AudioDeviceInit() {
   // Audio
   SDL_AudioSpec want_in, have_in, want_out, have_out;
   SDL_zero(want_in);
@@ -386,6 +338,44 @@ int Render::Run() {
   // SDL_PauseAudioDevice(input_dev_, 0);
   SDL_PauseAudioDevice(output_dev_, 0);
 
+  return 0;
+}
+
+int Render::AudioDeviceDestroy() {
+  SDL_CloseAudioDevice(output_dev_);
+  // SDL_CloseAudioDevice(input_dev_);
+
+  return 0;
+}
+
+int Render::Run() {
+  LoadSettingsFromCacheFile();
+
+  localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
+  localization_language_index_ = language_button_value_;
+
+  // Setup SDL
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER |
+               SDL_INIT_GAMECONTROLLER) != 0) {
+    printf("Error: %s\n", SDL_GetError());
+    return -1;
+  }
+
+  // get screen resolution
+  SDL_DisplayMode DM;
+  SDL_GetCurrentDisplayMode(0, &DM);
+  screen_width_ = DM.w;
+  screen_height_ = DM.h;
+
+  stream_render_rect_.x = 0;
+  stream_render_rect_.y = title_bar_height_;
+  stream_render_rect_.w = main_window_width_;
+  stream_render_rect_.h = main_window_height_ - title_bar_height_;
+
+  // use linear filtering to render textures otherwise the graphics will be
+  // blurry
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -415,48 +405,66 @@ int Render::Run() {
 
   io.Fonts->Build();
 
+  // Setup Dear ImGui style
+  // ImGui::StyleColorsDark();
+  ImGui::StyleColorsLight();
+
+  // init modules
+  if (!modules_inited_) {
+    // audio
+    AudioDeviceInit();
+
+    // screen capture init
+    screen_capturer_factory_ = new ScreenCapturerFactory();
+
+    // speaker capture init
+    speaker_capturer_factory_ = new SpeakerCapturerFactory();
+
+    // mouse control
+    device_controller_factory_ = new DeviceControllerFactory();
+
+    // RTC
+    CreateConnectionPeer();
+
+    modules_inited_ = true;
+  }
+
+  // create main window with SDL_Renderer graphics context
+  SDL_WindowFlags window_flags =
+      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
+  main_window_ = SDL_CreateWindow(
+      "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      main_window_width_default_, main_window_height_default_, window_flags);
+
+  main_renderer_ = SDL_CreateRenderer(
+      main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+  if (main_renderer_ == nullptr) {
+    LOG_ERROR("1 Error creating SDL_Renderer");
+    return 0;
+  }
+
+  stream_pixformat_ = SDL_PIXELFORMAT_NV12;
+  stream_texture_ = SDL_CreateTexture(main_renderer_, stream_pixformat_,
+                                      SDL_TEXTUREACCESS_STREAMING,
+                                      texture_width_, texture_height_);
+
+  // for window region action
+  SDL_SetWindowHitTest(main_window_, HitTestCallback, this);
+
   SDL_GL_GetDrawableSize(main_window_, &main_window_width_real_,
                          &main_window_height_real_);
   dpi_scaling_w_ = (float)main_window_width_real_ / (float)main_window_width_;
   dpi_scaling_h_ = (float)main_window_width_real_ / (float)main_window_width_;
-
-  LOG_INFO("Use dpi scaling [{}x{}]", dpi_scaling_w_, dpi_scaling_h_);
-
   SDL_RenderSetScale(main_renderer_, dpi_scaling_w_, dpi_scaling_h_);
-
-  // Setup Dear ImGui style
-  // ImGui::StyleColorsDark();
-  ImGui::StyleColorsLight();
+  LOG_INFO("Use dpi scaling [{}x{}]", dpi_scaling_w_, dpi_scaling_h_);
 
   // Setup Platform/Renderer backends
   ImGui_ImplSDL2_InitForSDLRenderer(main_window_, main_renderer_);
   ImGui_ImplSDLRenderer2_Init(main_renderer_);
 
-  CreateConnectionPeer();
-
-  {
-    nv12_buffer_ = new char[NV12_BUFFER_SIZE];
-
-    // Screen capture init
-    screen_capturer_factory_ = new ScreenCapturerFactory();
-
-    // Speaker capture init
-    speaker_capturer_factory_ = new SpeakerCapturerFactory();
-
-    // Mouse control
-    device_controller_factory_ = new DeviceControllerFactory();
-  }
-
   // Main loop
   while (!exit_) {
-    if (SignalStatus::SignalConnected == signal_status_ &&
-        !is_create_connection_ && password_inited_) {
-      LOG_INFO("Connected with signal server, create p2p connection");
-      is_create_connection_ =
-          CreateConnection(peer_, client_id_, password_saved_) ? false : true;
-    }
-
-    if (!inited_ ||
+    if (!label_inited_ ||
         localization_language_index_last_ != localization_language_index_) {
       connect_button_label_ =
           connect_button_pressed_
@@ -480,24 +488,8 @@ int Render::Run() {
 
       settings_button_label_ =
           localization::settings[localization_language_index_];
-      inited_ = true;
+      label_inited_ = true;
       localization_language_index_last_ = localization_language_index_;
-    }
-
-    if (start_screen_capture_ && !screen_capture_is_started_) {
-      StartScreenCapture();
-      screen_capture_is_started_ = true;
-    } else if (!start_screen_capture_ && screen_capture_is_started_) {
-      StopScreenCapture();
-      screen_capture_is_started_ = false;
-    }
-
-    if (start_mouse_control_ && !mouse_control_is_started_) {
-      StartMouseControl();
-      mouse_control_is_started_ = true;
-    } else if (!start_mouse_control_ && mouse_control_is_started_) {
-      StopMouseControl();
-      mouse_control_is_started_ = false;
     }
 
     // Start the Dear ImGui frame
@@ -540,6 +532,30 @@ int Render::Run() {
     }
 
     ImGui::End();
+
+    // create connection
+    if (SignalStatus::SignalConnected == signal_status_ &&
+        !is_create_connection_ && password_inited_) {
+      LOG_INFO("Connected with signal server, create p2p connection");
+      is_create_connection_ =
+          CreateConnection(peer_, client_id_, password_saved_) ? false : true;
+    }
+
+    if (start_screen_capture_ && !screen_capture_is_started_) {
+      StartScreenCapture();
+      screen_capture_is_started_ = true;
+    } else if (!start_screen_capture_ && screen_capture_is_started_) {
+      StopScreenCapture();
+      screen_capture_is_started_ = false;
+    }
+
+    if (start_mouse_control_ && !mouse_control_is_started_) {
+      StartMouseControl();
+      mouse_control_is_started_ = true;
+    } else if (!start_mouse_control_ && mouse_control_is_started_) {
+      StopMouseControl();
+      mouse_control_is_started_ = false;
+    }
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -716,8 +732,7 @@ int Render::Run() {
     DestroyPeer(&peer_reserved_);
   }
 
-  SDL_CloseAudioDevice(output_dev_);
-  // SDL_CloseAudioDevice(input_dev_);
+  AudioDeviceDestroy();
 
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
@@ -726,7 +741,6 @@ int Render::Run() {
   SDL_DestroyRenderer(main_renderer_);
   SDL_DestroyWindow(main_window_);
 
-  SDL_CloseAudio();
   SDL_Quit();
 
   return 0;

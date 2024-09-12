@@ -88,6 +88,9 @@ class Render {
 
   int CreateConnectionPeer();
 
+  int AudioDeviceInit();
+  int AudioDeviceDestroy();
+
  private:
   typedef struct {
     char client_id[10];
@@ -110,6 +113,8 @@ class Render {
 
   int localization_language_index_ = -1;
   int localization_language_index_last_ = -1;
+
+  bool modules_inited_ = false;
 
  private:
   std::string window_title = "Remote Desk Client";
@@ -182,7 +187,7 @@ class Render {
   uint32_t stream_pixformat_ = 0;
 
   bool resizable_ = false;
-  bool inited_ = false;
+  bool label_inited_ = false;
   bool exit_ = false;
   bool exit_video_window_ = false;
   bool connection_established_ = false;
@@ -245,7 +250,6 @@ class Render {
   SDL_AudioDeviceID output_dev_;
   unsigned char audio_buffer_[960];
   int audio_len_ = 0;
-  char *nv12_buffer_ = nullptr;
   unsigned char *dst_buffer_ = nullptr;
   int dst_buffer_capacity_ = 0;
 
