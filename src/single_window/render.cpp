@@ -558,7 +558,8 @@ int Render::Run() {
           received_frame_ = false;
           is_client_mode_ = false;
           audio_capture_button_pressed_ = false;
-          SDL_RestoreWindow(main_window_);
+          SDL_SetWindowSize(main_window_, main_window_width_default_,
+                            main_window_height_default_);
           continue;
         } else {
           LOG_INFO("Quit program");
@@ -612,7 +613,8 @@ int Render::Run() {
         }
       } else if (event.type == REFRESH_EVENT) {
         if (stream_texture_)
-          if (video_width_ != texture_width_) {
+          if (video_width_ != texture_width_ ||
+              video_height_ != texture_height_) {
             texture_width_ = video_width_;
             texture_height_ = video_height_;
 
