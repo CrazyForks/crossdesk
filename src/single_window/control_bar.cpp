@@ -9,7 +9,7 @@ int Render::ControlBar() {
 
   if (control_bar_expand_) {
     ImGui::SetCursorPosX(
-        is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 53.0f);
+        is_control_bar_in_left_ ? (control_window_width_ + 5.0f) : 41.0f);
     // mouse control button
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
