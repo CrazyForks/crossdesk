@@ -98,7 +98,7 @@ int OpenH264Encoder::InitEncoderParams(int width, int height) {
   //  0: auto (dynamic imp. internal encoder)
   //  1: single thread (default value)
   // >1: number of threads
-  encoder_params_.iMultipleThreadIdc = 1;
+  encoder_params_.iMultipleThreadIdc = 8;
   // The base spatial layer 0 is the only one we use.
   encoder_params_.sSpatialLayers[0].iVideoWidth = encoder_params_.iPicWidth;
   encoder_params_.sSpatialLayers[0].iVideoHeight = encoder_params_.iPicHeight;
