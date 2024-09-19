@@ -380,12 +380,7 @@ int IceTransmission::GatherCandidates() {
 }
 
 int IceTransmission::SetRemoteSdp(const std::string &remote_sdp) {
-  // GetAceptedVideoPayloadType(remote_sdp);
-  // GetAceptedAudioPayloadType(remote_sdp);
-
-  std::string media_stream_sdp = GetLocalCapabilitiesToSdp(remote_sdp);
-  LOG_ERROR("media_stream_sdp: [{}] [{}]", media_stream_sdp, remote_sdp);
-
+  std::string media_stream_sdp = GetRemoteCapabilities(remote_sdp);
   ice_agent_->SetRemoteSdp(media_stream_sdp.c_str());
   // LOG_INFO("[{}] set remote sdp", user_id_);
 
@@ -395,9 +390,7 @@ int IceTransmission::SetRemoteSdp(const std::string &remote_sdp) {
 
 int IceTransmission::SendOffer() {
   local_sdp_ = ice_agent_->GenerateLocalSdp();
-
-  AppendLocalCapabilitiesToSdp(local_sdp_);
-
+  AppendLocalCapabilities(local_sdp_);
   json message = {{"type", "offer"},
                   {"transmission_id", transmission_id_},
                   {"user_id", user_id_},
@@ -413,6 +406,7 @@ int IceTransmission::SendOffer() {
 
 int IceTransmission::SendAnswer() {
   local_sdp_ = ice_agent_->GenerateLocalSdp();
+  AppendLocalCapabilities(local_sdp_);
   json message = {{"type", "answer"},
                   {"transmission_id", transmission_id_},
                   {"user_id", user_id_},
@@ -427,7 +421,7 @@ int IceTransmission::SendAnswer() {
   return 0;
 }
 
-int IceTransmission::AppendLocalCapabilitiesToSdp(std::string &remote_sdp) {
+int IceTransmission::AppendLocalCapabilities(std::string &remote_sdp) {
   std::string to_replace = "ICE/SDP";
   std::string video_capabilities = "UDP/TLS/RTP/SAVPF 96 97 98 99";
   std::string audio_capabilities = "UDP/TLS/RTP/SAVPF 111";
@@ -465,7 +459,7 @@ int IceTransmission::AppendLocalCapabilitiesToSdp(std::string &remote_sdp) {
   return 0;
 }
 
-std::string IceTransmission::GetLocalCapabilitiesToSdp(
+std::string IceTransmission::GetRemoteCapabilities(
     const std::string &remote_sdp) {
   std::string media_stream_sdp;
   std::size_t video_start = remote_sdp.find("m=video");
@@ -475,6 +469,10 @@ std::string IceTransmission::GetLocalCapabilitiesToSdp(
   std::size_t data_start = audio_end;
   std::size_t data_end = remote_sdp.find("a=candidate");
   std::size_t candidate_start = data_end;
+
+  GetAceptedVideoPayloadType(remote_sdp);
+  GetAceptedAudioPayloadType(remote_sdp);
+  GetAceptedDataPayloadType(remote_sdp);
 
   if ((video_start != std::string::npos && video_end != std::string::npos) ||
       (audio_start != std::string::npos && audio_end != std::string::npos) ||
@@ -506,7 +504,7 @@ RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedVideoPayloadType(
     return RtpPacket::PAYLOAD_TYPE::H264;
   }
   std::size_t start =
-      remote_sdp.find("m=video ") + std::string("m=video ").length();
+      remote_sdp.find("m=video") + std::string("m=video").length();
   if (start != std::string::npos) {
     std::size_t end = remote_sdp.find("\n", start);
     std::string::size_type pos1 = remote_sdp.find(' ', start);
@@ -527,7 +525,7 @@ RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedAudioPayloadType(
     return RtpPacket::PAYLOAD_TYPE::H264;
   }
   std::size_t start =
-      remote_sdp.find("m=audio ") + std::string("m=audio ").length();
+      remote_sdp.find("m=audio") + std::string("m=audio").length();
   if (start != std::string::npos) {
     std::size_t end = remote_sdp.find("\n", start);
     std::string::size_type pos1 = remote_sdp.find(' ', start);
@@ -540,6 +538,27 @@ RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedAudioPayloadType(
   }
   LOG_INFO("audio pt [{}]", audio_pt_.c_str());
   return RtpPacket::PAYLOAD_TYPE::OPUS;
+}
+
+RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedDataPayloadType(
+    const std::string &remote_sdp) {
+  if (!data_pt_.empty()) {
+    return RtpPacket::PAYLOAD_TYPE::H264;
+  }
+  std::size_t start =
+      remote_sdp.find("m=data") + std::string("m=data").length();
+  if (start != std::string::npos) {
+    std::size_t end = remote_sdp.find("\n", start);
+    std::string::size_type pos1 = remote_sdp.find(' ', start);
+    std::string::size_type pos2 = remote_sdp.find(' ', pos1 + 1);
+    std::string::size_type pos3 = remote_sdp.find(' ', pos2 + 1);
+    if (end != std::string::npos && pos1 != std::string::npos &&
+        pos2 != std::string::npos && pos3 != std::string::npos) {
+      data_pt_ = remote_sdp.substr(pos3 + 1, end - pos3 - 1);
+    }
+  }
+  LOG_INFO("data pt [{}]", data_pt_.c_str());
+  return RtpPacket::PAYLOAD_TYPE::DATA;
 }
 
 int IceTransmission::SendData(DATA_TYPE type, const char *data, size_t size) {

@@ -194,7 +194,7 @@ const char *IceAgent::GenerateLocalSdp() {
     local_sdp_ += data_stream_sdp_;
   }
 
-  LOG_INFO("Generate local sdp:[\n{}]", local_sdp_.c_str());
+  // LOG_INFO("Generate local sdp:[\n{}]", local_sdp_.c_str());
 
   return local_sdp_.c_str();
 }
