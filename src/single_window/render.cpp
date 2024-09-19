@@ -569,7 +569,6 @@ int Render::Run() {
       if (event.type == SDL_QUIT) {
         if (streaming_) {
           LOG_INFO("Return to main interface");
-          streaming_ = false;
           LOG_INFO("[{}] Leave connection [{}]", client_id_, remote_id_);
           LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_,
                           remote_id_.c_str());
@@ -578,12 +577,15 @@ int Render::Run() {
             DestroyPeer(&peer_reserved_);
           }
 
+          streaming_ = false;
           rejoin_ = false;
-          memset(audio_buffer_, 0, 960);
           connection_established_ = false;
           received_frame_ = false;
           is_client_mode_ = false;
           audio_capture_button_pressed_ = false;
+          fullscreen_button_pressed_ = false;
+          SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
+          memset(audio_buffer_, 0, 960);
           SDL_SetWindowSize(main_window_, main_window_width_default_,
                             main_window_height_default_);
 
