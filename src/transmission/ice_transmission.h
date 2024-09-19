@@ -179,6 +179,9 @@ class IceTransmission {
   std::string video_pt_;
   std::string audio_pt_;
   std::string data_pt_;
+
+  RtpPacket::PAYLOAD_TYPE video_codec_payload_type_;
+  bool remote_capabilities_got_ = false;
 };
 
 #endif

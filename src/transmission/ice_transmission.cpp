@@ -67,6 +67,7 @@ int IceTransmission::InitIceTransmission(
         //     data_inbound_bitrate / 1000, data_outbound_bitrate / 1000,
         //     total_inbound_bitrate / 1000, total_outbound_bitrate / 1000);
       });
+  video_codec_payload_type_ = video_codec_payload_type;
   video_rtp_codec_ = std::make_unique<RtpCodec>(video_codec_payload_type);
   audio_rtp_codec_ = std::make_unique<RtpCodec>(RtpPacket::PAYLOAD_TYPE::OPUS);
   data_rtp_codec_ = std::make_unique<RtpCodec>(RtpPacket::PAYLOAD_TYPE::DATA);
@@ -422,10 +423,29 @@ int IceTransmission::SendAnswer() {
 }
 
 int IceTransmission::AppendLocalCapabilities(std::string &remote_sdp) {
+  std::string preferred_video_pt;
   std::string to_replace = "ICE/SDP";
-  std::string video_capabilities = "UDP/TLS/RTP/SAVPF 96 97 98 99";
+  std::string video_capabilities;
   std::string audio_capabilities = "UDP/TLS/RTP/SAVPF 111";
   std::string data_capabilities = "UDP/TLS/RTP/SAVPF 127";
+
+  switch (video_codec_payload_type_) {
+    case RtpPacket::PAYLOAD_TYPE::H264: {
+      preferred_video_pt = std::to_string(RtpPacket::PAYLOAD_TYPE::H264);
+      video_capabilities = preferred_video_pt + " 97 98 99";
+      break;
+    }
+    case RtpPacket::PAYLOAD_TYPE::AV1: {
+      preferred_video_pt = std::to_string(RtpPacket::PAYLOAD_TYPE::AV1);
+      video_capabilities = preferred_video_pt + " 96 97 98";
+      break;
+    }
+    default: {
+      preferred_video_pt = std::to_string(RtpPacket::PAYLOAD_TYPE::H264);
+      video_capabilities = preferred_video_pt + " 97 98 99";
+      break;
+    }
+  }
 
   std::size_t video_start = remote_sdp.find("m=video");
   std::size_t video_end = remote_sdp.find("\n", video_start);
@@ -470,9 +490,12 @@ std::string IceTransmission::GetRemoteCapabilities(
   std::size_t data_end = remote_sdp.find("a=candidate");
   std::size_t candidate_start = data_end;
 
-  GetAceptedVideoPayloadType(remote_sdp);
-  GetAceptedAudioPayloadType(remote_sdp);
-  GetAceptedDataPayloadType(remote_sdp);
+  if (!remote_capabilities_got_) {
+    GetAceptedVideoPayloadType(remote_sdp);
+    GetAceptedAudioPayloadType(remote_sdp);
+    GetAceptedDataPayloadType(remote_sdp);
+    remote_capabilities_got_ = true;
+  }
 
   if ((video_start != std::string::npos && video_end != std::string::npos) ||
       (audio_start != std::string::npos && audio_end != std::string::npos) ||
@@ -503,6 +526,10 @@ RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedVideoPayloadType(
   if (!video_pt_.empty()) {
     return RtpPacket::PAYLOAD_TYPE::H264;
   }
+
+  std::string remote_video_capabilities;
+  std::string remote_prefered_video_pt;
+
   std::size_t start =
       remote_sdp.find("m=video") + std::string("m=video").length();
   if (start != std::string::npos) {
@@ -512,10 +539,20 @@ RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedVideoPayloadType(
     std::string::size_type pos3 = remote_sdp.find(' ', pos2 + 1);
     if (end != std::string::npos && pos1 != std::string::npos &&
         pos2 != std::string::npos && pos3 != std::string::npos) {
-      video_pt_ = remote_sdp.substr(pos3 + 1, end - pos3 - 1);
+      remote_video_capabilities = remote_sdp.substr(pos3 + 1, end - pos3 - 1);
     }
   }
-  LOG_INFO("video pt [{}]", video_pt_.c_str());
+  LOG_INFO("remote video capabilities [{}]", remote_video_capabilities.c_str());
+
+  std::size_t prefered_pt_end = remote_video_capabilities.find(' ');
+  if (prefered_pt_end != std::string::npos) {
+    remote_prefered_video_pt =
+        remote_video_capabilities.substr(0, prefered_pt_end);
+  } else {
+    remote_prefered_video_pt = remote_video_capabilities;
+  }
+  LOG_INFO("remote prefered video pt [{}]", remote_prefered_video_pt.c_str());
+
   return RtpPacket::PAYLOAD_TYPE::H264;
 }
 
@@ -524,6 +561,10 @@ RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedAudioPayloadType(
   if (!audio_pt_.empty()) {
     return RtpPacket::PAYLOAD_TYPE::H264;
   }
+
+  std::string remote_audio_capabilities;
+  std::string remote_prefered_audio_pt;
+
   std::size_t start =
       remote_sdp.find("m=audio") + std::string("m=audio").length();
   if (start != std::string::npos) {
@@ -533,10 +574,20 @@ RtpPacket::PAYLOAD_TYPE IceTransmission::GetAceptedAudioPayloadType(
     std::string::size_type pos3 = remote_sdp.find(' ', pos2 + 1);
     if (end != std::string::npos && pos1 != std::string::npos &&
         pos2 != std::string::npos && pos3 != std::string::npos) {
-      audio_pt_ = remote_sdp.substr(pos3 + 1, end - pos3 - 1);
+      remote_audio_capabilities = remote_sdp.substr(pos3 + 1, end - pos3 - 1);
     }
   }
-  LOG_INFO("audio pt [{}]", audio_pt_.c_str());
+  LOG_INFO("remote audio capabilities [{}]", remote_audio_capabilities.c_str());
+
+  std::size_t prefered_pt_end = remote_audio_capabilities.find(' ');
+  if (prefered_pt_end != std::string::npos) {
+    remote_prefered_audio_pt =
+        remote_audio_capabilities.substr(0, prefered_pt_end);
+  } else {
+    remote_prefered_audio_pt = remote_audio_capabilities;
+  }
+  LOG_INFO("remote prefered audio pt [{}]", remote_prefered_audio_pt.c_str());
+
   return RtpPacket::PAYLOAD_TYPE::OPUS;
 }
 

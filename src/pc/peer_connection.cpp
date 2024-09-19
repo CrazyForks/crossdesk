@@ -831,8 +831,8 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
                                               on_ice_status_change_);
 
         ice_transmission_list_[remote_user_id]->SetLocalCapabilities(
-            trickle_ice_, false, enable_turn_, false, std::vector<int>(),
-            std::vector<int>());
+            trickle_ice_, false, enable_turn_, false, video_payload_types_,
+            audio_payload_types_);
 
         ice_transmission_list_[remote_user_id]->SetOnReceiveVideoFunc(
             on_receive_video_);
