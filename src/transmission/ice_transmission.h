@@ -104,15 +104,13 @@ class IceTransmission {
   int SendAnswer();
 
  private:
-  int AppendLocalCapabilities(std::string &remote_sdp);
+  int AppendLocalCapabilitiesToOffer(const std::string &remote_sdp);
+  int AppendLocalCapabilitiesToAnswer(const std::string &remote_sdp);
   std::string GetRemoteCapabilities(const std::string &remote_sdp);
 
-  RtpPacket::PAYLOAD_TYPE GetAceptedVideoPayloadType(
-      const std::string &remote_sdp);
-  RtpPacket::PAYLOAD_TYPE GetAceptedAudioPayloadType(
-      const std::string &remote_sdp);
-  RtpPacket::PAYLOAD_TYPE GetAceptedDataPayloadType(
-      const std::string &remote_sdp);
+  bool NegotiateVideoPayloadType(const std::string &remote_sdp);
+  bool NegotiateAudioPayloadType(const std::string &remote_sdp);
+  bool NegotiateDataPayloadType(const std::string &remote_sdp);
 
  private:
   uint8_t CheckIsRtcpPacket(const char *buffer, size_t size);
@@ -125,8 +123,9 @@ class IceTransmission {
   bool enable_turn_ = false;
   bool use_reliable_ice_ = false;
   bool force_turn_ = false;
-  std::vector<int> video_payload_types_;
-  std::vector<int> audio_payload_types_;
+  std::vector<int> support_video_payload_types_;
+  std::vector<int> support_audio_payload_types_;
+  std::vector<int> support_data_payload_types_;
 
   std::string local_sdp_;
   std::string remote_sdp_;
@@ -176,12 +175,20 @@ class IceTransmission {
   std::unique_ptr<IOStatistics> ice_io_statistics_ = nullptr;
 
  private:
-  std::string video_pt_;
-  std::string audio_pt_;
-  std::string data_pt_;
-
   RtpPacket::PAYLOAD_TYPE video_codec_payload_type_;
   bool remote_capabilities_got_ = false;
+  RtpPacket::PAYLOAD_TYPE remote_prefered_video_pt_ =
+      RtpPacket::PAYLOAD_TYPE::UNDEFINED;
+  RtpPacket::PAYLOAD_TYPE remote_prefered_audio_pt_ =
+      RtpPacket::PAYLOAD_TYPE::UNDEFINED;
+  RtpPacket::PAYLOAD_TYPE remote_prefered_data_pt_ =
+      RtpPacket::PAYLOAD_TYPE::UNDEFINED;
+  RtpPacket::PAYLOAD_TYPE negotiated_video_pt_ =
+      RtpPacket::PAYLOAD_TYPE::UNDEFINED;
+  RtpPacket::PAYLOAD_TYPE negotiated_audio_pt_ =
+      RtpPacket::PAYLOAD_TYPE::UNDEFINED;
+  RtpPacket::PAYLOAD_TYPE negotiated_data_pt_ =
+      RtpPacket::PAYLOAD_TYPE::UNDEFINED;
 };
 
 #endif

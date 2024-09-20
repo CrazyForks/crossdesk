@@ -160,6 +160,7 @@
 class RtpPacket {
  public:
   typedef enum {
+    UNDEFINED = 0,
     H264 = 96,
     H264_FEC_SOURCE = 97,
     H264_FEC_REPAIR = 98,
