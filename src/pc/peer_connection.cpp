@@ -261,7 +261,7 @@ int PeerConnection::CreateVideoCodec(bool av1, bool hardware_acceleration) {
 
   hardware_acceleration_ = hardware_acceleration;
 
-  if (av1_encoding_) {
+  if (av1) {
     if (hardware_acceleration_) {
       hardware_acceleration_ = false;
       LOG_WARN("Only support software codec for AV1");

@@ -23,6 +23,7 @@ std::unique_ptr<VideoEncoder> VideoEncoderFactory::CreateVideoEncoder(
     return std::make_unique<AomAv1Encoder>(AomAv1Encoder());
   } else {
 #if __APPLE__
+    LOG_INFO("Use OpenH264 encoder");
     return std::make_unique<OpenH264Encoder>(OpenH264Encoder());
 #else
     if (hardware_acceleration) {
