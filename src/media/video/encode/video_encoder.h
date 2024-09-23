@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <functional>
+#include <string>
 
 #include "x.h"
 
@@ -18,6 +19,7 @@ class VideoEncoder {
 
  public:
   virtual int Init() = 0;
+
   virtual int Encode(const uint8_t* pData, int nSize,
                      std::function<int(char* encoded_packets, size_t size,
                                        VideoFrameType frame_type)>
@@ -29,7 +31,10 @@ class VideoEncoder {
                          on_encoded_image) = 0;
 
   virtual int OnEncodedImage(char* encoded_packets, size_t size) = 0;
+
   virtual int ForceIdr() = 0;
+
+  virtual std::string GetEncoderName() = 0;
 
   VideoEncoder() = default;
   virtual ~VideoEncoder() {}

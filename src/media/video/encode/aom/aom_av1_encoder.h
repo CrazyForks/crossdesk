@@ -52,6 +52,8 @@ class AomAv1Encoder : public VideoEncoder {
 
   int ForceIdr();
 
+  std::string GetEncoderName() { return "AomAV1"; }
+
  private:
   template <typename P>
   bool SetEncoderControlParameters(int param_id, P param_value);

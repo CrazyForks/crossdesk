@@ -28,6 +28,8 @@ class NvidiaVideoEncoder : public VideoEncoder {
 
   int ForceIdr();
 
+  std::string GetEncoderName() { return "NvidiaH264"; }
+
  private:
   int ResetEncodeResolution(unsigned int width, unsigned int height);
 

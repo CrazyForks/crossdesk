@@ -39,6 +39,8 @@ class OpenH264Encoder : public VideoEncoder {
 
   int ForceIdr();
 
+  std::string GetEncoderName() { return "OpenH264"; }
+
  private:
   int InitEncoderParams(int width, int height);
   int ResetEncodeResolution(unsigned int width, unsigned int height);

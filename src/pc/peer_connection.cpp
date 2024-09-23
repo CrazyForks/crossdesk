@@ -320,6 +320,9 @@ int PeerConnection::CreateVideoCodec(bool av1, bool hardware_acceleration) {
   }
 
   video_codec_inited_ = true;
+  LOG_INFO("Create video codec [{}|{}] finish",
+           video_encoder_->GetEncoderName(), video_decoder_->GetDecoderName());
+
   return 0;
 }
 
@@ -341,6 +344,9 @@ int PeerConnection::CreateAudioCodec() {
   }
 
   audio_codec_inited_ = true;
+  LOG_INFO("Create audio codec [{}|{}] finish",
+           audio_encoder_->GetEncoderName(), audio_decoder_->GetDecoderName());
+
   return 0;
 }
 

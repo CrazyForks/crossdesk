@@ -11,15 +11,20 @@
 #include <cstdint>
 #include <cstdio>
 #include <functional>
+#include <string>
 
 #include "video_frame.h"
 
 class VideoDecoder {
  public:
   virtual int Init() = 0;
+
   virtual int Decode(
       const uint8_t *data, int size,
       std::function<void(VideoFrame)> on_receive_decoded_frame) = 0;
+
+  virtual std::string GetDecoderName() = 0;
+
   VideoDecoder() = default;
   virtual ~VideoDecoder() {}
 };

@@ -25,8 +25,11 @@ class AudioDecoder {
 
  public:
   int Init();
+
   int Decode(const uint8_t *data, int size,
              std::function<void(uint8_t *, int)> on_receive_decoded_frame);
+
+  std::string GetDecoderName() { return "Opus"; }
 
  private:
   /* data */
