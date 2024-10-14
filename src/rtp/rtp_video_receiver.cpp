@@ -16,6 +16,8 @@ RtpVideoReceiver::~RtpVideoReceiver() {
 }
 
 void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
+  LOG_ERROR("1 input [{:X} {:X}], size={}", rtp_packet.Payload()[0],
+            rtp_packet.Payload()[1], rtp_packet.PayloadSize());
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();
@@ -237,8 +239,8 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(RtpPacket& rtp_packet) {
 }
 
 bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacket& rtp_packet) {
-  LOG_ERROR("input [{:X} {:X}]", rtp_packet.Payload()[0],
-            rtp_packet.Payload()[1]);
+  LOG_ERROR("2 input [{:X} {:X}], size={}", rtp_packet.Payload()[0],
+            rtp_packet.Payload()[1], rtp_packet.PayloadSize());
 
   if (rtp_packet.Av1FrameEnd()) {
     uint16_t end_seq = rtp_packet.SequenceNumber();

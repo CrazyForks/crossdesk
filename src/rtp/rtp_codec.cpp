@@ -519,6 +519,8 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
       }
     }
   } else if (RtpPacket::PAYLOAD_TYPE::AV1 == payload_type_) {
+    LOG_ERROR("source [{:X} {:X} {:X} {:X}], size={}", buffer[0], buffer[1],
+              buffer[2], buffer[3], size);
     std::vector<Obu> obus = ParseObus(buffer, size);
     // LOG_ERROR("Total size = [{}]", size);
 
@@ -530,6 +532,9 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
     for (int i = 0; i < obus.size(); i++) {
       // LOG_ERROR("1 [{}] Obu size = [{}], Obu type [{}]", i, obus[i].size,
       //           ObuTypeToString((OBU_TYPE)ObuType(obus[i].header)));
+
+      LOG_ERROR("0 output [{:X} {:X}], size={}", obus[i].payload.data()[0],
+                obus[i].payload.data()[1], obus[i].payload.size());
 
       if (obus[i].size <= MAX_NALU_LEN) {
         RtpPacket rtp_packet;
@@ -562,9 +567,8 @@ void RtpCodec::Encode(VideoFrameType frame_type, uint8_t* buffer, size_t size,
         rtp_packet.EncodeAv1(obus[i].payload.data(), obus[i].size);
         // int type = (obus[i].payload[0] & 0b0'1111'000) >> 3;
         int type = (rtp_packet.Payload()[0] & 0b0'1111'000) >> 3;
-        LOG_ERROR("!!!!! Obu type = [{}]", type);
-        LOG_ERROR("output [{:X} {:X}]", rtp_packet.Payload()[0],
-                  rtp_packet.Payload()[1]);
+        LOG_ERROR("1 output [{:X} {:X}], size={}", rtp_packet.Payload()[0],
+                  rtp_packet.Payload()[1], rtp_packet.PayloadSize());
 
         packets.emplace_back(rtp_packet);
       } else {

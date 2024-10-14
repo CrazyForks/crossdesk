@@ -50,10 +50,13 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
   std::vector<Obu> result;
   ByteBufferReader payload_reader(reinterpret_cast<const char*>(payload),
                                   payload_size);
+  int count = 0;
   while (payload_reader.Length() > 0) {
+    count++;
     Obu obu;
     bool has_ext_header = false;
     payload_reader.ReadUInt8(&obu.header);
+    LOG_ERROR("obu.header = [{:B}]", obu.header);
     obu.size = 1;
     if (ObuHasExtension(obu.header)) {
       if (payload_reader.Length() == 0) {
@@ -83,10 +86,14 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
             size, payload_reader.Length());
         return {};
       }
-
-      obu.payload = std::vector<uint8_t>(
-          reinterpret_cast<const uint8_t*>(payload_reader.Data()),
-          reinterpret_cast<const uint8_t*>(payload_reader.Data()) + size);
+      if (0 == size) {
+        obu.payload.push_back(0);
+      } else {
+        obu.payload = std::vector<uint8_t>(
+            reinterpret_cast<const uint8_t*>(payload_reader.Data()),
+            reinterpret_cast<const uint8_t*>(payload_reader.Data()) + size);
+        obu.payload.insert(obu.payload.begin(), size);
+      }
       payload_reader.Consume(size);
       LOG_ERROR("Has size = {}", size);
     }
@@ -97,16 +104,19 @@ std::vector<Obu> ParseObus(uint8_t* payload, int payload_size) {
       obu.payload.insert(obu.payload.begin(), obu.extension_header);
     }
     obu.payload.insert(obu.payload.begin(), obu.header);
-    if (obu_type != kObuTypeTileList &&  //
-        obu_type != kObuTypePadding) {
-      result.push_back(obu);
-    }
+    // if (obu_type != kObuTypeTileList &&  //
+    //     obu_type != kObuTypePadding) {
+    result.push_back(obu);
+    LOG_ERROR("obu size = {}", obu.payload.size());
+    // }
     // if (obu_type != kObuTypeTemporalDelimiter &&  //
     //     obu_type != kObuTypeTileList &&           //
     //     obu_type != kObuTypePadding) {
     //   result.push_back(obu);
     // }
   }
+
+  LOG_ERROR("count = [{}]", count);
 
   for (int i = 0; i < result.size(); i++) {
     LOG_ERROR("[{}] Obu size = [{}], Obu type [{}|{}]", i, result[i].size,
