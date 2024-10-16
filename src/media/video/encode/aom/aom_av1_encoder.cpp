@@ -339,7 +339,6 @@ int AomAv1Encoder::Encode(const XVideoFrame *video_frame,
       // LOG_INFO("Encoded frame qp = {}", qp);
 
       if (on_encoded_image) {
-        LOG_ERROR("enc {}x{}", video_frame->width, video_frame->height);
         on_encoded_image((char *)encoded_frame_, encoded_frame_size_,
                          frame_type);
         if (SAVE_ENCODED_AV1_STREAM) {
