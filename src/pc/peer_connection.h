@@ -139,6 +139,7 @@ class PeerConnection {
   bool av1_encoding_ = false;
   bool enable_turn_ = false;
   bool trickle_ice_ = true;
+  bool reliable_ice_ = true;
   TraversalMode mode_ = TraversalMode::P2P;
   bool try_rejoin_with_turn_ = true;
   std::vector<int> video_payload_types_ = {RtpPacket::PAYLOAD_TYPE::H264,
