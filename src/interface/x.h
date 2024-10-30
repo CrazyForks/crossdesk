@@ -51,15 +51,17 @@ typedef struct Peer PeerPtr;
 typedef void (*OnReceiveBuffer)(const char*, size_t, const char*, const size_t,
                                 void*);
 
-typedef void (*OnReceiveVideoFrame)(const XVideoFrame* video_frame, const char*,
+typedef void (*OnReceiveVideoFrame)(const XVideoFrame*, const char*,
                                     const size_t, void*);
 
 typedef void (*OnSignalStatus)(SignalStatus, void*);
 
-typedef void (*OnConnectionStatus)(ConnectionStatus, void*);
+typedef void (*OnConnectionStatus)(ConnectionStatus, const char*, const size_t,
+                                   void*);
 
-typedef void (*NetStatusReport)(int, TraversalMode, const unsigned short,
-                                const unsigned short, void*);
+typedef void (*NetStatusReport)(const char*, const size_t, TraversalMode,
+                                const unsigned short, const unsigned short,
+                                void*);
 
 typedef struct {
   bool use_cfg_file;

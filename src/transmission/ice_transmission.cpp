@@ -14,7 +14,7 @@ using nlohmann::json;
 IceTransmission::IceTransmission(
     bool offer_peer, std::string &transmission_id, std::string &user_id,
     std::string &remote_user_id, std::shared_ptr<WsClient> ice_ws_transmission,
-    std::function<void(std::string)> on_ice_status_change)
+    std::function<void(std::string, const std::string &)> on_ice_status_change)
     : offer_peer_(offer_peer),
       transmission_id_(transmission_id),
       user_id_(user_id),
@@ -82,8 +82,7 @@ int IceTransmission::InitIceTransmission(
         // LOG_ERROR("OnReceiveCompleteFrame {}", video_frame.Size());
         ice_io_statistics_->UpdateVideoInboundBytes(video_frame.Size());
         on_receive_video_((const char *)video_frame.Buffer(),
-                          video_frame.Size(), remote_user_id_.data(),
-                          remote_user_id_.size());
+                          video_frame.Size(), remote_user_id_);
       });
 
   rtp_video_receiver_->Start();
@@ -130,8 +129,7 @@ int IceTransmission::InitIceTransmission(
   rtp_audio_receiver_->SetOnReceiveData(
       [this](const char *data, size_t size) -> void {
         ice_io_statistics_->UpdateAudioInboundBytes(size);
-        on_receive_audio_(data, size, remote_user_id_.data(),
-                          remote_user_id_.size());
+        on_receive_audio_(data, size, remote_user_id_);
       });
 
   rtp_audio_sender_ = std::make_unique<RtpAudioSender>();
@@ -176,8 +174,7 @@ int IceTransmission::InitIceTransmission(
   rtp_data_receiver_->SetOnReceiveData(
       [this](const char *data, size_t size) -> void {
         ice_io_statistics_->UpdateDataInboundBytes(size);
-        on_receive_data_(data, size, remote_user_id_.data(),
-                         remote_user_id_.size());
+        on_receive_data_(data, size, remote_user_id_);
       });
 
   rtp_data_sender_ = std::make_unique<RtpDataSender>();
@@ -212,20 +209,22 @@ int IceTransmission::InitIceTransmission(
         if (user_ptr) {
           IceTransmission *ice_transmission_obj =
               static_cast<IceTransmission *>(user_ptr);
-          LOG_INFO("[{}->{}] state_change: {}", ice_transmission_obj->user_id_,
-                   ice_transmission_obj->remote_user_id_,
-                   nice_component_state_to_string(state));
-          ice_transmission_obj->state_ = state;
+          if (!ice_transmission_obj->is_closed_) {
+            LOG_INFO("[{}->{}] state_change: {}",
+                     ice_transmission_obj->user_id_,
+                     ice_transmission_obj->remote_user_id_,
+                     nice_component_state_to_string(state));
+            ice_transmission_obj->state_ = state;
 
-          if (state == NICE_COMPONENT_STATE_READY ||
-              state == NICE_COMPONENT_STATE_CONNECTED) {
-            ice_transmission_obj->ice_io_statistics_->Start();
+            if (state == NICE_COMPONENT_STATE_READY ||
+                state == NICE_COMPONENT_STATE_CONNECTED) {
+              ice_transmission_obj->ice_io_statistics_->Start();
+            }
+
+            ice_transmission_obj->on_ice_status_change_(
+                nice_component_state_to_string(state),
+                ice_transmission_obj->remote_user_id_);
           }
-
-          ice_transmission_obj->on_ice_status_change_(
-              nice_component_state_to_string(state));
-        } else {
-          LOG_INFO("state_change: {}", nice_component_state_to_string(state));
         }
       },
       [](NiceAgent *agent, guint stream_id, guint component_id,
@@ -301,7 +300,7 @@ int IceTransmission::InitIceTransmission(
             ice_transmission_obj->traversal_type_ = TraversalType::TP2P;
           }
           ice_transmission_obj->on_receive_net_status_report_(
-              atoi(ice_transmission_obj->transmission_id_.c_str()),
+              ice_transmission_obj->transmission_id_,
               ice_transmission_obj->traversal_type_, 0, 0, nullptr);
         }
       },
@@ -310,7 +309,7 @@ int IceTransmission::InitIceTransmission(
         if (user_ptr) {
           IceTransmission *ice_transmission_obj =
               static_cast<IceTransmission *>(user_ptr);
-          if (ice_transmission_obj) {
+          if (ice_transmission_obj && !ice_transmission_obj->is_closed_) {
             if (ice_transmission_obj->CheckIsVideoPacket(buffer, size)) {
               RtpPacket packet((uint8_t *)buffer, size);
               ice_transmission_obj->rtp_video_receiver_->InsertRtpPacket(
@@ -336,8 +335,10 @@ int IceTransmission::InitIceTransmission(
 
 int IceTransmission::DestroyIceTransmission() {
   LOG_INFO("[{}->{}] Destroy ice transmission", user_id_, remote_user_id_);
+  is_closed_ = true;
+
   if (on_ice_status_change_) {
-    on_ice_status_change_("closed");
+    on_ice_status_change_("closed", remote_user_id_);
   }
 
   if (ice_io_statistics_) {
@@ -359,8 +360,6 @@ int IceTransmission::DestroyIceTransmission() {
   if (rtp_data_sender_) {
     rtp_data_sender_->Stop();
   }
-
-  LOG_ERROR("threads stoped");
 
   return ice_agent_->DestroyIceAgent();
 }

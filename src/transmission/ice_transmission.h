@@ -38,7 +38,8 @@ class IceTransmission {
   IceTransmission(bool offer_peer, std::string &transmission_id,
                   std::string &user_id, std::string &remote_user_id,
                   std::shared_ptr<WsClient> ice_ws_transmission,
-                  std::function<void(std::string)> on_ice_status_change);
+                  std::function<void(std::string, const std::string &)>
+                      on_ice_status_change);
   ~IceTransmission();
 
  public:
@@ -56,26 +57,26 @@ class IceTransmission {
   int DestroyIceTransmission();
 
   void SetOnReceiveVideoFunc(
-      std::function<void(const char *, size_t, const char *, size_t)>
+      std::function<void(const char *, size_t, const std::string &)>
           on_receive_video) {
     on_receive_video_ = on_receive_video;
   }
 
   void SetOnReceiveAudioFunc(
-      std::function<void(const char *, size_t, const char *, size_t)>
+      std::function<void(const char *, size_t, const std::string &)>
           on_receive_audio) {
     on_receive_audio_ = on_receive_audio;
   }
 
   void SetOnReceiveDataFunc(
-      std::function<void(const char *, size_t, const char *, size_t)>
+      std::function<void(const char *, size_t, const std::string &)>
           on_receive_data) {
     on_receive_data_ = on_receive_data;
   }
 
   void SetOnReceiveNetStatusReportFunc(
-      std::function<void(int, TraversalType, const unsigned short,
-                         const unsigned short, void *)>
+      std::function<void(const std::string &, TraversalType,
+                         const unsigned short, const unsigned short, void *)>
           on_receive_net_status_report) {
     on_receive_net_status_report_ = on_receive_net_status_report;
   }
@@ -147,16 +148,18 @@ class IceTransmission {
 
  private:
   std::unique_ptr<IceAgent> ice_agent_ = nullptr;
+  bool is_closed_ = false;
   std::shared_ptr<WsClient> ice_ws_transport_ = nullptr;
   CongestionControl *congestion_control_ = nullptr;
-  std::function<void(const char *, size_t, const char *, size_t)>
+  std::function<void(const char *, size_t, const std::string &)>
       on_receive_video_ = nullptr;
-  std::function<void(const char *, size_t, const char *, size_t)>
+  std::function<void(const char *, size_t, const std::string &)>
       on_receive_audio_ = nullptr;
-  std::function<void(const char *, size_t, const char *, size_t)>
+  std::function<void(const char *, size_t, const std::string &)>
       on_receive_data_ = nullptr;
-  std::function<void(std::string)> on_ice_status_change_ = nullptr;
-  std::function<void(int, TraversalType, const unsigned short,
+  std::function<void(std::string, const std::string &)> on_ice_status_change_ =
+      nullptr;
+  std::function<void(const std::string &, TraversalType, const unsigned short,
                      const unsigned short, void *)>
       on_receive_net_status_report_ = nullptr;
 

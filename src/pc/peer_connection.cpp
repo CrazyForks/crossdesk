@@ -143,63 +143,70 @@ int PeerConnection::Init(PeerConnectionParams params,
     }
   };
 
-  on_receive_video_ = [this](const char *data, size_t size, const char *user_id,
-                             size_t user_id_size) {
+  on_receive_video_ = [this](const char *data, size_t size,
+                             const std::string &user_id) {
     int num_frame_returned = video_decoder_->Decode(
-        (uint8_t *)data, size,
-        [this, user_id, user_id_size](VideoFrame video_frame) {
+        (uint8_t *)data, size, [this, user_id](VideoFrame video_frame) {
           if (on_receive_video_frame_) {
             XVideoFrame x_video_frame;
             x_video_frame.data = (const char *)video_frame.Buffer();
             x_video_frame.width = video_frame.Width();
             x_video_frame.height = video_frame.Height();
             x_video_frame.size = video_frame.Size();
-            on_receive_video_frame_(&x_video_frame, user_id, user_id_size,
-                                    user_data_);
+            on_receive_video_frame_(&x_video_frame, user_id.data(),
+                                    user_id.size(), user_data_);
           }
         });
   };
 
-  on_receive_audio_ = [this](const char *data, size_t size, const char *user_id,
-                             size_t user_id_size) {
+  on_receive_audio_ = [this](const char *data, size_t size,
+                             const std::string &user_id) {
     int num_frame_returned = audio_decoder_->Decode(
-        (uint8_t *)data, size,
-        [this, user_id, user_id_size](uint8_t *data, int size) {
+        (uint8_t *)data, size, [this, user_id](uint8_t *data, int size) {
           if (on_receive_audio_buffer_) {
-            on_receive_audio_buffer_((const char *)data, size, user_id,
-                                     user_id_size, user_data_);
+            on_receive_audio_buffer_((const char *)data, size, user_id.data(),
+                                     user_id.size(), user_data_);
           }
         });
   };
 
-  on_receive_data_ = [this](const char *data, size_t size, const char *user_id,
-                            size_t user_id_size) {
+  on_receive_data_ = [this](const char *data, size_t size,
+                            const std::string &user_id) {
     if (on_receive_data_buffer_) {
-      on_receive_data_buffer_(data, size, user_id, user_id_size, user_data_);
+      on_receive_data_buffer_(data, size, user_id.data(), user_id.size(),
+                              user_data_);
     }
   };
 
-  on_ice_status_change_ = [this](std::string ice_status) {
+  on_ice_status_change_ = [this](std::string ice_status,
+                                 const std::string &user_id) {
     if ("connecting" == ice_status) {
-      on_connection_status_(ConnectionStatus::Connecting, user_data_);
+      on_connection_status_(ConnectionStatus::Connecting, user_id.data(),
+                            user_id.size(), user_data_);
     } else if ("gathering" == ice_status) {
-      on_connection_status_(ConnectionStatus::Gathering, user_data_);
+      on_connection_status_(ConnectionStatus::Gathering, user_id.data(),
+                            user_id.size(), user_data_);
     } else if ("disconnected" == ice_status) {
-      on_connection_status_(ConnectionStatus::Disconnected, user_data_);
+      on_connection_status_(ConnectionStatus::Disconnected, user_id.data(),
+                            user_id.size(), user_data_);
     } else if ("connected" == ice_status) {
-      ice_ready_ = true;
-      on_connection_status_(ConnectionStatus::Connected, user_data_);
+      // std::string transmission_id = std::string(user_id, user_id_size);
+      is_ice_transmission_ready_[user_id] = true;
+      on_connection_status_(ConnectionStatus::Connected, user_id.data(),
+                            user_id.size(), user_data_);
       b_force_i_frame_ = true;
       LOG_INFO("Ice connected");
     } else if ("ready" == ice_status) {
-      ice_ready_ = true;
-      on_connection_status_(ConnectionStatus::Connected, user_data_);
+      is_ice_transmission_ready_[user_id] = true;
+      on_connection_status_(ConnectionStatus::Connected, user_id.data(),
+                            user_id.size(), user_data_);
     } else if ("closed" == ice_status) {
-      ice_ready_ = false;
+      is_ice_transmission_ready_[user_id] = false;
       LOG_INFO("Ice closed");
-      on_connection_status_(ConnectionStatus::Closed, user_data_);
+      on_connection_status_(ConnectionStatus::Closed, user_id.data(),
+                            user_id.size(), user_data_);
     } else if ("failed" == ice_status) {
-      ice_ready_ = false;
+      is_ice_transmission_ready_[user_id] = false;
       if (offer_peer_ && try_rejoin_with_turn_) {
         enable_turn_ = true;
         reliable_ice_ = false;
@@ -218,21 +225,22 @@ int PeerConnection::Init(PeerConnectionParams params,
         }
       } else {
         LOG_INFO("Ice failed");
-        on_connection_status_(ConnectionStatus::Failed, user_data_);
+        on_connection_status_(ConnectionStatus::Failed, user_id.data(),
+                              user_id.size(), user_data_);
       }
     } else {
-      ice_ready_ = false;
+      is_ice_transmission_ready_[user_id] = false;
       LOG_INFO("Unknown ice state [{}]", ice_status);
     }
   };
 
-  on_net_status_report_ = [this](int transmission_id,
+  on_net_status_report_ = [this](const std::string &user_id,
                                  IceTransmission::TraversalType mode,
                                  const unsigned short send,
                                  const unsigned short receive, void *user_ptr) {
     if (net_status_report_) {
-      net_status_report_(transmission_id, TraversalMode(mode), send, receive,
-                         user_data_);
+      net_status_report_(user_id.data(), user_id.size(), TraversalMode(mode),
+                         send, receive, user_data_);
     }
   };
 
@@ -450,7 +458,7 @@ int PeerConnection::Leave(const std::string &transmission_id) {
              transmission_id);
   }
 
-  ice_ready_ = false;
+  is_ice_transmission_ready_[user_id_] = false;
   leave_ = true;
 
   IceWorkMsg msg;
@@ -506,10 +514,6 @@ SignalStatus PeerConnection::GetSignalStatus() {
 }
 
 int PeerConnection::SendVideoData(const char *data, size_t size) {
-  if (!ice_ready_) {
-    return -1;
-  }
-
   if (ice_transmission_list_.empty()) {
     return -1;
   }
@@ -525,6 +529,9 @@ int PeerConnection::SendVideoData(const char *data, size_t size) {
       [this](char *encoded_frame, size_t size,
              VideoEncoder::VideoFrameType frame_type) -> int {
         for (auto &ice_trans : ice_transmission_list_) {
+          if (!is_ice_transmission_ready_[ice_trans.first]) {
+            continue;
+          }
           // LOG_ERROR("Send frame size: [{}]", size);
           ice_trans.second->SendVideoData(
               static_cast<IceTransmission::VideoFrameType>(frame_type),
@@ -542,10 +549,6 @@ int PeerConnection::SendVideoData(const char *data, size_t size) {
 }
 
 int PeerConnection::SendAudioData(const char *data, size_t size) {
-  if (!ice_ready_) {
-    return -1;
-  }
-
   if (ice_transmission_list_.empty()) {
     return -1;
   }
@@ -554,6 +557,9 @@ int PeerConnection::SendAudioData(const char *data, size_t size) {
       (uint8_t *)data, size,
       [this](char *encoded_audio_buffer, size_t size) -> int {
         for (auto &ice_trans : ice_transmission_list_) {
+          if (!is_ice_transmission_ready_[ice_trans.first]) {
+            continue;
+          }
           // LOG_ERROR("opus frame size: [{}]", size);
           ice_trans.second->SendData(IceTransmission::DATA_TYPE::AUDIO,
                                      encoded_audio_buffer, size);
@@ -566,16 +572,15 @@ int PeerConnection::SendAudioData(const char *data, size_t size) {
 
 int PeerConnection::SendUserData(const char *data, size_t size) {
   for (auto &ice_trans : ice_transmission_list_) {
+    if (!is_ice_transmission_ready_[ice_trans.first]) {
+      continue;
+    }
     ice_trans.second->SendData(IceTransmission::DATA_TYPE::DATA, data, size);
   }
   return 0;
 }
 
 int PeerConnection::SendVideoData(const XVideoFrame *video_frame) {
-  if (!ice_ready_) {
-    return -1;
-  }
-
   if (ice_transmission_list_.empty()) {
     return -1;
   }
@@ -591,6 +596,9 @@ int PeerConnection::SendVideoData(const XVideoFrame *video_frame) {
       [this](char *encoded_frame, size_t size,
              VideoEncoder::VideoFrameType frame_type) -> int {
         for (auto &ice_trans : ice_transmission_list_) {
+          if (!is_ice_transmission_ready_[ice_trans.first]) {
+            continue;
+          }
           // LOG_ERROR("Send frame size: [{}]", size);
           ice_trans.second->SendVideoData(
               static_cast<IceTransmission::VideoFrameType>(frame_type),
@@ -615,8 +623,8 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
     case "login"_H: {
       if (j["status"].get<std::string>() == "success") {
         user_id_ = j["user_id"].get<std::string>();
-        net_status_report_(atoi(user_id_.c_str()), TraversalMode::UnknownMode,
-                           0, 0, user_data_);
+        net_status_report_(user_id_.data(), user_id_.size(),
+                           TraversalMode::UnknownMode, 0, 0, user_data_);
         LOG_INFO("Login success with id [{}]", user_id_);
         signal_status_ = SignalStatus::SignalConnected;
         on_signal_status_(SignalStatus::SignalConnected, user_data_);
@@ -648,9 +656,11 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         LOG_ERROR("{}", reason);
         if ("Incorrect password" == reason) {
           on_connection_status_(ConnectionStatus::IncorrectPassword,
+                                transmission_id.data(), transmission_id.size(),
                                 user_data_);
         } else if ("No such transmission id" == reason) {
           on_connection_status_(ConnectionStatus::NoSuchTransmissionId,
+                                transmission_id.data(), transmission_id.size(),
                                 user_data_);
         }
       } else {
@@ -691,7 +701,9 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         msg.remote_user_id = remote_user_id;
         msg.remote_sdp = remote_sdp;
         PushIceWorkMsg(msg);
-        on_connection_status_(ConnectionStatus::Connecting, user_data_);
+        on_connection_status_(ConnectionStatus::Connecting,
+                              remote_user_id.data(), remote_user_id.size(),
+                              user_data_);
       } else {
         LOG_ERROR("Invalid offer msg");
       }
@@ -713,7 +725,9 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
         msg.remote_user_id = remote_user_id;
         msg.remote_sdp = remote_sdp;
         PushIceWorkMsg(msg);
-        on_connection_status_(ConnectionStatus::Connecting, user_data_);
+        on_connection_status_(ConnectionStatus::Connecting,
+                              remote_user_id.data(), remote_user_id.size(),
+                              user_data_);
       } else {
         LOG_ERROR("Invalid answer msg");
       }
@@ -741,7 +755,6 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
 }
 
 void PeerConnection::StartIceWorker() {
-  LOG_INFO("Start ice worker");
   ice_worker_ = std::thread([this]() {
     while (true) {
       std::unique_lock<std::mutex> lck(ice_work_mutex_);
@@ -752,7 +765,6 @@ void PeerConnection::StartIceWorker() {
       }
 
       if (!ice_worker_running_) {
-        LOG_INFO("Exit ice worker");
         break;
       }
 
@@ -767,7 +779,6 @@ void PeerConnection::StartIceWorker() {
 }
 
 void PeerConnection::StopIceWorker() {
-  LOG_INFO("Stop ice worker");
   ice_worker_running_ = false;
   ice_work_cv_.notify_one();
   if (ice_worker_.joinable()) {
@@ -840,7 +851,7 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
       if (user_id_it != ice_transmission_list_.end()) {
         user_id_it->second->DestroyIceTransmission();
         ice_transmission_list_.erase(user_id_it);
-        ice_ready_ = false;
+        is_ice_transmission_ready_[user_id] = false;
         LOG_INFO("Terminate transmission to user [{}]", user_id);
       }
       break;
@@ -960,6 +971,7 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
         user_id_it.second->DestroyIceTransmission();
       }
       ice_transmission_list_.clear();
+      is_ice_transmission_ready_.clear();
       break;
     }
     default: {

@@ -21,10 +21,12 @@ typedef void (*OnReceiveVideoFrame)(const XVideoFrame *video_frame,
 
 typedef void (*OnSignalStatus)(SignalStatus, void *);
 
-typedef void (*OnConnectionStatus)(ConnectionStatus, void *);
+typedef void (*OnConnectionStatus)(ConnectionStatus, const char *, const size_t,
+                                   void *);
 
-typedef void (*NetStatusReport)(int, TraversalMode, const unsigned short,
-                                const unsigned short, void *);
+typedef void (*NetStatusReport)(const char *, const size_t, TraversalMode,
+                                const unsigned short, const unsigned short,
+                                void *);
 
 typedef struct {
   bool use_cfg_file;
@@ -166,15 +168,17 @@ class PeerConnection {
  private:
   std::map<std::string, std::unique_ptr<IceTransmission>>
       ice_transmission_list_;
-  std::function<void(const char *, size_t, const char *, size_t)>
+  std::map<std::string, bool> is_ice_transmission_ready_;
+  std::function<void(const char *, size_t, const std::string &)>
       on_receive_video_ = nullptr;
-  std::function<void(const char *, size_t, const char *, size_t)>
+  std::function<void(const char *, size_t, const std::string &)>
       on_receive_audio_ = nullptr;
-  std::function<void(const char *, size_t, const char *, size_t)>
+  std::function<void(const char *, size_t, const std::string &)>
       on_receive_data_ = nullptr;
-  std::function<void(std::string)> on_ice_status_change_ = nullptr;
-  std::function<void(int, IceTransmission::TraversalType, const unsigned short,
-                     const unsigned short, void *)>
+  std::function<void(std::string, const std::string &)> on_ice_status_change_ =
+      nullptr;
+  std::function<void(const std::string &, IceTransmission::TraversalType,
+                     const unsigned short, const unsigned short, void *)>
       on_net_status_report_ = nullptr;
   bool ice_ready_ = false;
 
