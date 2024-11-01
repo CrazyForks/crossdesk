@@ -29,18 +29,18 @@ int Render::ControlWindow() {
   ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_), ImGuiCond_Once);
   if (ImGui::IsMouseReleased(ImGuiPopupFlags_MouseButtonLeft) ||
       control_window_width_is_changing_) {
-    if (control_winodw_pos_.x <= main_window_width_ / 2) {
+    if (control_winodw_pos_.x <= stream_window_width_ / 2) {
       int pos_x = 0;
       int pos_y =
           (control_winodw_pos_.y >=
                (fullscreen_button_pressed_ ? 0 : title_bar_height_) &&
            control_winodw_pos_.y <=
-               main_window_height_ - control_window_height_)
+               stream_window_height_ - control_window_height_)
               ? control_winodw_pos_.y
               : (control_winodw_pos_.y <
                          (fullscreen_button_pressed_ ? 0 : title_bar_height_)
                      ? (fullscreen_button_pressed_ ? 0 : title_bar_height_)
-                     : (main_window_height_ - control_window_height_));
+                     : (stream_window_height_ - control_window_height_));
 
       if (control_bar_expand_) {
         if (control_window_width_ >= control_window_max_width_) {
@@ -59,36 +59,36 @@ int Render::ControlWindow() {
       }
       ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiCond_Always);
       is_control_bar_in_left_ = true;
-    } else if (control_winodw_pos_.x > main_window_width_ / 2) {
+    } else if (control_winodw_pos_.x > stream_window_width_ / 2) {
       int pos_x = 0;
       int pos_y =
           (control_winodw_pos_.y >=
                (fullscreen_button_pressed_ ? 0 : title_bar_height_) &&
            control_winodw_pos_.y <=
-               main_window_height_ - control_window_height_)
+               stream_window_height_ - control_window_height_)
               ? control_winodw_pos_.y
               : (control_winodw_pos_.y <
                          (fullscreen_button_pressed_ ? 0 : title_bar_height_)
                      ? (fullscreen_button_pressed_ ? 0 : title_bar_height_)
-                     : (main_window_height_ - control_window_height_));
+                     : (stream_window_height_ - control_window_height_));
 
       if (control_bar_expand_) {
         if (control_window_width_ >= control_window_max_width_) {
           control_window_width_ = control_window_max_width_;
           control_window_width_is_changing_ = false;
-          pos_x = main_window_width_ - control_window_max_width_;
+          pos_x = stream_window_width_ - control_window_max_width_;
         } else {
           control_window_width_is_changing_ = true;
-          pos_x = main_window_width_ - control_window_width_;
+          pos_x = stream_window_width_ - control_window_width_;
         }
       } else {
         if (control_window_width_ <= control_window_min_width_) {
           control_window_width_ = control_window_min_width_;
           control_window_width_is_changing_ = false;
-          pos_x = main_window_width_ - control_window_min_width_;
+          pos_x = stream_window_width_ - control_window_min_width_;
         } else {
           control_window_width_is_changing_ = true;
-          pos_x = main_window_width_ - control_window_width_;
+          pos_x = stream_window_width_ - control_window_width_;
         }
       }
       ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiCond_Always);
@@ -131,8 +131,8 @@ int Render::ControlWindow() {
       ImVec2(0, fullscreen_button_pressed_ ? 0 : title_bar_height_),
       ImGuiCond_Always);
   ImGui::SetNextWindowSize(
-      ImVec2(main_window_width_,
-             main_window_height_ -
+      ImVec2(stream_window_width_,
+             stream_window_height_ -
                  (fullscreen_button_pressed_ ? 0 : title_bar_height_)),
       ImGuiCond_Always);
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));

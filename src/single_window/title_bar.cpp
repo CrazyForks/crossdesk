@@ -4,20 +4,23 @@
 
 #define BUTTON_PADDING 36.0f
 
-int Render::TitleBar() {
+int Render::TitleBar(bool main_window) {
   ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(1, 1, 1, 0.0f));
   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
   ImGui::SetWindowFontScale(0.8f);
-  ImGui::BeginChild("TitleBar", ImVec2(main_window_width_, title_bar_height_),
-                    ImGuiChildFlags_None,
-                    ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDecoration |
-                        ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::BeginChild(
+      "TitleBar",
+      ImVec2(main_window ? main_window_width_ : stream_window_width_,
+             title_bar_height_),
+      ImGuiChildFlags_None,
+      ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDecoration |
+          ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
   if (ImGui::BeginMenuBar()) {
-    ImGui::SetCursorPosX(main_window_width_ - (streaming_
-                                                   ? BUTTON_PADDING * 4 - 3
-                                                   : BUTTON_PADDING * 3 - 3));
+    ImGui::SetCursorPosX(
+        (main_window ? main_window_width_ : stream_window_width_) -
+        (streaming_ ? BUTTON_PADDING * 4 - 3 : BUTTON_PADDING * 3 - 3));
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0.1f));
     ImGui::PushStyleColor(ImGuiCol_HeaderActive,
                           ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -58,9 +61,9 @@ int Render::TitleBar() {
     ImGui::PopStyleColor(2);
 
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-    ImGui::SetCursorPosX(main_window_width_ - (streaming_
-                                                   ? BUTTON_PADDING * 3
-                                                   : BUTTON_PADDING * 2));
+    ImGui::SetCursorPosX(
+        (main_window ? main_window_width_ : stream_window_width_) -
+        (streaming_ ? BUTTON_PADDING * 3 : BUTTON_PADDING * 2));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0.1f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive,
                           ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -70,7 +73,7 @@ int Render::TitleBar() {
     std::string window_minimize_button = "##minimize";  // ICON_FA_MINUS;
     if (ImGui::Button(window_minimize_button.c_str(),
                       ImVec2(BUTTON_PADDING, 30))) {
-      SDL_MinimizeWindow(main_window_);
+      SDL_MinimizeWindow(main_window ? main_window_ : stream_window_);
     }
     draw_list->AddLine(ImVec2(minimize_pos_x, minimize_pos_y),
                        ImVec2(minimize_pos_x + 12, minimize_pos_y),
@@ -78,7 +81,9 @@ int Render::TitleBar() {
     ImGui::PopStyleColor(2);
 
     if (streaming_) {
-      ImGui::SetCursorPosX(main_window_width_ - BUTTON_PADDING * 2);
+      ImGui::SetCursorPosX(
+          (main_window ? main_window_width_ : stream_window_width_) -
+          BUTTON_PADDING * 2);
       ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0.1f));
       ImGui::PushStyleColor(ImGuiCol_ButtonActive,
                             ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -92,7 +97,7 @@ int Render::TitleBar() {
             "##restore";  // ICON_FA_WINDOW_RESTORE;
         if (ImGui::Button(window_restore_button.c_str(),
                           ImVec2(BUTTON_PADDING, 30))) {
-          SDL_RestoreWindow(main_window_);
+          SDL_RestoreWindow(main_window ? main_window_ : stream_window_);
           window_maximized_ = false;
         }
         draw_list->AddRect(ImVec2(pos_x_top, pos_y_top),
@@ -111,7 +116,7 @@ int Render::TitleBar() {
             "##maximize";  // ICON_FA_SQUARE_FULL;
         if (ImGui::Button(window_maximize_button.c_str(),
                           ImVec2(BUTTON_PADDING, 30))) {
-          SDL_MaximizeWindow(main_window_);
+          SDL_MaximizeWindow(main_window ? main_window_ : stream_window_);
           window_maximized_ = !window_maximized_;
         }
         draw_list->AddRect(ImVec2(maximize_pos_x, maximize_pos_y),
@@ -121,7 +126,9 @@ int Render::TitleBar() {
       ImGui::PopStyleColor(2);
     }
 
-    ImGui::SetCursorPosX(main_window_width_ - BUTTON_PADDING);
+    ImGui::SetCursorPosX(
+        (main_window ? main_window_width_ : stream_window_width_) -
+        BUTTON_PADDING);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0, 0, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0, 0, 0.5f));
 

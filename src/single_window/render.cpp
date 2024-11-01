@@ -352,44 +352,150 @@ int Render::AudioDeviceDestroy() {
   return 0;
 }
 
-int Render::Run() {
-  LoadSettingsFromCacheFile();
+int Render::CreateRtcConnection() {
+  // create connection
+  if (SignalStatus::SignalConnected == signal_status_ &&
+      !is_create_connection_ && password_inited_) {
+    LOG_INFO("Connected with signal server, create p2p connection");
+    is_create_connection_ =
+        CreateConnection(peer_, client_id_, password_saved_) ? false : true;
+  }
 
-  localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
-  localization_language_index_ = language_button_value_;
+  if (start_screen_capture_ && !screen_capture_is_started_) {
+    StartScreenCapture();
+    screen_capture_is_started_ = true;
+  } else if (!start_screen_capture_ && screen_capture_is_started_) {
+    StopScreenCapture();
+    screen_capture_is_started_ = false;
+  }
 
-  // Setup SDL
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER |
-               SDL_INIT_GAMECONTROLLER) != 0) {
-    printf("Error: %s\n", SDL_GetError());
+  if (start_mouse_control_ && !mouse_control_is_started_) {
+    StartMouseControl();
+    mouse_control_is_started_ = true;
+  } else if (!start_mouse_control_ && mouse_control_is_started_) {
+    StopMouseControl();
+    mouse_control_is_started_ = false;
+  }
+
+  return 0;
+}
+
+int Render::CreateMainWindow() {
+  main_ctx_ = ImGui::CreateContext();
+  if (!main_ctx_) {
+    LOG_ERROR("Main context is null");
     return -1;
   }
 
-  // get screen resolution
-  SDL_DisplayMode DM;
-  SDL_GetCurrentDisplayMode(0, &DM);
-  screen_width_ = DM.w;
-  screen_height_ = DM.h;
+  ImGui::SetCurrentContext(main_ctx_);
 
-  stream_render_rect_.x = 0;
-  stream_render_rect_.y = title_bar_height_;
-  stream_render_rect_.w = main_window_width_;
-  stream_render_rect_.h = main_window_height_ - title_bar_height_;
+  SDL_WindowFlags window_flags =
+      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
+  main_window_ = SDL_CreateWindow(
+      "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      main_window_width_default_, main_window_height_default_, window_flags);
 
-  // use linear filtering to render textures otherwise the graphics will be
-  // blurry
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+  main_renderer_ = SDL_CreateRenderer(
+      main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+  if (main_renderer_ == nullptr) {
+    LOG_ERROR("Error creating SDL_Renderer");
+    return 0;
+  }
 
-  // Setup Dear ImGui context
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
+  SDL_SetWindowResizable(main_window_, SDL_FALSE);
+
+  // for window region action
+  SDL_SetWindowHitTest(main_window_, HitTestCallback, this);
+
+  return 0;
+}
+
+int Render::DestroyMainWindow() {
+  if (main_ctx_) {
+    ImGui::SetCurrentContext(main_ctx_);
+  }
+
+  if (main_renderer_) {
+    SDL_DestroyRenderer(main_renderer_);
+  }
+
+  if (main_window_) {
+    SDL_DestroyWindow(main_window_);
+  }
+
+  return 0;
+}
+
+int Render::CreateStreamWindow() {
+  if (stream_window_created_) {
+    return 0;
+  }
+
+  stream_ctx_ = ImGui::CreateContext();
+  if (!stream_ctx_) {
+    LOG_ERROR("Stream context is null");
+    return -1;
+  }
+
+  ImGui::SetCurrentContext(stream_ctx_);
+
+  SDL_WindowFlags window_flags =
+      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
+  stream_window_ =
+      SDL_CreateWindow("Stream window", SDL_WINDOWPOS_UNDEFINED,
+                       SDL_WINDOWPOS_UNDEFINED, stream_window_width_default_,
+                       stream_window_height_default_, window_flags);
+
+  stream_renderer_ = SDL_CreateRenderer(
+      stream_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+  if (stream_renderer_ == nullptr) {
+    LOG_ERROR("Error creating SDL_Renderer");
+    return 0;
+  }
+
+  stream_pixformat_ = SDL_PIXELFORMAT_NV12;
+  stream_texture_ = SDL_CreateTexture(stream_renderer_, stream_pixformat_,
+                                      SDL_TEXTUREACCESS_STREAMING,
+                                      texture_width_, texture_height_);
+
+  SDL_SetWindowResizable(stream_window_, SDL_TRUE);
+
+  // for window region action
+  SDL_SetWindowHitTest(stream_window_, HitTestCallback, this);
+
+  stream_window_created_ = true;
+
+  return 0;
+}
+
+int Render::DestroyStreamWindow() {
+  if (stream_ctx_) {
+    ImGui::SetCurrentContext(stream_ctx_);
+  }
+
+  if (stream_renderer_) {
+    SDL_DestroyRenderer(stream_renderer_);
+  }
+
+  if (stream_window_) {
+    SDL_DestroyWindow(stream_window_);
+  }
+
+  stream_window_created_ = false;
+
+  return 0;
+}
+
+int Render::SetupFontAndStyle() {
+  // Setup Dear ImGui style
   ImGuiIO &io = ImGui::GetIO();
   // Master keyboard navigation enable flag. Enable full Tabbing + directional
   // arrows + space/enter to activate.
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   io.ConfigFlags |=
-      ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+      ImGuiConfigFlags_NavEnableGamepad;             // Enable Gamepad Controls
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
 
   // Load Fonts
   io.Fonts->AddFontFromMemoryTTF(OPPOSans_Regular_ttf,
@@ -413,6 +519,191 @@ int Render::Run() {
   // ImGui::StyleColorsDark();
   ImGui::StyleColorsLight();
 
+  return 0;
+}
+
+int Render::SetupMainWindow() {
+  if (!main_ctx_) {
+    LOG_ERROR("Main context is null");
+    return -1;
+  }
+
+  ImGui::SetCurrentContext(main_ctx_);
+  SetupFontAndStyle();
+
+  SDL_GL_GetDrawableSize(main_window_, &main_window_width_real_,
+                         &main_window_height_real_);
+  main_window_dpi_scaling_w_ =
+      (float)main_window_width_real_ / (float)main_window_width_;
+  main_window_dpi_scaling_h_ =
+      (float)main_window_width_real_ / (float)main_window_width_;
+  SDL_RenderSetScale(main_renderer_, main_window_dpi_scaling_w_,
+                     main_window_dpi_scaling_h_);
+  LOG_INFO("Use dpi scaling [{}x{}] for main window",
+           main_window_dpi_scaling_w_, main_window_dpi_scaling_h_);
+
+  ImGui_ImplSDL2_InitForSDLRenderer(main_window_, main_renderer_);
+  ImGui_ImplSDLRenderer2_Init(main_renderer_);
+
+  return 0;
+}
+
+int Render::DestroyMainWindowContext() {
+  ImGui_ImplSDLRenderer2_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  ImGui::DestroyContext(main_ctx_);
+
+  return 0;
+}
+
+int Render::SetupStreamWindow() {
+  if (stream_window_inited_) {
+    return 0;
+  }
+
+  if (!stream_ctx_) {
+    LOG_ERROR("Stream context is null");
+    return -1;
+  }
+
+  ImGui::SetCurrentContext(stream_ctx_);
+  SetupFontAndStyle();
+
+  SDL_GL_GetDrawableSize(stream_window_, &stream_window_width_real_,
+                         &stream_window_height_real_);
+  stream_window_dpi_scaling_w_ =
+      (float)stream_window_width_real_ / (float)stream_window_width_;
+  stream_window_dpi_scaling_h_ =
+      (float)stream_window_width_real_ / (float)stream_window_width_;
+  SDL_RenderSetScale(stream_renderer_, stream_window_dpi_scaling_w_,
+                     stream_window_dpi_scaling_h_);
+  LOG_INFO("Use dpi scaling [{}x{}] for stream window",
+           stream_window_dpi_scaling_w_, stream_window_dpi_scaling_h_);
+
+  ImGui_ImplSDL2_InitForSDLRenderer(stream_window_, stream_renderer_);
+  ImGui_ImplSDLRenderer2_Init(stream_renderer_);
+
+  stream_window_inited_ = true;
+  LOG_INFO("Stream window inited");
+
+  return 0;
+}
+
+int Render::DestroyStreamWindowContext() {
+  stream_window_inited_ = false;
+  ImGui_ImplSDLRenderer2_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  ImGui::DestroyContext(stream_ctx_);
+
+  return 0;
+}
+
+int Render::DrawMainWindow() {
+  if (!main_ctx_) {
+    LOG_ERROR("Main context is null");
+    return -1;
+  }
+
+  ImGui::SetCurrentContext(main_ctx_);
+  ImGui_ImplSDLRenderer2_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  ImGui::NewFrame();
+
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+  ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(
+      ImVec2(main_window_width_, main_window_height_default_),
+      ImGuiCond_Always);
+  ImGui::Begin("MainRender", nullptr,
+               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
+                   ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PopStyleColor();
+
+  TitleBar(true);
+
+  MainWindow();
+
+  ImGui::End();
+
+  // Rendering
+  ImGui::Render();
+  SDL_RenderClear(main_renderer_);
+  ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), main_renderer_);
+  SDL_RenderPresent(main_renderer_);
+
+  return 0;
+}
+
+int Render::DrawStreamWindow() {
+  if (!stream_ctx_) {
+    LOG_ERROR("Stream context is null");
+    return -1;
+  }
+
+  ImGui::SetCurrentContext(stream_ctx_);
+  ImGui_ImplSDLRenderer2_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  ImGui::NewFrame();
+
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+  ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+  ImGui::SetNextWindowSize(
+      ImVec2(stream_window_width_,
+             fullscreen_button_pressed_ ? 0 : title_bar_height_),
+      ImGuiCond_Always);
+  ImGui::Begin("StreamRender", nullptr,
+               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar |
+                   ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::PopStyleColor();
+
+  TitleBar(false);
+  ControlWindow();
+
+  ImGui::End();
+
+  // Rendering
+  ImGui::Render();
+  SDL_RenderClear(stream_renderer_);
+  SDL_RenderCopy(stream_renderer_, stream_texture_, NULL, &stream_render_rect_);
+  ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), stream_renderer_);
+  SDL_RenderPresent(stream_renderer_);
+
+  return 0;
+}
+
+int Render::Run() {
+  LoadSettingsFromCacheFile();
+
+  localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
+  localization_language_index_ = language_button_value_;
+
+  // Setup SDL
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER |
+               SDL_INIT_GAMECONTROLLER) != 0) {
+    printf("Error: %s\n", SDL_GetError());
+    return -1;
+  }
+
+  // get screen resolution
+  SDL_DisplayMode DM;
+  SDL_GetCurrentDisplayMode(0, &DM);
+  screen_width_ = DM.w;
+  screen_height_ = DM.h;
+
+  stream_render_rect_.x = 0;
+  stream_render_rect_.y = title_bar_height_;
+  stream_render_rect_.w = stream_window_width_;
+  stream_render_rect_.h = stream_window_height_ - title_bar_height_;
+
+  // use linear filtering to render textures otherwise the graphics will be
+  // blurry
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+
   // init modules
   if (!modules_inited_) {
     // audio
@@ -433,38 +724,9 @@ int Render::Run() {
     modules_inited_ = true;
   }
 
-  // create main window with SDL_Renderer graphics context
-  SDL_WindowFlags window_flags =
-      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS);
-  main_window_ = SDL_CreateWindow(
-      "Remote Desk", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      main_window_width_default_, main_window_height_default_, window_flags);
-
-  main_renderer_ = SDL_CreateRenderer(
-      main_window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-  if (main_renderer_ == nullptr) {
-    LOG_ERROR("1 Error creating SDL_Renderer");
-    return 0;
-  }
-
-  stream_pixformat_ = SDL_PIXELFORMAT_NV12;
-  stream_texture_ = SDL_CreateTexture(main_renderer_, stream_pixformat_,
-                                      SDL_TEXTUREACCESS_STREAMING,
-                                      texture_width_, texture_height_);
-
-  // for window region action
-  SDL_SetWindowHitTest(main_window_, HitTestCallback, this);
-
-  SDL_GL_GetDrawableSize(main_window_, &main_window_width_real_,
-                         &main_window_height_real_);
-  dpi_scaling_w_ = (float)main_window_width_real_ / (float)main_window_width_;
-  dpi_scaling_h_ = (float)main_window_width_real_ / (float)main_window_width_;
-  SDL_RenderSetScale(main_renderer_, dpi_scaling_w_, dpi_scaling_h_);
-  LOG_INFO("Use dpi scaling [{}x{}]", dpi_scaling_w_, dpi_scaling_h_);
-
-  // Setup Platform/Renderer backends
-  ImGui_ImplSDL2_InitForSDLRenderer(main_window_, main_renderer_);
-  ImGui_ImplSDLRenderer2_Init(main_renderer_);
+  // create window
+  CreateMainWindow();
+  SetupMainWindow();
 
   // Main loop
   while (!exit_) {
@@ -496,91 +758,32 @@ int Render::Run() {
       localization_language_index_last_ = localization_language_index_;
     }
 
-    // Start the Dear ImGui frame
-    ImGui_ImplSDLRenderer2_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
-    ImGui::NewFrame();
-
-    if (!fullscreen_button_pressed_) {
-      ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-      ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-      ImGui::SetNextWindowSize(
-          ImVec2(main_window_width_,
-                 (connection_established_ && streaming_ && is_client_mode_)
-                     ? (fullscreen_button_pressed_ ? 0 : title_bar_height_)
-                     : main_window_height_default_),
-          ImGuiCond_Always);
-      ImGui::Begin("Render", nullptr,
-                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                       ImGuiWindowFlags_NoResize |
-                       ImGuiWindowFlags_NoScrollbar |
-                       ImGuiWindowFlags_NoBringToFrontOnFocus);
-      ImGui::PopStyleColor();
-
-      TitleBar();
-
-      if (connection_established_ && streaming_ && is_client_mode_) {
-        if (!resizable_) {
-          resizable_ = !resizable_;
-          SDL_SetWindowResizable(main_window_, SDL_TRUE);
-        }
-        ControlWindow();
-      } else {
-        if (resizable_) {
-          resizable_ = !resizable_;
-          SDL_SetWindowResizable(main_window_, SDL_FALSE);
-        }
-        MainWindow();
-      }
-
-      ImGui::End();
-    } else {
-      if (connection_established_ && streaming_ && is_client_mode_) {
-        if (!resizable_) {
-          resizable_ = !resizable_;
-          SDL_SetWindowResizable(main_window_, SDL_TRUE);
-        }
-
-        ControlWindow();
-      } else {
-        if (resizable_) {
-          resizable_ = !resizable_;
-          SDL_SetWindowResizable(main_window_, SDL_FALSE);
-        }
-        MainWindow();
-      }
-    }
-
-    // create connection
-    if (SignalStatus::SignalConnected == signal_status_ &&
-        !is_create_connection_ && password_inited_) {
-      LOG_INFO("Connected with signal server, create p2p connection");
-      is_create_connection_ =
-          CreateConnection(peer_, client_id_, password_saved_) ? false : true;
-    }
-
-    if (start_screen_capture_ && !screen_capture_is_started_) {
-      StartScreenCapture();
-      screen_capture_is_started_ = true;
-    } else if (!start_screen_capture_ && screen_capture_is_started_) {
-      StopScreenCapture();
-      screen_capture_is_started_ = false;
-    }
-
-    if (start_mouse_control_ && !mouse_control_is_started_) {
-      StartMouseControl();
-      mouse_control_is_started_ = true;
-    } else if (!start_mouse_control_ && mouse_control_is_started_) {
-      StopMouseControl();
-      mouse_control_is_started_ = false;
-    }
-
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      ImGui_ImplSDL2_ProcessEvent(&event);
+      {
+        if (!main_ctx_) {
+          LOG_ERROR("Main context is null");
+          return -1;
+        }
+
+        ImGui::SetCurrentContext(main_ctx_);
+        ImGui_ImplSDL2_ProcessEvent(&event);
+      }
+      if (stream_window_inited_) {
+        if (!stream_ctx_) {
+          LOG_ERROR("Stream context is null");
+          return -1;
+        }
+
+        ImGui::SetCurrentContext(stream_ctx_);
+        ImGui_ImplSDL2_ProcessEvent(&event);
+      }
       if (event.type == SDL_QUIT) {
         if (streaming_) {
-          LOG_INFO("Return to main interface");
+          LOG_INFO("Destroy stream window");
+          DestroyStreamWindow();
+          DestroyStreamWindowContext();
+
           LOG_INFO("[{}] Leave connection [{}]", client_id_, remote_id_);
           LeaveConnection(peer_reserved_ ? peer_reserved_ : peer_,
                           remote_id_.c_str());
@@ -601,11 +804,11 @@ int Render::Run() {
           SDL_SetWindowSize(main_window_, main_window_width_default_,
                             main_window_height_default_);
 
-          SDL_Rect display_bounds;
-          SDL_GetDisplayBounds(0, &display_bounds);
-          int center_x = (display_bounds.w - main_window_width_default_) / 2;
-          int center_y = (display_bounds.h - main_window_height_default_) / 2;
-          SDL_SetWindowPosition(main_window_, center_x, center_y);
+          // SDL_Rect display_bounds;
+          // SDL_GetDisplayBounds(0, &display_bounds);
+          // int center_x = (display_bounds.w - main_window_width_default_) / 2;
+          // int center_y = (display_bounds.h - main_window_height_default_) /
+          // 2; SDL_SetWindowPosition(main_window_, center_x, center_y);
 
           continue;
         } else {
@@ -617,15 +820,15 @@ int Render::Run() {
       } else if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
         window_maximized_ = false;
       } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-        SDL_GetWindowSize(main_window_, &main_window_width_,
-                          &main_window_height_);
+        SDL_GetWindowSize(stream_window_, &stream_window_width_,
+                          &stream_window_height_);
 
         float video_ratio = (float)video_width_ / (float)video_height_;
         float video_ratio_reverse = (float)video_height_ / (float)video_width_;
 
-        int render_area_width = main_window_width_;
+        int render_area_width = stream_window_width_;
         int render_area_height =
-            main_window_height_ -
+            stream_window_height_ -
             (fullscreen_button_pressed_ ? 0 : title_bar_height_);
 
         if (render_area_width < render_area_height * video_ratio) {
@@ -667,8 +870,8 @@ int Render::Run() {
 
             SDL_DestroyTexture(stream_texture_);
             stream_texture_ = SDL_CreateTexture(
-                main_renderer_, stream_pixformat_, SDL_TEXTUREACCESS_STREAMING,
-                texture_width_, texture_height_);
+                stream_renderer_, stream_pixformat_,
+                SDL_TEXTUREACCESS_STREAMING, texture_width_, texture_height_);
           }
         SDL_UpdateTexture(stream_texture_, NULL, dst_buffer_, texture_width_);
       } else {
@@ -678,17 +881,19 @@ int Render::Run() {
       }
     }
 
-    // Rendering
-    ImGui::Render();
-
-    SDL_RenderClear(main_renderer_);
-    if (connection_established_ && received_frame_ && streaming_) {
-      SDL_RenderCopy(main_renderer_, stream_texture_, NULL,
-                     &stream_render_rect_);
+    if (connection_established_ && streaming_) {
+      CreateStreamWindow();
+      SetupStreamWindow();
     }
 
-    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), main_renderer_);
-    SDL_RenderPresent(main_renderer_);
+    DrawMainWindow();
+
+    if (stream_window_inited_) {
+      DrawStreamWindow();
+    }
+
+    // create connection
+    CreateRtcConnection();
 
     // frame_count_++;
     // end_time_ = SDL_GetTicks();
@@ -754,12 +959,8 @@ int Render::Run() {
 
   AudioDeviceDestroy();
 
-  ImGui_ImplSDLRenderer2_Shutdown();
-  ImGui_ImplSDL2_Shutdown();
-
-  SDL_DestroyTexture(stream_texture_);
-  SDL_DestroyRenderer(main_renderer_);
-  SDL_DestroyWindow(main_window_);
+  DestroyMainWindow();
+  DestroyMainWindowContext();
 
   SDL_Quit();
 

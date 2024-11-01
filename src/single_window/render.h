@@ -32,7 +32,7 @@ class Render {
 
  private:
   int CreateStreamRenderWindow();
-  int TitleBar();
+  int TitleBar(bool main_window);
   int MainWindow();
   int LocalWindow();
   int RemoteWindow();
@@ -42,6 +42,20 @@ class Render {
   int AboutWindow();
   int StatusBar();
   int ConnectionStatusWindow();
+
+ private:
+  int CreateRtcConnection();
+  int CreateMainWindow();
+  int DestroyMainWindow();
+  int CreateStreamWindow();
+  int DestroyStreamWindow();
+  int SetupFontAndStyle();
+  int SetupMainWindow();
+  int DestroyMainWindowContext();
+  int SetupStreamWindow();
+  int DestroyStreamWindowContext();
+  int DrawMainWindow();
+  int DrawStreamWindow();
 
  public:
   static void OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
@@ -145,6 +159,8 @@ class Render {
   int main_window_height_ = 570;
   int main_window_width_last_ = 960;
   int main_window_height_last_ = 540;
+  int stream_window_width_default_ = 1280;
+  int stream_window_height_default_ = 720;
   int stream_window_width_ = 1280;
   int stream_window_height_ = 720;
   int stream_window_width_last_ = 1280;
@@ -169,8 +185,13 @@ class Render {
 
   int main_window_width_real_ = 960;
   int main_window_height_real_ = 540;
-  float dpi_scaling_w_ = 1.0f;
-  float dpi_scaling_h_ = 1.0f;
+  float main_window_dpi_scaling_w_ = 1.0f;
+  float main_window_dpi_scaling_h_ = 1.0f;
+
+  int stream_window_width_real_ = 1280;
+  int stream_window_height_real_ = 720;
+  float stream_window_dpi_scaling_w_ = 1.0f;
+  float stream_window_dpi_scaling_h_ = 1.0f;
 
   int texture_width_ = 1280;
   int texture_height_ = 720;
@@ -179,8 +200,15 @@ class Render {
   int video_height_ = 720;
   int video_size_ = 1280 * 720 * 3;
 
-  SDL_Window *main_window_;
+  SDL_Window *main_window_ = nullptr;
   SDL_Renderer *main_renderer_ = nullptr;
+  ImGuiContext *main_ctx_ = nullptr;
+
+  SDL_Window *stream_window_ = nullptr;
+  SDL_Renderer *stream_renderer_ = nullptr;
+  ImGuiContext *stream_ctx_ = nullptr;
+  bool stream_window_created_ = false;
+  bool stream_window_inited_ = false;
 
   // video window
   SDL_Texture *stream_texture_ = nullptr;
