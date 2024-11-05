@@ -7,18 +7,16 @@
 #include "render.h"
 
 int Render::LocalWindow() {
-  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_), ImGuiCond_Always);
+  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_ + 1), ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-  ImGui::BeginChild(
-      "LocalDesktopWindow",
-      ImVec2(local_window_width_, main_window_height_default_ -
-                                      title_bar_height_ - status_bar_height_),
-      ImGuiChildFlags_Border,
-      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-          ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-          ImGuiWindowFlags_NoBringToFrontOnFocus);
+  ImGui::BeginChild("LocalDesktopWindow",
+                    ImVec2(local_window_width_, local_window_height_),
+                    ImGuiChildFlags_Border,
+                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+                        ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PopStyleColor();
 
   ImGui::SetWindowFontScale(1.0f);
@@ -27,6 +25,8 @@ int Render::LocalWindow() {
 
   ImGui::Spacing();
   {
+    ImGui::SetNextWindowPos(ImVec2(30, title_bar_height_ + 50),
+                            ImGuiCond_Always);
     ImGui::PushStyleColor(ImGuiCol_ChildBg,
                           ImVec4(239.0 / 255, 240.0 / 255, 242.0 / 255, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);

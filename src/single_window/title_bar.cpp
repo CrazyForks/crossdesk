@@ -12,7 +12,7 @@ int Render::TitleBar(bool main_window) {
       "TitleBar",
       ImVec2(main_window ? main_window_width_ : stream_window_width_,
              title_bar_height_),
-      ImGuiChildFlags_None,
+      ImGuiChildFlags_Border,
       ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDecoration |
           ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
