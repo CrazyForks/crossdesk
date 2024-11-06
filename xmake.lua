@@ -124,6 +124,7 @@ target("localization")
 
 target("single_window")
     set_kind("object")
+    add_packages("libyuv")
     add_deps("rd_log", "common", "localization", "config_center", "projectx", "screen_capturer", "speaker_capturer", "device_controller")
     if is_os("macosx") then
         add_packages("ffmpeg")

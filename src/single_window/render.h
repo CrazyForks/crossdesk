@@ -42,6 +42,8 @@ class Render {
   int AboutWindow();
   int StatusBar();
   int ConnectionStatusWindow();
+  int LoadRecentConnections();
+  int ShowRecentConnections();
 
  private:
   int CreateRtcConnection();
@@ -150,32 +152,39 @@ class Render {
   char client_password_[20] = "";
 
  private:
-  int title_bar_width_ = 960;
+  int title_bar_width_ = 640;
   int title_bar_height_ = 30;
   int screen_width_ = 1280;
   int screen_height_ = 720;
-  int main_window_width_default_ = 960;
-  int main_window_height_default_ = 590;
-  int main_window_width_ = 960;
-  int main_window_height_ = 590;
-  int main_window_width_last_ = 960;
-  int main_window_height_last_ = 540;
+  int main_window_width_default_ = 640;
+  int main_window_height_default_ = 480;
+  int main_window_width_ = 640;
+  int main_window_height_ = 480;
+  int main_window_width_last_ = 640;
+  int main_window_height_last_ = 480;
   int stream_window_width_default_ = 1280;
   int stream_window_height_default_ = 720;
   int stream_window_width_ = 1280;
   int stream_window_height_ = 720;
   int stream_window_width_last_ = 1280;
   int stream_window_height_last_ = 720;
-  int main_window_width_before_maximized_ = 960;
-  int main_window_height_before_maximized_ = 590;
+  int main_window_width_before_maximized_ = 640;
+  int main_window_height_before_maximized_ = 480;
   int control_window_min_width_ = 20;
   int control_window_max_width_ = 170;
   int control_window_width_ = 170;
   int control_window_height_ = 40;
-  int local_window_width_ = 720;
-  int local_window_height_ = 270;
-  int remote_window_width_ = 720;
-  int remote_window_height_ = 270;
+  int local_window_width_ = 320;
+  int local_window_height_ = 260;
+  int remote_window_width_ = 320;
+  int remote_window_height_ = 260;
+  int local_child_window_width_ = 266;
+  int local_child_window_height_ = 180;
+  int remote_child_window_width_ = 266;
+  int remote_child_window_height_ = 180;
+  int main_window_text_y_padding_ = 20;
+  int main_child_window_x_padding_ = 27;
+  int main_child_window_y_padding_ = 60;
   int status_bar_height_ = 20;
   int connection_status_window_width_ = 200;
   int connection_status_window_height_ = 150;
@@ -187,7 +196,7 @@ class Render {
   int control_bar_pos_x_ = 0;
   int control_bar_pos_y_ = 30;
 
-  int main_window_width_real_ = 960;
+  int main_window_width_real_ = 720;
   int main_window_height_real_ = 540;
   float main_window_dpi_scaling_w_ = 1.0f;
   float main_window_dpi_scaling_h_ = 1.0f;
@@ -213,6 +222,11 @@ class Render {
   ImGuiContext *stream_ctx_ = nullptr;
   bool stream_window_created_ = false;
   bool stream_window_inited_ = false;
+
+  // recent connections
+  SDL_Texture *recent_connection_texture_ = nullptr;
+  int recent_connection_image_width_ = 128;
+  int recent_connection_image_height_ = 72;
 
   // video window
   SDL_Texture *stream_texture_ = nullptr;
@@ -253,6 +267,7 @@ class Render {
   bool is_client_mode_ = false;
   bool is_control_bar_in_left_ = true;
   bool control_window_width_is_changing_ = false;
+  bool reload_recent_connections_ = true;
 
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;
@@ -282,7 +297,7 @@ class Render {
  private:
   SDL_AudioDeviceID input_dev_;
   SDL_AudioDeviceID output_dev_;
-  unsigned char audio_buffer_[960];
+  unsigned char audio_buffer_[720];
   int audio_len_ = 0;
   unsigned char *dst_buffer_ = nullptr;
   int dst_buffer_capacity_ = 0;
@@ -298,6 +313,7 @@ class Render {
 
  private:
   char client_id_[10] = "";
+  char client_id_display_[12] = "";
   char password_saved_[7] = "";
   int language_button_value_ = 0;
   int video_quality_button_value_ = 0;

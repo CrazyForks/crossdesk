@@ -7,34 +7,42 @@
 #include "render.h"
 
 int Render::LocalWindow() {
-  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_ + 1), ImGuiCond_Always);
+  ImGui::SetNextWindowPos(ImVec2(-1.0f, title_bar_height_), ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::BeginChild("LocalDesktopWindow",
                     ImVec2(local_window_width_, local_window_height_),
-                    ImGuiChildFlags_Border,
+                    ImGuiChildFlags_None,
                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                         ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PopStyleColor();
 
+  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + main_window_text_y_padding_);
+  ImGui::Indent(main_child_window_x_padding_);
   ImGui::SetWindowFontScale(1.0f);
-  ImGui::Text(
-      "%s", localization::local_desktop[localization_language_index_].c_str());
+
+  ImGui::TextColored(
+      ImVec4(0.0f, 0.0f, 0.0f, 0.5f), "%s",
+      localization::local_desktop[localization_language_index_].c_str());
 
   ImGui::Spacing();
   {
-    ImGui::SetNextWindowPos(ImVec2(30, title_bar_height_ + 50),
-                            ImGuiCond_Always);
+    ImGui::SetNextWindowPos(
+        ImVec2(main_child_window_x_padding_,
+               title_bar_height_ + main_child_window_y_padding_),
+        ImGuiCond_Always);
     ImGui::PushStyleColor(ImGuiCol_ChildBg,
                           ImVec4(239.0 / 255, 240.0 / 255, 242.0 / 255, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
-    ImGui::BeginChild("LocalDesktopWindow_1", ImVec2(330, 180),
-                      ImGuiChildFlags_Border,
-                      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                          ImGuiWindowFlags_NoTitleBar |
-                          ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::BeginChild(
+        "LocalDesktopWindow_1",
+        ImVec2(local_child_window_width_, local_child_window_height_),
+        ImGuiChildFlags_Border,
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     {
@@ -48,16 +56,17 @@ int Render::LocalWindow() {
       ImGui::SetWindowFontScale(1.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 
-      char client_id_display[12] = "";
-      for (int i = 0, j = 0; i < sizeof(client_id_); i++, j++) {
-        client_id_display[j] = client_id_[i];
-        if (i == 2 || i == 5) {
-          client_id_display[++j] = ' ';
+      if (strcmp(client_id_display_, client_id_)) {
+        for (int i = 0, j = 0; i < sizeof(client_id_); i++, j++) {
+          client_id_display_[j] = client_id_[i];
+          if (i == 2 || i == 5) {
+            client_id_display_[++j] = ' ';
+          }
         }
       }
 
       ImGui::InputText(
-          "##local_id", client_id_display, IM_ARRAYSIZE(client_id_display),
+          "##local_id", client_id_display_, IM_ARRAYSIZE(client_id_display_),
           ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_ReadOnly);
       ImGui::PopStyleVar();
 

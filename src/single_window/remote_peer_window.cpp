@@ -4,47 +4,44 @@
 #include "rd_log.h"
 #include "render.h"
 
-static int InputTextCallback(ImGuiInputTextCallbackData *data) {
-  if (data->BufTextLen > 3 && data->Buf[3] != ' ') {
-    data->InsertChars(3, " ");
-  }
-
-  if (data->BufTextLen > 7 && data->Buf[7] != ' ') {
-    data->InsertChars(7, " ");
-  }
-
-  return 0;
-}
+static int InputTextCallback(ImGuiInputTextCallbackData *data);
 
 int Render::RemoteWindow() {
-  ImGui::SetNextWindowPos(ImVec2(0, title_bar_height_ + local_window_height_),
+  ImGui::SetNextWindowPos(ImVec2(local_window_width_ + 1.0f, title_bar_height_),
                           ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   ImGui::BeginChild("RemoteDesktopWindow",
                     ImVec2(remote_window_width_, remote_window_height_),
-                    ImGuiChildFlags_Border,
+                    ImGuiChildFlags_None,
                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
                         ImGuiWindowFlags_NoBringToFrontOnFocus);
   ImGui::PopStyleColor();
 
+  ImGui::SetCursorPosY(ImGui::GetCursorPosY() + main_window_text_y_padding_);
+  ImGui::Indent(main_child_window_x_padding_ - 1.0f);
   ImGui::SetWindowFontScale(1.0f);
-  ImGui::Text(
-      "%s", localization::remote_desktop[localization_language_index_].c_str());
+
+  ImGui::TextColored(
+      ImVec4(0.0f, 0.0f, 0.0f, 0.5f), "%s",
+      localization::remote_desktop[localization_language_index_].c_str());
 
   ImGui::Spacing();
   {
     ImGui::SetNextWindowPos(
-        ImVec2(30, title_bar_height_ + local_window_height_ + 50),
+        ImVec2(local_window_width_ + main_child_window_x_padding_ - 1.0f,
+               title_bar_height_ + main_child_window_y_padding_),
         ImGuiCond_Always);
     ImGui::PushStyleColor(ImGuiCol_ChildBg,
                           ImVec4(239.0 / 255, 240.0 / 255, 242.0 / 255, 1.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.0f);
 
     ImGui::BeginChild(
-        "RemoteDesktopWindow_1", ImVec2(330, 180), ImGuiChildFlags_Border,
+        "RemoteDesktopWindow_1",
+        ImVec2(remote_child_window_width_, remote_child_window_height_),
+        ImGuiChildFlags_Border,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoBringToFrontOnFocus);
@@ -109,6 +106,18 @@ int Render::RemoteWindow() {
   }
   ImGui::EndChild();
   ImGui::PopStyleVar();
+
+  return 0;
+}
+
+static int InputTextCallback(ImGuiInputTextCallbackData *data) {
+  if (data->BufTextLen > 3 && data->Buf[3] != ' ') {
+    data->InsertChars(3, " ");
+  }
+
+  if (data->BufTextLen > 7 && data->Buf[7] != ' ') {
+    data->InsertChars(7, " ");
+  }
 
   return 0;
 }

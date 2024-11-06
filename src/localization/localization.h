@@ -22,6 +22,8 @@ static std::vector<std::string> remote_desktop = {u8"控制远程桌面",
                                                   "Control Remote Desktop"};
 static std::vector<std::string> remote_id = {u8"对端ID", "Remote ID"};
 static std::vector<std::string> connect = {u8"连接", "Connect"};
+static std::vector<std::string> recent_connections = {u8"近期连接",
+                                                      "Recent Connections"};
 static std::vector<std::string> disconnect = {u8"断开连接", "Disconnect"};
 static std::vector<std::string> fullscreen = {u8" 全屏", " Fullscreen"};
 static std::vector<std::string> exit_fullscreen = {u8" 退出全屏",

@@ -15,15 +15,21 @@
 #include "rd_log.h"
 #include "screen_capturer_factory.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "libyuv.h"
+#include "stb_image_write.h"
+
 // Refresh Event
 #define REFRESH_EVENT (SDL_USEREVENT + 1)
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
 #define MOUSE_GRAB_PADDING 5
 
-SDL_HitTestResult Render::HitTestCallback(SDL_Window *window,
-                                          const SDL_Point *area, void *data) {
-  Render *render = (Render *)data;
+SDL_HitTestResult Render::HitTestCallback(SDL_Window* window,
+                                          const SDL_Point* area, void* data) {
+  Render* render = (Render*)data;
   if (!render) {
     return SDL_HITTEST_NORMAL;
   }
@@ -67,6 +73,60 @@ SDL_HitTestResult Render::HitTestCallback(SDL_Window *window,
   }
 
   return SDL_HITTEST_NORMAL;
+}
+
+bool LoadTextureFromMemory(const void* data, size_t data_size,
+                           SDL_Renderer* renderer, SDL_Texture** out_texture,
+                           int* out_width, int* out_height) {
+  int image_width = 0;
+  int image_height = 0;
+  int channels = 4;
+  unsigned char* image_data =
+      stbi_load_from_memory((const unsigned char*)data, (int)data_size,
+                            &image_width, &image_height, NULL, 4);
+  if (image_data == nullptr) {
+    fprintf(stderr, "Failed to load image: %s\n", stbi_failure_reason());
+    return false;
+  }
+
+  SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+      (void*)image_data, image_width, image_height, channels * 8,
+      channels * image_width, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+  if (surface == nullptr) {
+    fprintf(stderr, "Failed to create SDL surface: %s\n", SDL_GetError());
+    return false;
+  }
+
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+  if (texture == nullptr)
+    fprintf(stderr, "Failed to create SDL texture: %s\n", SDL_GetError());
+
+  *out_texture = texture;
+  *out_width = image_width;
+  *out_height = image_height;
+
+  SDL_FreeSurface(surface);
+  stbi_image_free(image_data);
+
+  return true;
+}
+
+// Open and read a file, then forward to LoadTextureFromMemory()
+bool LoadTextureFromFile(const char* file_name, SDL_Renderer* renderer,
+                         SDL_Texture** out_texture, int* out_width,
+                         int* out_height) {
+  FILE* f = fopen(file_name, "rb");
+  if (f == NULL) return false;
+  fseek(f, 0, SEEK_END);
+  size_t file_size = (size_t)ftell(f);
+  if (file_size == -1) return false;
+  fseek(f, 0, SEEK_SET);
+  void* file_data = IM_ALLOC(file_size);
+  fread(file_data, 1, file_size, f);
+  bool ret = LoadTextureFromMemory(file_data, file_size, renderer, out_texture,
+                                   out_width, out_height);
+  IM_FREE(file_data);
+  return ret;
 }
 
 Render::Render() {}
@@ -162,13 +222,13 @@ int Render::LoadSettingsFromCacheFile() {
 }
 
 int Render::StartScreenCapture() {
-  screen_capturer_ = (ScreenCapturer *)screen_capturer_factory_->Create();
+  screen_capturer_ = (ScreenCapturer*)screen_capturer_factory_->Create();
   last_frame_time_ = std::chrono::duration_cast<std::chrono::milliseconds>(
                          std::chrono::steady_clock::now().time_since_epoch())
                          .count();
 
   int screen_capturer_init_ret = screen_capturer_->Init(
-      60, [this](unsigned char *data, int size, int width, int height) -> void {
+      60, [this](unsigned char* data, int size, int width, int height) -> void {
         auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
@@ -178,7 +238,7 @@ int Render::StartScreenCapture() {
           //          NV12_BUFFER_SIZE);
 
           XVideoFrame frame;
-          frame.data = (const char *)data;
+          frame.data = (const char*)data;
           frame.size = size;
           frame.width = width;
           frame.height = height;
@@ -213,11 +273,11 @@ int Render::StopScreenCapture() {
 
 int Render::StartSpeakerCapture() {
   if (!speaker_capturer_) {
-    speaker_capturer_ = (SpeakerCapturer *)speaker_capturer_factory_->Create();
+    speaker_capturer_ = (SpeakerCapturer*)speaker_capturer_factory_->Create();
     int speaker_capturer_init_ret = speaker_capturer_->Init(
-        [this](unsigned char *data, size_t size) -> void {
+        [this](unsigned char* data, size_t size) -> void {
           if (connection_established_) {
-            SendData(peer_, DATA_TYPE::AUDIO, (const char *)data, size);
+            SendData(peer_, DATA_TYPE::AUDIO, (const char*)data, size);
           }
         });
 
@@ -244,7 +304,7 @@ int Render::StopSpeakerCapture() {
 
 int Render::StartMouseControl() {
   device_controller_factory_ = new DeviceControllerFactory();
-  mouse_controller_ = (MouseController *)device_controller_factory_->Create(
+  mouse_controller_ = (MouseController*)device_controller_factory_->Create(
       DeviceControllerFactory::Device::Mouse);
   int mouse_controller_init_ret =
       mouse_controller_->Init(screen_width_, screen_height_);
@@ -488,7 +548,7 @@ int Render::DestroyStreamWindow() {
 
 int Render::SetupFontAndStyle() {
   // Setup Dear ImGui style
-  ImGuiIO &io = ImGui::GetIO();
+  ImGuiIO& io = ImGui::GetIO();
   // Master keyboard navigation enable flag. Enable full Tabbing + directional
   // arrows + space/enter to activate.
   io.ConfigFlags |=
@@ -678,6 +738,8 @@ int Render::DrawStreamWindow() {
   return 0;
 }
 
+int Render::LoadRecentConnections() { return 0; }
+
 int Render::Run() {
   LoadSettingsFromCacheFile();
 
@@ -763,6 +825,44 @@ int Render::Run() {
       localization_language_index_last_ = localization_language_index_;
     }
 
+    {
+      const int scaled_video_width_ = 128;
+      const int scaled_video_height_ = 72;
+      // uint8_t scaled_yuv_data =
+      //     new uint8_t[scaled_video_width_ * scaled_video_height_ * 3 / 2];
+      // uint8_t* rgb_data =
+      //     new uint8_t[scaled_video_width_ * scaled_video_height_ * 3];
+
+      uint8_t
+          scaled_yuv_data[scaled_video_width_ * scaled_video_height_ * 3 / 2];
+      uint8_t rgb_data[scaled_video_width_ * scaled_video_height_ * 3];
+
+      libyuv::I420Scale(
+          dst_buffer_, video_width_, dst_buffer_ + video_width_ * video_height_,
+          video_width_ / 2, dst_buffer_ + video_width_ * video_height_ * 5 / 4,
+          video_width_ / 2, video_width_, video_height_, scaled_yuv_data,
+          scaled_video_width_,
+          scaled_yuv_data + scaled_video_width_ * scaled_video_height_,
+          scaled_video_width_ / 2,
+          scaled_yuv_data + scaled_video_width_ * scaled_video_height_ * 5 / 4,
+          scaled_video_width_ / 2, scaled_video_width_, scaled_video_width_,
+          libyuv::FilterMode::kFilterNone);
+
+      libyuv::I420ToRGB24(
+          scaled_yuv_data, scaled_video_width_,
+          scaled_yuv_data + scaled_video_width_ * scaled_video_height_,
+          scaled_video_width_ / 2,
+          scaled_yuv_data + scaled_video_width_ * scaled_video_height_ * 5 / 4,
+          scaled_video_width_ / 2, rgb_data, scaled_video_width_ * 3,
+          scaled_video_width_, scaled_video_height_);
+      stbi_write_png("RecentConnectionImage01.png", scaled_video_width_,
+                     scaled_video_height_, 3, rgb_data,
+                     scaled_video_width_ * 3);
+
+      // delete[] scaled_yuv_data;
+      // delete[] rgb_data;
+    }
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       {
@@ -804,10 +904,50 @@ int Render::Run() {
           is_client_mode_ = false;
           audio_capture_button_pressed_ = false;
           fullscreen_button_pressed_ = false;
+          reload_recent_connections_ = true;
           SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
-          memset(audio_buffer_, 0, 960);
+          memset(audio_buffer_, 0, 720);
           SDL_SetWindowSize(main_window_, main_window_width_default_,
                             main_window_height_default_);
+
+          // {
+          //   int scaled_video_width_ = 128;
+          //   int scaled_video_height_ = 72;
+          //   uint8_t* scaled_yuv_data =
+          //       new uint8_t[scaled_video_width_ * scaled_video_height_ * 3 /
+          //       2];
+          //   uint8_t* rgb_data =
+          //       new uint8_t[scaled_video_width_ * scaled_video_height_ * 3];
+
+          //   libyuv::I420Scale(
+          //       dst_buffer_, video_width_,
+          //       dst_buffer_ + video_width_ * video_height_, video_width_ / 2,
+          //       dst_buffer_ + video_width_ * video_height_ * 5 / 4,
+          //       video_width_ / 2, video_width_, video_height_,
+          //       scaled_yuv_data, scaled_video_width_, scaled_yuv_data +
+          //       scaled_video_width_ * scaled_video_height_,
+          //       scaled_video_width_ / 2,
+          //       scaled_yuv_data +
+          //           scaled_video_width_ * scaled_video_height_ * 5 / 4,
+          //       scaled_video_width_ / 2, scaled_video_width_,
+          //       scaled_video_width_, libyuv::FilterMode::kFilterNone);
+
+          //   libyuv::I420ToRGB24(
+          //       scaled_yuv_data, scaled_video_width_,
+          //       scaled_yuv_data + scaled_video_width_ * scaled_video_height_,
+          //       scaled_video_width_ / 2,
+          //       scaled_yuv_data +
+          //           scaled_video_width_ * scaled_video_height_ * 5 / 4,
+          //       scaled_video_width_ / 2, rgb_data, scaled_video_width_ * 3,
+          //       scaled_video_width_, scaled_video_height_);
+          //   stbi_write_png("RecentConnectionImage01.jpg",
+          //   scaled_video_width_,
+          //                  scaled_video_height_, 3, rgb_data,
+          //                  scaled_video_width_ * 3);
+
+          //   delete[] scaled_yuv_data;
+          //   delete[] rgb_data;
+          // }
 
           // SDL_Rect display_bounds;
           // SDL_GetDisplayBounds(0, &display_bounds);
@@ -884,6 +1024,17 @@ int Render::Run() {
           ProcessMouseKeyEvent(event);
         }
       }
+    }
+
+    if (reload_recent_connections_) {
+      bool ret = LoadTextureFromFile(
+          "RecentConnectionImage01.png", main_renderer_,
+          &recent_connection_texture_, &recent_connection_image_width_,
+          &recent_connection_image_height_);
+      if (!ret) {
+        LOG_ERROR("Load recent connections image failed");
+      }
+      reload_recent_connections_ = false;
     }
 
     if (connection_established_ && streaming_) {
