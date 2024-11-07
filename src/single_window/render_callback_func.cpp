@@ -211,7 +211,7 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
       render->StopSpeakerCapture();
     }
   } else if (ControlType::keyboard == remote_action.type) {
-  } else if (ControlType::host_info == remote_action.type) {
+  } else if (ControlType::host_infomation == remote_action.type) {
     render->host_name_ =
         std::string(remote_action.i.host_name, remote_action.i.host_name_size);
     LOG_INFO("Remote hostname: [{}]", render->host_name_);
@@ -270,7 +270,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
     if (!render->hostname_sent_) {
       std::string host_name = GetHostName();
       RemoteAction remote_action;
-      remote_action.type = ControlType::host_info;
+      remote_action.type = ControlType::host_infomation;
       memcpy(&remote_action.i.host_name, host_name.data(), host_name.size());
       remote_action.i.host_name_size = host_name.size();
       int ret = SendData(render->peer_, DATA_TYPE::DATA,
