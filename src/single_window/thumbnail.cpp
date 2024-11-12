@@ -1,8 +1,15 @@
 #include "thumbnail.h"
 
+#include <openssl/aes.h>
+#include <openssl/rand.h>
+
 #include <chrono>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <map>
+#include <string>
+#include <vector>
 
 #include "libyuv.h"
 #include "rd_log.h"
@@ -11,6 +18,8 @@
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+
+static std::string test;
 
 void ScaleYUV420pToABGR(char* dst_buffer_, int video_width_, int video_height_,
                         int scaled_video_width_, int scaled_video_height_,
@@ -64,7 +73,8 @@ Thumbnail::~Thumbnail() {
 
 int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
                                const std::string& host_name,
-                               const std::string& remote_id) {
+                               const std::string& remote_id,
+                               const std::string& password) {
   if (!rgba_buffer_) {
     rgba_buffer_ = new char[thumbnail_width_ * thumbnail_height_ * 4];
   }
@@ -72,9 +82,13 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
   if (yuv420p) {
     ScaleYUV420pToABGR((char*)yuv420p, width, height, thumbnail_width_,
                        thumbnail_height_, rgba_buffer_);
-    std::string image_name =
-        image_path_ + "/" + host_name + "@" + remote_id + ".png";
-    stbi_write_png(image_name.data(), thumbnail_width_, thumbnail_height_, 4,
+
+    std::string image_name = password + "@" + host_name + "@" + remote_id;
+    LOG_ERROR("1 Save thumbnail: {}", image_name);
+    std::string cipher_image_name = AES_encrypt(key_, image_name);
+    LOG_ERROR("2 Save thumbnail: {}", cipher_image_name);
+    std::string save_path = image_path_ + cipher_image_name;
+    stbi_write_png(save_path.data(), thumbnail_width_, thumbnail_height_, 4,
                    rgba_buffer_, thumbnail_width_ * 4);
   }
   return 0;
@@ -141,7 +155,7 @@ bool LoadTextureFromFile(const char* file_name, SDL_Renderer* renderer,
 std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
     const std::filesystem::path& directory) {
   std::vector<std::filesystem::path> thumbnails_path;
-  std::string image_extensions = ".png";
+  // std::string image_extensions = ".png";
 
   if (!std::filesystem::is_directory(directory)) {
     LOG_ERROR("No such directory [{}]", directory.string());
@@ -158,9 +172,9 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
               std::filesystem::file_time_type::clock::now() +
               std::chrono::system_clock::now()));
 
-      if (entry.path().extension() == image_extensions) {
-        thumbnails_sorted_by_write_time_[last_write_time] = entry.path();
-      }
+      // if (entry.path().extension() == image_extensions) {
+      thumbnails_sorted_by_write_time_[last_write_time] = entry.path();
+      // }
     }
   }
 
@@ -176,21 +190,30 @@ int Thumbnail::LoadThumbnail(SDL_Renderer* renderer,
                              std::map<std::string, SDL_Texture*>& textures,
                              int* width, int* height) {
   textures.clear();
-  std::vector<std::filesystem::path> image_path =
+  std::vector<std::filesystem::path> image_paths =
       FindThumbnailPath(image_path_);
 
-  if (image_path.size() == 0) {
+  if (image_paths.size() == 0) {
     return -1;
   } else {
-    for (int i = 0; i < image_path.size(); i++) {
-      // size_t pos1 = image_path[i].string().find('\\') + 1;
-      // size_t pos2 = image_path[i].string().rfind('@');
-      // std::string host_name = image_path[i].string().substr(pos1, pos2 -
-      // pos1);
-      std::string image_p = image_path[i].string();
-      textures[image_p] = nullptr;
-      LoadTextureFromFile(image_path[i].string().c_str(), renderer,
-                          &(textures[image_p]), width, height);
+    for (int i = 0; i < image_paths.size(); i++) {
+      size_t pos1 = image_paths[i].string().find('/') + 1;
+      std::string cipher_image_name = image_paths[i].string().substr(pos1);
+      LOG_ERROR("cipher_image_name: {}", cipher_image_name);
+      std::string original_image_name = AES_decrypt(key_, cipher_image_name);
+      std::string image_path = image_path_ + original_image_name;
+      LOG_ERROR("image_path: {}", image_path);
+      // size_t pos1 = original_image_name[i].string().find('@') + 1;
+      // size_t pos2 = original_image_name[i].string().rfind('@');
+      // std::string password = original_image_name[i].string().substr(0, pos1);
+      // std::string host_name =
+      //     original_image_name[i].string().substr(pos1, pos2 - pos1);
+      // std::string remote_id = original_image_name[i].string().substr(pos2 +
+      // 1);
+
+      textures[original_image_name] = nullptr;
+      LoadTextureFromFile(image_path.c_str(), renderer,
+                          &(textures[original_image_name]), width, height);
     }
     return 0;
   }
@@ -206,4 +229,96 @@ int Thumbnail::DeleteThumbnail(const std::string& file_path) {
     LOG_ERROR("File [{}] does not exist", file_path);
     return -1;
   }
+}
+
+// 将std::string转换为unsigned char向量
+std::vector<unsigned char> string_to_uchar_vector(const std::string& str) {
+  return std::vector<unsigned char>(str.begin(), str.end());
+}
+
+// 将unsigned char向量转换为std::string
+std::string uchar_vector_to_string(const std::vector<unsigned char>& vec) {
+  return std::string(vec.begin(), vec.end());
+}
+
+// PKCS#7 填充
+void pkcs7_pad(std::vector<unsigned char>& data) {
+  size_t pad_length = AES_BLOCK_SIZE - (data.size() % AES_BLOCK_SIZE);
+  data.insert(data.end(), pad_length, static_cast<unsigned char>(pad_length));
+}
+
+// PKCS#7 去除填充
+void pkcs7_unpad(std::vector<unsigned char>& data) {
+  if (!data.empty()) {
+    size_t pad_length = data.back();
+    data.resize(data.size() - pad_length);
+  }
+}
+
+std::string Thumbnail::AES_encrypt(const std::string& key,
+                                   const std::string& plaintext) {
+  std::vector<unsigned char> key_vec = string_to_uchar_vector(key);
+  std::vector<unsigned char> iv(AES_BLOCK_SIZE);
+  RAND_bytes(iv.data(), AES_BLOCK_SIZE);  // 随机生成IV
+
+  std::vector<unsigned char> plaintext_vec = string_to_uchar_vector(plaintext);
+  pkcs7_pad(plaintext_vec);  // 填充明文
+
+  std::vector<unsigned char> ciphertext(plaintext_vec.size());
+  AES_KEY encryptKey;
+  AES_set_encrypt_key(key_vec.data(), 128, &encryptKey);
+
+  AES_cbc_encrypt(plaintext_vec.data(), ciphertext.data(), plaintext_vec.size(),
+                  &encryptKey, iv.data(), AES_ENCRYPT);
+
+  // 将IV和密文拼接，方便解密时取出IV
+  ciphertext.insert(ciphertext.begin(), iv.begin(), iv.end());
+
+  // return uchar_vector_to_string(ciphertext);
+
+  std::string encrypted = uchar_vector_to_string(ciphertext);
+
+  std::string original_image_name =
+      AES_decrypt(key_, uchar_vector_to_string(ciphertext));
+  LOG_ERROR("!!!!!!!!!!!!!!! src = [{}]", original_image_name);
+
+  // 转换成十六进制字符串
+  std::ostringstream encrypted_oss;
+  for (unsigned char c : encrypted) {
+    encrypted_oss << std::hex << std::setw(2) << std::setfill('0') << (int)c;
+  }
+  return encrypted_oss.str();
+}
+
+std::string Thumbnail::AES_decrypt(const std::string& key,
+                                   const std::string& ciphertext) {
+  // // 将十六进制字符串转换回原始二进制密文
+  std::string original_ciphertext = ciphertext;
+  // for (size_t i = 0; i < ciphertext.size(); i += 2) {
+  //   std::string byte_str = ciphertext.substr(i, 2);
+  //   unsigned char byte =
+  //       static_cast<unsigned char>(std::stoi(byte_str, nullptr, 16));
+  //   original_ciphertext.push_back(byte);
+  // }
+
+  std::vector<unsigned char> key_vec = string_to_uchar_vector(key);
+  std::vector<unsigned char> ciphertext_vec =
+      string_to_uchar_vector(ciphertext);
+
+  // 提取IV
+  std::vector<unsigned char> iv(ciphertext_vec.begin(),
+                                ciphertext_vec.begin() + AES_BLOCK_SIZE);
+  ciphertext_vec.erase(ciphertext_vec.begin(),
+                       ciphertext_vec.begin() + AES_BLOCK_SIZE);
+
+  std::vector<unsigned char> plaintext(ciphertext_vec.size());
+  AES_KEY decryptKey;
+  AES_set_decrypt_key(key_vec.data(), 128, &decryptKey);
+
+  AES_cbc_encrypt(ciphertext_vec.data(), plaintext.data(),
+                  ciphertext_vec.size(), &decryptKey, iv.data(), AES_DECRYPT);
+
+  pkcs7_unpad(plaintext);  // 去除填充
+
+  return uchar_vector_to_string(plaintext);
 }

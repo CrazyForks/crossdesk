@@ -802,8 +802,9 @@ int Render::Run() {
           DestroyStreamWindowContext();
 
           if (dst_buffer_) {
-            thumbnail_.SaveToThumbnail((char*)dst_buffer_, video_width_,
-                                       video_height_, host_name_, remote_id_);
+            thumbnail_.SaveToThumbnail(
+                (char*)dst_buffer_, video_width_, video_height_, host_name_,
+                remote_id_, remember_password_ ? remote_password_ : "");
             recent_connection_image_save_time_ = SDL_GetTicks();
           }
 

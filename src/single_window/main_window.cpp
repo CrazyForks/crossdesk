@@ -102,9 +102,16 @@ int Render::ShowRecentConnections() {
                           ImGuiWindowFlags_NoTitleBar |
                           ImGuiWindowFlags_NoBringToFrontOnFocus |
                           ImGuiWindowFlags_NoScrollbar);
-    size_t pos1 = it->first.find('\\') + 1;
+    // size_t pos1 = it->first.find('\\') + 1;
+    // size_t pos2 = it->first.rfind('@');
+    // std::string host_name = it->first.substr(pos1, pos2 - pos1);
+
+    size_t pos1 = it->first.find('@') + 1;
     size_t pos2 = it->first.rfind('@');
+    std::string password = it->first.substr(0, pos1);
     std::string host_name = it->first.substr(pos1, pos2 - pos1);
+    std::string remote_id = it->first.substr(pos2 + 1);
+
     ImGui::SetWindowFontScale(0.4f);
     ImVec2 window_size = ImGui::GetWindowSize();
     ImVec2 text_size = ImGui::CalcTextSize(host_name.c_str());

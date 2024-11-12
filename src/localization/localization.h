@@ -63,6 +63,9 @@ static std::vector<std::string> validate_password = {u8"验证密码中...",
 static std::vector<std::string> reinput_password = {
     u8"请重新输入密码", "Please input password again"};
 
+static std::vector<std::string> remember_password = {u8"记住密码",
+                                                     "Remember password"};
+
 static std::vector<std::string> signal_connected = {u8"已连接服务器",
                                                     "Connected"};
 static std::vector<std::string> signal_disconnected = {u8"未连接服务器",

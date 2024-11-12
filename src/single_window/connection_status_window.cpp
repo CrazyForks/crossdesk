@@ -88,6 +88,7 @@ int Render::ConnectionStatusWindow() {
         } else {
           text = localization::reinput_password[localization_language_index_];
         }
+
         auto window_width = ImGui::GetWindowSize().x;
         auto window_height = ImGui::GetWindowSize().y;
         ImGui::SetCursorPosX((window_width - IPUT_WINDOW_WIDTH / 2) * 0.5f);
@@ -100,10 +101,22 @@ int Render::ConnectionStatusWindow() {
           ImGui::SetKeyboardFocusHere();
           focus_on_input_widget_ = false;
         }
+
         ImGui::InputText("##password", remote_password_,
                          IM_ARRAYSIZE(remote_password_),
                          ImGuiInputTextFlags_CharsNoBlank);
 
+        ImGui::SetWindowFontScale(0.4f);
+
+        ImVec2 text_size = ImGui::CalcTextSize(
+            localization::remember_password[localization_language_index_]
+                .c_str());
+        ImGui::SetCursorPosX((window_width - text_size.x) * 0.5f - 13.0f);
+        ImGui::Checkbox(
+            localization::remember_password[localization_language_index_]
+                .c_str(),
+            &remember_password_);
+        ImGui::SetWindowFontScale(0.5f);
         ImGui::PopStyleVar();
 
         ImGui::SetCursorPosX(window_width * 0.315f);
