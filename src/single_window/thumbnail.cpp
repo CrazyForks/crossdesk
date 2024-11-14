@@ -97,13 +97,13 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
 
     std::string image_name;
     if (password.empty()) {
-      image_name = remote_id + "N" + host_name;
+      image_name = remote_id + 'N' + host_name;
     } else {
       // delete the file which has no password in its name
       std::string filename_without_password = remote_id + "N" + host_name;
       DeleteThumbnail(filename_without_password);
 
-      image_name = remote_id + "Y" + password + host_name;
+      image_name = remote_id + 'Y' + password + host_name;
     }
 
     std::string ciphertext = AES_encrypt(image_name, aes128_key_, aes128_iv_);

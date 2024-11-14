@@ -533,7 +533,6 @@ int Render::SetupFontAndStyle() {
                                  30.0f, &config, icon_ranges);
 
   io.Fonts->Build();
-
   // Setup Dear ImGui style
   // ImGui::StyleColorsDark();
   ImGui::StyleColorsLight();
@@ -842,6 +841,7 @@ int Render::Run() {
           audio_capture_button_pressed_ = false;
           fullscreen_button_pressed_ = false;
           reload_recent_connections_ = true;
+          remember_password_ = false;
 
           SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
           memset(audio_buffer_, 0, 720);
