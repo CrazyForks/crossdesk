@@ -55,7 +55,7 @@ class Render {
   int DestroyMainWindow();
   int CreateStreamWindow();
   int DestroyStreamWindow();
-  int SetupFontAndStyle();
+  int SetupFontAndStyle(bool is_main_window);
   int SetupMainWindow();
   int DestroyMainWindowContext();
   int SetupStreamWindow();
@@ -353,6 +353,19 @@ class Render {
 
  private:
   bool settings_window_pos_reset_ = true;
+
+ private:
+  ImFont *font_size_32_main_ = nullptr;
+  ImFont *font_size_25_main_ = nullptr;
+  ImFont *font_size_16_main_ = nullptr;
+  ImFont *font_size_32_sub_ = nullptr;
+  ImFont *font_size_25_sub_ = nullptr;
+  ImFont *font_size_16_sub_ = nullptr;
+
+  ImFont *icon_size_30_main_ = nullptr;
+  ImFont *icon_size_15_main_ = nullptr;
+  ImFont *icon_size_30_sub_ = nullptr;
+  ImFont *icon_size_15_sub_ = nullptr;
 };
 
 #endif
