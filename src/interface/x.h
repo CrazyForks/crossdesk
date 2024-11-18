@@ -42,9 +42,20 @@ extern "C" {
 typedef struct {
   const char* data;
   size_t size;
-  unsigned int width;
-  unsigned int height;
+  uint32_t width;
+  uint32_t height;
 } XVideoFrame;
+
+typedef struct {
+  uint64_t video_in;
+  uint64_t video_out;
+  uint64_t audio_in;
+  uint64_t audio_out;
+  uint64_t data_in;
+  uint64_t data_out;
+  uint64_t total_in;
+  uint64_t total_out;
+} XNetTrafficStats;
 
 typedef struct Peer PeerPtr;
 
@@ -60,8 +71,7 @@ typedef void (*OnConnectionStatus)(ConnectionStatus, const char*, const size_t,
                                    void*);
 
 typedef void (*NetStatusReport)(const char*, const size_t, TraversalMode,
-                                const unsigned short, const unsigned short,
-                                void*);
+                                const XNetTrafficStats*, void*);
 
 typedef struct {
   bool use_cfg_file;

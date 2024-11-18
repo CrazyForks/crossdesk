@@ -43,18 +43,18 @@ int IceTransmission::InitIceTransmission(
     std::string &turn_username, std::string &turn_password,
     RtpPacket::PAYLOAD_TYPE video_codec_payload_type) {
   ice_io_statistics_ = std::make_unique<IOStatistics>(
-      [](uint32_t video_inbound_bitrate, uint32_t video_outbound_bitrate,
-         uint32_t audio_inbound_bitrate, uint32_t audio_outbound_bitrate,
-         uint32_t data_inbound_bitrate, uint32_t data_outbound_bitrate,
-         uint32_t total_inbound_bitrate, uint32_t total_outbound_bitrate) {
-        // LOG_ERROR(
-        //     "video in: [{}] kbps, video out: [{}] kbps, audio in: [{}] kbps,
-        //     " "audio out: [{}] kbps, data in: [{}] kbps, data out: [{}] kbps,
-        //     " "total in: [{}] kbps, total out: [{}] kbps",
-        //     video_inbound_bitrate / 1000, video_outbound_bitrate / 1000,
-        //     audio_inbound_bitrate / 1000, audio_outbound_bitrate / 1000,
-        //     data_inbound_bitrate / 1000, data_outbound_bitrate / 1000,
-        //     total_inbound_bitrate / 1000, total_outbound_bitrate / 1000);
+      [this](uint32_t video_inbound_bitrate, uint32_t video_outbound_bitrate,
+             uint32_t audio_inbound_bitrate, uint32_t audio_outbound_bitrate,
+             uint32_t data_inbound_bitrate, uint32_t data_outbound_bitrate,
+             uint32_t total_inbound_bitrate, uint32_t total_outbound_bitrate) {
+        if (on_receive_net_status_report_) {
+          on_receive_net_status_report_(
+              transmission_id_, traversal_type_, video_inbound_bitrate,
+              video_outbound_bitrate, audio_inbound_bitrate,
+              audio_outbound_bitrate, data_inbound_bitrate,
+              data_outbound_bitrate, total_inbound_bitrate,
+              total_outbound_bitrate, nullptr);
+        }
       });
 
   video_codec_payload_type_ = video_codec_payload_type;
@@ -301,7 +301,8 @@ int IceTransmission::InitIceTransmission(
           }
           ice_transmission_obj->on_receive_net_status_report_(
               ice_transmission_obj->transmission_id_,
-              ice_transmission_obj->traversal_type_, 0, 0, nullptr);
+              ice_transmission_obj->traversal_type_, 0, 0, 0, 0, 0, 0, 0, 0,
+              nullptr);
         }
       },
       [](NiceAgent *agent, guint stream_id, guint component_id, guint size,

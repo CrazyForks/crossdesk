@@ -75,8 +75,10 @@ class IceTransmission {
   }
 
   void SetOnReceiveNetStatusReportFunc(
-      std::function<void(const std::string &, TraversalType,
-                         const unsigned short, const unsigned short, void *)>
+      std::function<void(const std::string &, TraversalType, const uint64_t,
+                         const uint64_t, const uint64_t, const uint64_t,
+                         const uint64_t, const uint64_t, const uint64_t,
+                         const uint64_t, void *)>
           on_receive_net_status_report) {
     on_receive_net_status_report_ = on_receive_net_status_report;
   }
@@ -159,8 +161,10 @@ class IceTransmission {
       on_receive_data_ = nullptr;
   std::function<void(std::string, const std::string &)> on_ice_status_change_ =
       nullptr;
-  std::function<void(const std::string &, TraversalType, const unsigned short,
-                     const unsigned short, void *)>
+  std::function<void(const std::string &, TraversalType, const uint64_t,
+                     const uint64_t, const uint64_t, const uint64_t,
+                     const uint64_t, const uint64_t, const uint64_t,
+                     const uint64_t, void *)>
       on_receive_net_status_report_ = nullptr;
 
  private:

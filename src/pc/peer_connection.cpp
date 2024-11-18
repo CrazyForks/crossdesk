@@ -234,13 +234,27 @@ int PeerConnection::Init(PeerConnectionParams params,
     }
   };
 
-  on_net_status_report_ = [this](const std::string &user_id,
-                                 IceTransmission::TraversalType mode,
-                                 const unsigned short send,
-                                 const unsigned short receive, void *user_ptr) {
+  on_net_status_report_ = [this](
+                              const std::string &user_id,
+                              IceTransmission::TraversalType mode,
+                              const uint64_t video_in, const uint64_t video_out,
+                              const uint64_t audio_in, const uint64_t audio_out,
+                              const uint64_t data_in, const uint64_t data_out,
+                              const uint64_t total_in, const uint64_t total_out,
+                              void *user_ptr) {
     if (net_status_report_) {
+      XNetTrafficStats net_traffic_stats;
+      net_traffic_stats.video_in = video_in;
+      net_traffic_stats.video_out = video_out;
+      net_traffic_stats.audio_in = audio_in;
+      net_traffic_stats.audio_out = audio_out;
+      net_traffic_stats.data_in = data_in;
+      net_traffic_stats.data_out = data_out;
+      net_traffic_stats.total_in = total_in;
+      net_traffic_stats.total_out = total_out;
+
       net_status_report_(user_id.data(), user_id.size(), TraversalMode(mode),
-                         send, receive, user_data_);
+                         &net_traffic_stats, user_data_);
     }
   };
 
@@ -623,8 +637,20 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
     case "login"_H: {
       if (j["status"].get<std::string>() == "success") {
         user_id_ = j["user_id"].get<std::string>();
+
+        XNetTrafficStats net_traffic_stats;
+        net_traffic_stats.video_in = 0;
+        net_traffic_stats.video_out = 0;
+        net_traffic_stats.audio_in = 0;
+        net_traffic_stats.audio_out = 0;
+        net_traffic_stats.data_in = 0;
+        net_traffic_stats.data_out = 0;
+        net_traffic_stats.total_in = 0;
+        net_traffic_stats.total_out = 0;
+
         net_status_report_(user_id_.data(), user_id_.size(),
-                           TraversalMode::UnknownMode, 0, 0, user_data_);
+                           TraversalMode::UnknownMode, &net_traffic_stats,
+                           user_data_);
         LOG_INFO("Login success with id [{}]", user_id_);
         signal_status_ = SignalStatus::SignalConnected;
         on_signal_status_(SignalStatus::SignalConnected, user_data_);
@@ -967,7 +993,6 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
     }
     case IceWorkMsg::Type::Destroy: {
       for (auto &user_id_it : ice_transmission_list_) {
-        LOG_ERROR("Destroy transmission");
         user_id_it.second->DestroyIceTransmission();
       }
       ice_transmission_list_.clear();
