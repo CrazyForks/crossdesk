@@ -1,97 +1,157 @@
 #include "keyboard_capturer.h"
 
-#include <ApplicationServices/ApplicationServices.h>
-
-#include <unordered_map>
-
+#include "keyboard_converter.h"
 #include "rd_log.h"
 
-// vkCode 到 CGKeyCode 的映射表
-std::unordered_map<int, CGKeyCode> vkCodeToCGKeyCode = {
-    // 字母键
-    {0x41, 0x00},  // A
-    {0x42, 0x0B},  // B
-    {0x43, 0x08},  // C
-    {0x44, 0x02},  // D
-    {0x45, 0x0E},  // E
-    {0x46, 0x03},  // F
-    {0x47, 0x05},  // G
-    {0x48, 0x04},  // H
-    {0x49, 0x22},  // I
-    {0x4A, 0x26},  // J
-    {0x4B, 0x28},  // K
-    {0x4C, 0x25},  // L
-    {0x4D, 0x2E},  // M
-    {0x4E, 0x2D},  // N
-    {0x4F, 0x1F},  // O
-    {0x50, 0x23},  // P
-    {0x51, 0x0C},  // Q
-    {0x52, 0x0F},  // R
-    {0x53, 0x01},  // S
-    {0x54, 0x11},  // T
-    {0x55, 0x20},  // U
-    {0x56, 0x09},  // V
-    {0x57, 0x0D},  // W
-    {0x58, 0x07},  // X
-    {0x59, 0x10},  // Y
-    {0x5A, 0x06},  // Z
+static OnKeyAction g_on_key_action = nullptr;
+static void *g_user_ptr = nullptr;
 
-    // 数字键
-    {0x30, 0x1D},  // 0
-    {0x31, 0x12},  // 1
-    {0x32, 0x13},  // 2
-    {0x33, 0x14},  // 3
-    {0x34, 0x15},  // 4
-    {0x35, 0x17},  // 5
-    {0x36, 0x16},  // 6
-    {0x37, 0x1A},  // 7
-    {0x38, 0x1C},  // 8
-    {0x39, 0x19},  // 9
+CGEventRef eventCallback(CGEventTapProxy proxy, CGEventType type,
+                         CGEventRef event, void *userInfo) {
+  KeyboardCapturer *keyboard_capturer = (KeyboardCapturer *)userInfo;
+  if (!keyboard_capturer) {
+    LOG_ERROR("keyboard_capturer is nullptr");
+    return event;
+  }
 
-    // 功能键
-    {0x20, 0x31},  // 空格
-    {0x0D, 0x24},  // 回车
-    {0x08, 0x33},  // 退格
-    {0x1B, 0x35},  // Esc
-    {0x2E, 0x75},  // Delete
+  int vk_code = 0;
 
-    // 箭头键
-    {0x25, 0x7B},  // 左
-    {0x27, 0x7C},  // 右
-    {0x26, 0x7E},  // 上
-    {0x28, 0x7D},  // 下
+  if (type == kCGEventKeyDown || type == kCGEventKeyUp) {
+    CGKeyCode key_code = static_cast<CGKeyCode>(
+        CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode));
+    std::cout << "Key Down Event: key code = " << key_code << std::endl;
+    if (CGKeyCodeToVkCode.find(key_code) != CGKeyCodeToVkCode.end()) {
+      g_on_key_action(CGKeyCodeToVkCode[key_code], type == kCGEventKeyDown,
+                      g_user_ptr);
+    } else {
+      LOG_ERROR("key_code not found");
+    }
+  } else if (type == kCGEventFlagsChanged) {
+    CGEventFlags current_flags = CGEventGetFlags(event);
+    CGKeyCode key_code = static_cast<CGKeyCode>(
+        CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode));
+    // 检测 CapsLock 键
+    bool caps_lock_state = (current_flags & kCGEventFlagMaskAlphaShift) != 0;
+    if (caps_lock_state != keyboard_capturer->caps_lock_flag_) {
+      keyboard_capturer->caps_lock_flag_ = caps_lock_state;
+      if (keyboard_capturer->caps_lock_flag_) {
+        std::cout << "CapsLock Pressed" << std::endl;
+        g_on_key_action(CGKeyCodeToVkCode[key_code], true, g_user_ptr);
+      } else {
+        std::cout << "CapsLock Released" << std::endl;
+        g_on_key_action(CGKeyCodeToVkCode[key_code], false, g_user_ptr);
+      }
+    }
 
-    // 功能键 F1-F12
-    {0x70, 0x7A},  // F1
-    {0x71, 0x78},  // F2
-    {0x72, 0x63},  // F3
-    {0x73, 0x76},  // F4
-    {0x74, 0x60},  // F5
-    {0x75, 0x61},  // F6
-    {0x76, 0x62},  // F7
-    {0x77, 0x64},  // F8
-    {0x78, 0x65},  // F9
-    {0x79, 0x6D},  // F10
-    {0x7A, 0x67},  // F11
-    {0x7B, 0x6F},  // F12
-};
+    // 检测 Shift 键
+    bool shift_state = (current_flags & kCGEventFlagMaskShift) != 0;
+    if (shift_state != keyboard_capturer->shift_flag_) {
+      keyboard_capturer->shift_flag_ = shift_state;
+      if (keyboard_capturer->shift_flag_) {
+        LOG_INFO("Shift Pressed: key_code = {:#04x} -> {:#04x}", key_code,
+                 CGKeyCodeToVkCode[key_code]);
+        g_on_key_action(CGKeyCodeToVkCode[key_code], true, g_user_ptr);
+      } else {
+        LOG_INFO("Shift Released: key_code = {:#04x} -> {:#04x}", key_code,
+                 CGKeyCodeToVkCode[key_code]);
+        g_on_key_action(CGKeyCodeToVkCode[key_code], false, g_user_ptr);
+      }
+    }
+
+    // 检测 Control 键
+    bool control_state = (current_flags & kCGEventFlagMaskControl) != 0;
+    if (control_state != keyboard_capturer->control_flag_) {
+      keyboard_capturer->control_flag_ = control_state;
+      if (keyboard_capturer->control_flag_) {
+        std::cout << "Control Pressed" << std::endl;
+        g_on_key_action(CGKeyCodeToVkCode[key_code], true, g_user_ptr);
+      } else {
+        std::cout << "Control Released" << std::endl;
+        g_on_key_action(CGKeyCodeToVkCode[key_code], false, g_user_ptr);
+      }
+    }
+
+    // 检测 Option 键
+    bool option_state = (current_flags & kCGEventFlagMaskAlternate) != 0;
+    if (option_state != keyboard_capturer->option_flag_) {
+      keyboard_capturer->option_flag_ = option_state;
+      if (keyboard_capturer->option_flag_) {
+        std::cout << "Option Pressed" << std::endl;
+        g_on_key_action(CGKeyCodeToVkCode[key_code], true, g_user_ptr);
+      } else {
+        std::cout << "Option Released" << std::endl;
+        g_on_key_action(CGKeyCodeToVkCode[key_code], false, g_user_ptr);
+      }
+    }
+
+    // 检测 Command 键
+    bool command_state = (current_flags & kCGEventFlagMaskCommand) != 0;
+    if (command_state != keyboard_capturer->command_flag_) {
+      keyboard_capturer->command_flag_ = command_state;
+      if (keyboard_capturer->command_flag_) {
+        std::cout << "Command Pressed" << std::endl;
+        g_on_key_action(CGKeyCodeToVkCode[key_code], true, g_user_ptr);
+      } else {
+        std::cout << "Command Released" << std::endl;
+        g_on_key_action(CGKeyCodeToVkCode[key_code], false, g_user_ptr);
+      }
+    }
+  }
+
+  return nullptr;  // 返回 null 表示阻止事件
+}
 
 KeyboardCapturer::KeyboardCapturer() {}
 
 KeyboardCapturer::~KeyboardCapturer() {}
 
 int KeyboardCapturer::Hook(OnKeyAction on_key_action, void *user_ptr) {
+  g_on_key_action = on_key_action;
+  g_user_ptr = user_ptr;
+
+  CGEventMask eventMask = (1 << kCGEventKeyDown) | (1 << kCGEventKeyUp) |
+                          (1 << kCGEventFlagsChanged);
+
+  eventTap = CGEventTapCreate(kCGSessionEventTap,     // 事件 Tap 的作用范围
+                              kCGHeadInsertEventTap,  // 插入到事件队列的最前面
+                              kCGEventTapOptionDefault,  // 默认选项
+                              eventMask,                 // 要拦截的事件类型
+                              eventCallback,             // 事件回调函数
+                              this                       // 用户数据指针（可选）
+  );
+
+  if (!eventTap) {
+    std::cerr << "Failed to create event tap. Ensure Accessibility permissions "
+                 "are granted."
+              << std::endl;
+    return -1;
+  }
+
+  runLoopSource =
+      CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0);
+
+  CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource,
+                     kCFRunLoopCommonModes);
+
+  CGEventTapEnable(eventTap, true);
   return 0;
 }
 
-int KeyboardCapturer::Unhook() { return 0; }
+int KeyboardCapturer::Unhook() {
+  CFRelease(runLoopSource);
+  CFRelease(eventTap);
+  return 0;
+}
 
 int KeyboardCapturer::SendKeyboardCommand(int key_code, bool is_down) {
+  LOG_INFO("SendKeyboardCommand: key_code = {:#04x}", key_code);
   if (vkCodeToCGKeyCode.find(key_code) != vkCodeToCGKeyCode.end()) {
     CGKeyCode cg_key_code = vkCodeToCGKeyCode[key_code];
     CGEventRef event = CGEventCreateKeyboardEvent(NULL, cg_key_code, is_down);
     CGEventPost(kCGHIDEventTap, event);
     CFRelease(event);
+  } else {
+    LOG_ERROR("key_code not found");
   }
 
   return 0;

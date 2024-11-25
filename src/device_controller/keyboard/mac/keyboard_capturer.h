@@ -7,6 +7,8 @@
 #ifndef _KEYBOARD_CAPTURER_H_
 #define _KEYBOARD_CAPTURER_H_
 
+#include <ApplicationServices/ApplicationServices.h>
+
 #include "device_controller.h"
 
 class KeyboardCapturer : public DeviceController {
@@ -20,6 +22,15 @@ class KeyboardCapturer : public DeviceController {
   virtual int SendKeyboardCommand(int key_code, bool is_down);
 
  private:
+  CFMachPortRef eventTap;
+  CFRunLoopSourceRef runLoopSource;
+
+ public:
+  bool caps_lock_flag_ = false;
+  bool shift_flag_ = false;
+  bool control_flag_ = false;
+  bool option_flag_ = false;
+  bool command_flag_ = false;
 };
 
 #endif

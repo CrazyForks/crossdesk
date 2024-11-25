@@ -210,13 +210,14 @@ int Render::NetTrafficStats(ImVec2 mouse_button_pos) {
     ImGui::TableNextColumn();
     ImGui::Text(" ");
     ImGui::TableNextColumn();
-    ImGui::Text(localization::in[localization_language_index_].c_str());
+    ImGui::Text("%s", localization::in[localization_language_index_].c_str());
     ImGui::TableNextColumn();
-    ImGui::Text(localization::out[localization_language_index_].c_str());
+    ImGui::Text("%s", localization::out[localization_language_index_].c_str());
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text(localization::video[localization_language_index_].c_str());
+    ImGui::Text("%s",
+                localization::video[localization_language_index_].c_str());
     ImGui::TableNextColumn();
     BitrateDisplay(net_traffic_stats_.video_in);
     ImGui::TableNextColumn();
@@ -224,7 +225,8 @@ int Render::NetTrafficStats(ImVec2 mouse_button_pos) {
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text(localization::audio[localization_language_index_].c_str());
+    ImGui::Text("%s",
+                localization::audio[localization_language_index_].c_str());
     ImGui::TableNextColumn();
     BitrateDisplay(net_traffic_stats_.audio_in);
     ImGui::TableNextColumn();
@@ -232,7 +234,7 @@ int Render::NetTrafficStats(ImVec2 mouse_button_pos) {
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text(localization::data[localization_language_index_].c_str());
+    ImGui::Text("%s", localization::data[localization_language_index_].c_str());
     ImGui::TableNextColumn();
     BitrateDisplay(net_traffic_stats_.data_in);
     ImGui::TableNextColumn();
@@ -240,7 +242,8 @@ int Render::NetTrafficStats(ImVec2 mouse_button_pos) {
 
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text(localization::total[localization_language_index_].c_str());
+    ImGui::Text("%s",
+                localization::total[localization_language_index_].c_str());
     ImGui::TableNextColumn();
     BitrateDisplay(net_traffic_stats_.total_in);
     ImGui::TableNextColumn();
