@@ -13,7 +13,7 @@ std::shared_ptr<spdlog::logger> get_logger() {
 #ifdef _WIN32
   gmtime_s(&tm_info, &now_time);
 #else
-  std::gmtime_r(&now_time, &tm_info);
+  gmtime_r(&now_time, &tm_info);
 #endif
 
   std::stringstream ss;
