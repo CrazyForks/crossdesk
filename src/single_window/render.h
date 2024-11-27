@@ -215,8 +215,8 @@ class Render {
 
   float control_bar_pos_x_ = 0;
   float control_bar_pos_y_ = 30;
-  int mouse_diff_control_bar_pos_x_ = 0;
-  int mouse_diff_control_bar_pos_y_ = 0;
+  float mouse_diff_control_bar_pos_x_ = 0;
+  float mouse_diff_control_bar_pos_y_ = 0;
   int mouse_pos_x_ = 0;
   int mouse_pos_y_ = 0;
   int mouse_pos_x_last_ = 0;
