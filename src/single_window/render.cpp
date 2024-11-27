@@ -634,8 +634,8 @@ int Render::SetupStreamWindow() {
 
   SetupFontAndStyle();
 
-  SDL_GL_GetDrawableSize(stream_window_, &main_window_width_real_,
-                         &main_window_height_real_);
+  SDL_GL_GetDrawableSize(stream_window_, &stream_window_width_real_,
+                         &stream_window_height_real_);
 
   stream_window_dpi_scaling_w_ =
       stream_window_width_real_ / stream_window_width_;
