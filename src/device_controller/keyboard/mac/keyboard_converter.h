@@ -118,7 +118,7 @@ std::map<int, int> vkCodeToCGKeyCode = {
     // modifier keys
     {0x14, 0x39},  // Caps Lock
     {0xA0, 0x38},  // Shift (Left)
-    {0xA1, 0x3B},  // Shift (Right)
+    {0xA1, 0x3C},  // Shift (Right)
     {0xA2, 0x3B},  // Ctrl (Left)
     {0xA3, 0x3E},  // Ctrl (Right)
     {0xA4, 0x3A},  // Alt (Left)
