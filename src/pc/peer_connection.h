@@ -143,8 +143,9 @@ class PeerConnection {
   bool enable_turn_ = false;
   bool trickle_ice_ = true;
   bool reliable_ice_ = true;
+  bool try_rejoin_with_turn_ = false;
   TraversalMode mode_ = TraversalMode::P2P;
-  bool try_rejoin_with_turn_ = true;
+
   std::vector<int> video_payload_types_ = {RtpPacket::PAYLOAD_TYPE::H264,
                                            RtpPacket::PAYLOAD_TYPE::AV1};
   std::vector<int> audio_payload_types_ = {RtpPacket::PAYLOAD_TYPE::OPUS};

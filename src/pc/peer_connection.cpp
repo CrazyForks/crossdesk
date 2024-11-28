@@ -140,13 +140,15 @@ int PeerConnection::Init(PeerConnectionParams params,
                             user_id.size(), user_data_);
     } else if ("connected" == ice_status) {
       // std::string transmission_id = std::string(user_id, user_id_size);
-      is_ice_transmission_ready_[user_id] = true;
-      on_connection_status_(ConnectionStatus::Connected, user_id.data(),
-                            user_id.size(), user_data_);
-      b_force_i_frame_ = true;
+      // is_ice_transmission_ready_[user_id] = true;
+      // on_connection_status_(ConnectionStatus::Connected, user_id.data(),
+      //                       user_id.size(), user_data_);
+      // b_force_i_frame_ = true;
       LOG_INFO("Ice connected");
     } else if ("ready" == ice_status) {
       is_ice_transmission_ready_[user_id] = true;
+      b_force_i_frame_ = true;
+      LOG_INFO("Ice ready");
       on_connection_status_(ConnectionStatus::Connected, user_id.data(),
                             user_id.size(), user_data_);
     } else if ("closed" == ice_status) {
