@@ -30,6 +30,7 @@ void RtpDataReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   if (io_statistics_) {
     io_statistics_->UpdateDataInboundBytes(last_recv_bytes_);
     io_statistics_->IncrementDataInboundRtpPacketCount();
+    io_statistics_->UpdateDataPacketLossCount(rtp_packet.SequenceNumber());
   }
 
   if (CheckIsTimeSendRR()) {

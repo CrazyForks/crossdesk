@@ -2,6 +2,8 @@
 
 #include "log.h"
 
+#define RTP_SEQ_NUM_MAX 65535
+
 IOStatistics::IOStatistics(
     std::function<void(const NetTrafficStats&)> io_report_callback)
     : io_report_callback_(io_report_callback) {
@@ -52,7 +54,7 @@ void IOStatistics::Process() {
       }
 
       if (expected_audio_inbound_rtp_pkt_cnt_ > 0 &&
-          audio_inbound_rtp_pkt_cnt_tmp_ > 0) {
+          audio_inbound_rtp_pkt_cnt_tmp_ >= 0) {
         audio_rtp_pkt_loss_rate_ =
             audio_rtp_pkt_loss_cnt_ / (float)audio_inbound_rtp_pkt_cnt_;
       } else {
@@ -60,7 +62,7 @@ void IOStatistics::Process() {
       }
 
       if (expected_data_inbound_rtp_pkt_cnt_ > 0 &&
-          data_inbound_rtp_pkt_cnt_ > 0) {
+          data_inbound_rtp_pkt_cnt_ >= 0) {
         data_rtp_pkt_loss_rate_ =
             data_rtp_pkt_loss_cnt_ / (float)data_inbound_rtp_pkt_cnt_;
       } else {
@@ -122,6 +124,30 @@ void IOStatistics::Process() {
           video_outbound_rtp_pkt_cnt_ + audio_outbound_rtp_pkt_cnt_ +
           data_outbound_rtp_pkt_cnt_;
 
+      LOG_ERROR(
+          "[{} {} {}] | [{} {}] | [{} {} {}] | [{} {}] | [{} {} {}] | [{} "
+          "{}] | [{} {} {}] | [{} {}]",
+          net_traffic_stats.video_inbound_stats.bitrate,
+          net_traffic_stats.video_inbound_stats.loss_rate,
+          net_traffic_stats.video_inbound_stats.rtp_packet_count,
+          net_traffic_stats.video_outbound_stats.bitrate,
+          net_traffic_stats.video_outbound_stats.rtp_packet_count,
+          net_traffic_stats.audio_inbound_stats.bitrate,
+          net_traffic_stats.audio_inbound_stats.loss_rate,
+          net_traffic_stats.audio_inbound_stats.rtp_packet_count,
+          net_traffic_stats.audio_outbound_stats.bitrate,
+          net_traffic_stats.audio_outbound_stats.rtp_packet_count,
+          net_traffic_stats.data_inbound_stats.bitrate,
+          net_traffic_stats.data_inbound_stats.loss_rate,
+          net_traffic_stats.data_inbound_stats.rtp_packet_count,
+          net_traffic_stats.data_outbound_stats.bitrate,
+          net_traffic_stats.data_outbound_stats.rtp_packet_count,
+          net_traffic_stats.total_inbound_stats.bitrate,
+          net_traffic_stats.total_inbound_stats.loss_rate,
+          net_traffic_stats.total_inbound_stats.rtp_packet_count,
+          net_traffic_stats.total_outbound_stats.bitrate,
+          net_traffic_stats.total_outbound_stats.rtp_packet_count);
+
       io_report_callback_(net_traffic_stats);
     }
   }
@@ -158,7 +184,7 @@ void IOStatistics::UpdateVideoPacketLossCount(uint16_t seq_num) {
             0xffff - last_received_video_rtp_pkt_seq_ + seq_num + 1;
       } else {
         expected_video_inbound_rtp_pkt_cnt_ +=
-            seq_num - last_received_video_rtp_pkt_seq_ - 1;
+            seq_num - last_received_video_rtp_pkt_seq_;
       }
     } else if (last_received_video_rtp_pkt_seq_ > seq_num) {
       expected_video_inbound_rtp_pkt_cnt_ +=
@@ -184,7 +210,7 @@ void IOStatistics::UpdateAudioPacketLossCount(uint16_t seq_num) {
             0xffff - last_received_audio_rtp_pkt_seq_ + seq_num + 1;
       } else {
         expected_audio_inbound_rtp_pkt_cnt_ +=
-            seq_num - last_received_audio_rtp_pkt_seq_ - 1;
+            seq_num - last_received_audio_rtp_pkt_seq_;
       }
     } else if (last_received_audio_rtp_pkt_seq_ > seq_num) {
       expected_audio_inbound_rtp_pkt_cnt_ +=
@@ -210,7 +236,7 @@ void IOStatistics::UpdateDataPacketLossCount(uint16_t seq_num) {
             0xffff - last_received_data_rtp_pkt_seq_ + seq_num + 1;
       } else {
         expected_data_inbound_rtp_pkt_cnt_ +=
-            seq_num - last_received_data_rtp_pkt_seq_ - 1;
+            seq_num - last_received_data_rtp_pkt_seq_;
       }
     } else if (last_received_data_rtp_pkt_seq_ > seq_num) {
       expected_data_inbound_rtp_pkt_cnt_ +=

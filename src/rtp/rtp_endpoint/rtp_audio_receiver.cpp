@@ -30,6 +30,7 @@ void RtpAudioReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   if (io_statistics_) {
     io_statistics_->UpdateAudioInboundBytes(last_recv_bytes_);
     io_statistics_->IncrementAudioInboundRtpPacketCount();
+    io_statistics_->UpdateAudioPacketLossCount(rtp_packet.SequenceNumber());
   }
 
   if (CheckIsTimeSendRR()) {

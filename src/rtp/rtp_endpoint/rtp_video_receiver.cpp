@@ -33,6 +33,7 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   if (io_statistics_) {
     io_statistics_->UpdateVideoInboundBytes(last_recv_bytes_);
     io_statistics_->IncrementVideoInboundRtpPacketCount();
+    io_statistics_->UpdateVideoPacketLossCount(rtp_packet.SequenceNumber());
   }
 
   if (CheckIsTimeSendRR()) {
