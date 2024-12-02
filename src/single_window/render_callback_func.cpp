@@ -13,76 +13,6 @@
 #define MOUSE_CONTROL 1
 #endif
 
-int Render::ProcessMouseKeyEvent(SDL_Event &event) {
-  if (!control_mouse_ || !connection_established_) {
-    return 0;
-  }
-
-  if (SDL_KEYDOWN == event.type || SDL_KEYUP == event.type) {
-  } else {
-    ProcessMouseEvent(event);
-  }
-
-  return 0;
-}
-
-int Render::ProcessMouseEvent(SDL_Event &event) {
-  float ratio_x = (float)video_width_ / (float)stream_render_rect_.w;
-  float ratio_y = (float)video_height_ / (float)stream_render_rect_.h;
-
-  if (event.button.x <= stream_render_rect_.x) {
-    event.button.x = 0;
-  } else if (event.button.x > stream_render_rect_.x &&
-             event.button.x < stream_render_rect_.x + stream_render_rect_.w) {
-    event.button.x -= stream_render_rect_.x;
-  } else if (event.button.x >= stream_render_rect_.x + stream_render_rect_.w) {
-    event.button.x = stream_render_rect_.w;
-  }
-
-  if (event.button.y <= stream_render_rect_.y) {
-    event.button.y = 0;
-  } else if (event.button.y > stream_render_rect_.y &&
-             event.button.y < stream_render_rect_.y + stream_render_rect_.h) {
-    event.button.y -= stream_render_rect_.y;
-  } else if (event.button.y >= stream_render_rect_.y + stream_render_rect_.h) {
-    event.button.y = stream_render_rect_.h;
-  }
-
-  RemoteAction remote_action;
-  remote_action.m.x = (size_t)(event.button.x * ratio_x);
-  remote_action.m.y = (size_t)(event.button.y * ratio_y);
-
-  if (SDL_MOUSEBUTTONDOWN == event.type) {
-    remote_action.type = ControlType::mouse;
-    if (SDL_BUTTON_LEFT == event.button.button) {
-      remote_action.m.flag = MouseFlag::left_down;
-    } else if (SDL_BUTTON_RIGHT == event.button.button) {
-      remote_action.m.flag = MouseFlag::right_down;
-    }
-    if (control_bar_hovered_) {
-      remote_action.m.flag = MouseFlag::move;
-    }
-    SendDataFrame(peer_, (const char *)&remote_action, sizeof(remote_action));
-  } else if (SDL_MOUSEBUTTONUP == event.type) {
-    remote_action.type = ControlType::mouse;
-    if (SDL_BUTTON_LEFT == event.button.button) {
-      remote_action.m.flag = MouseFlag::left_up;
-    } else if (SDL_BUTTON_RIGHT == event.button.button) {
-      remote_action.m.flag = MouseFlag::right_up;
-    }
-    if (control_bar_hovered_) {
-      remote_action.m.flag = MouseFlag::move;
-    }
-    SendDataFrame(peer_, (const char *)&remote_action, sizeof(remote_action));
-  } else if (SDL_MOUSEMOTION == event.type) {
-    remote_action.type = ControlType::mouse;
-    remote_action.m.flag = MouseFlag::move;
-    SendDataFrame(peer_, (const char *)&remote_action, sizeof(remote_action));
-  }
-
-  return 0;
-}
-
 int Render::SendKeyEvent(int key_code, bool is_down) {
   RemoteAction remote_action;
   remote_action.type = ControlType::keyboard;
@@ -200,10 +130,12 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
                                    void *user_data) {
   Render *render = (Render *)user_data;
   if (!render) {
+    LOG_ERROR("??????????????????");
     return;
   }
 
   std::string user(user_id, user_id_size);
+  LOG_INFO("Receive data from: {}", user);
   RemoteAction remote_action;
   memcpy(&remote_action, data, size);
 
@@ -219,9 +151,11 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
     render->ProcessKeyEvent((int)remote_action.k.key_value,
                             remote_action.k.flag == KeyFlag::key_down);
   } else if (ControlType::host_infomation == remote_action.type) {
-    render->host_name_ =
+    render->remote_host_name_ =
         std::string(remote_action.i.host_name, remote_action.i.host_name_size);
-    LOG_INFO("Remote hostname: [{}]", render->host_name_);
+    LOG_INFO("Remote hostname: [{}]", render->remote_host_name_);
+  } else {
+    LOG_ERROR("Unknown control type: {}", (int)remote_action.type);
   }
 }
 
@@ -270,6 +204,8 @@ void Render::OnConnectionStatusCb(ConnectionStatus status,
   } else if (ConnectionStatus::Gathering == status) {
     render->connection_status_str_ = "Gathering";
   } else if (ConnectionStatus::Connected == status) {
+    std::string remote_id(user_id, user_id_size);
+    render->connection_properties_[remote_id] = SubStreamWindowProperties();
     render->connection_status_str_ = "Connected";
     render->connection_established_ = true;
     if (render->peer_reserved_ || !render->is_client_mode_) {
@@ -288,6 +224,9 @@ void Render::OnConnectionStatusCb(ConnectionStatus status,
       if (0 == ret) {
         render->hostname_sent_ = true;
       }
+      LOG_ERROR("1111111111111111 [{}|{}]", ret, host_name);
+    } else {
+      LOG_ERROR("2222222222222222");
     }
   } else if (ConnectionStatus::Disconnected == status) {
     render->connection_status_str_ = "Disconnected";
@@ -310,7 +249,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status,
       render->audio_capture_ = false;
       render->audio_capture_button_pressed_ = false;
     }
-    render->exit_video_window_ = false;
     if (!render->rejoin_) {
       memset(render->remote_password_, 0, sizeof(render->remote_password_));
     }

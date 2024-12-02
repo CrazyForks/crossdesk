@@ -323,8 +323,6 @@ int Render::StopKeyboardCapturer() {
 }
 
 int Render::CreateConnectionPeer() {
-  mac_addr_str_ = GetMac();
-
   params_.use_cfg_file = false;
   params_.signal_server_ip = "150.158.81.30";
   params_.signal_server_port = 9099;
@@ -819,24 +817,6 @@ int Render::Run() {
           connect_button_pressed_
               ? localization::disconnect[localization_language_index_]
               : localization::connect[localization_language_index_];
-
-      mouse_control_button_label_ =
-          mouse_control_button_pressed_
-              ? localization::release_mouse[localization_language_index_]
-              : localization::control_mouse[localization_language_index_];
-
-      audio_capture_button_label_ =
-          audio_capture_button_pressed_
-              ? localization::mute[localization_language_index_]
-              : localization::audio_capture[localization_language_index_];
-
-      fullscreen_button_label_ =
-          fullscreen_button_pressed_
-              ? localization::exit_fullscreen[localization_language_index_]
-              : localization::fullscreen[localization_language_index_];
-
-      settings_button_label_ =
-          localization::settings[localization_language_index_];
       label_inited_ = true;
       localization_language_index_last_ = localization_language_index_;
     }
@@ -871,7 +851,7 @@ int Render::Run() {
           if (dst_buffer_) {
             thumbnail_->SaveToThumbnail(
                 (char*)dst_buffer_, video_width_, video_height_, remote_id_,
-                host_name_, remember_password_ ? remote_password_ : "");
+                remote_host_name_, remember_password_ ? remote_password_ : "");
             recent_connection_image_save_time_ = SDL_GetTicks();
           }
 
@@ -975,17 +955,13 @@ int Render::Run() {
                 SDL_TEXTUREACCESS_STREAMING, texture_width_, texture_height_);
           }
         SDL_UpdateTexture(stream_texture_, NULL, dst_buffer_, texture_width_);
-      } else {
-        if (connection_established_) {
-          ProcessMouseKeyEvent(event);
-        }
       }
     }
 
     if (reload_recent_connections_ && main_renderer_) {
-      // loal recent connection thumbnails after saving for 0.5 second
+      // loal recent connection thumbnails after saving for 0.05 second
       uint32_t now_time = SDL_GetTicks();
-      if (now_time - recent_connection_image_save_time_ >= 500) {
+      if (now_time - recent_connection_image_save_time_ >= 50) {
         int ret = thumbnail_->LoadThumbnail(
             main_renderer_, recent_connection_textures_,
             &recent_connection_image_width_, &recent_connection_image_height_);
@@ -1021,20 +997,6 @@ int Render::Run() {
 
     // create connection
     CreateRtcConnection();
-
-    // frame_count_++;
-    // end_time_ = SDL_GetTicks();
-    // elapsed_time_ = end_time_ - start_time_;
-    // if (elapsed_time_ >= 1000) {
-    //   fps_ = frame_count_ / (elapsed_time_ / 1000);
-    //   frame_count_ = 0;
-    //   window_title = "Remote Desk Client FPS [" + std::to_string(fps_) +
-    //                  "] status [" + connection_status_str_ + "|" +
-    //                  connection_status_str_ + "]";
-    //   // For MacOS, UI frameworks can only be called from the main thread
-    //   SDL_SetWindowTitle(main_window_, window_title.c_str());
-    //   start_time_ = end_time_;
-    // }
   }
 
   delete[] argb_buffer_;

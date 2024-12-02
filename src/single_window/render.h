@@ -27,6 +27,68 @@
 
 class Render {
  public:
+  struct SubStreamWindowProperties {
+    bool exit_ = false;
+    bool connection_established_ = false;
+    bool net_traffic_stats_button_pressed_ = false;
+    bool mouse_control_button_pressed_ = false;
+    bool mouse_controller_is_started_ = false;
+    bool audio_capture_button_pressed_ = false;
+    bool audio_capture_ = true;
+    bool start_screen_capturer_ = false;
+    bool screen_capturer_is_started_ = false;
+    bool start_keyboard_capturer_ = false;
+    bool keyboard_capturer_is_started_ = false;
+    bool control_mouse_ = false;
+    bool stream_window_grabbed_ = false;
+    bool window_maximized_ = false;
+    bool streaming_ = false;
+    bool is_control_bar_in_left_ = true;
+    bool control_bar_hovered_ = false;
+    bool control_bar_expand_ = true;
+    bool reset_control_bar_pos_ = false;
+    bool control_window_width_is_changing_ = false;
+    bool control_window_height_is_changing_ = false;
+    bool p2p_mode_ = true;
+    float sub_stream_window_width_ = 1280;
+    float sub_stream_window_height_ = 720;
+    float control_window_min_width_ = 20;
+    float control_window_max_width_ = 200;
+    float control_window_min_height_ = 40;
+    float control_window_max_height_ = 150;
+    float control_window_width_ = 200;
+    float control_window_height_ = 40;
+    float control_bar_pos_x_ = 0;
+    float control_bar_pos_y_ = 30;
+    float mouse_diff_control_bar_pos_x_ = 0;
+    float mouse_diff_control_bar_pos_y_ = 0;
+    double control_bar_button_pressed_time_ = 0;
+    double net_traffic_stats_button_pressed_time_ = 0;
+    unsigned char *dst_buffer_ = nullptr;
+    size_t dst_buffer_capacity_ = 0;
+    int mouse_pos_x_ = 0;
+    int mouse_pos_y_ = 0;
+    int mouse_pos_x_last_ = 0;
+    int mouse_pos_y_last_ = 0;
+    int texture_width_ = 1280;
+    int texture_height_ = 720;
+    int video_width_ = 1280;
+    int video_height_ = 720;
+    size_t video_size_ = 1280 * 720 * 3;
+    std::string fullscreen_button_label_ = "Fullscreen";
+    std::string net_traffic_stats_button_label_ = "Show Net Traffic Stats";
+    std::string mouse_control_button_label_ = "Mouse Control";
+    std::string audio_capture_button_label_ = "Audio Capture";
+    std::string remote_host_name_ = "";
+    SDL_Rect stream_render_rect_;
+    SDL_Rect stream_render_rect_last_;
+    ImVec2 control_winodw_pos_;
+    ConnectionStatus connection_status_ = ConnectionStatus::Closed;
+    TraversalMode traversal_mode_ = TraversalMode::UnknownMode;
+    XNetTrafficStats net_traffic_stats_;
+  };
+
+ public:
   Render();
   ~Render();
 
@@ -42,11 +104,11 @@ class Render {
   int RemoteWindow();
   int RecentConnectionsWindow();
   int SettingWindow();
-  int ControlWindow();
-  int ControlBar();
+  int ControlWindow(SubStreamWindowProperties &properties);
+  int ControlBar(SubStreamWindowProperties &properties);
   int AboutWindow();
   int StatusBar();
-  int ConnectionStatusWindow();
+  int ConnectionStatusWindow(SubStreamWindowProperties &properties);
   int LoadRecentConnections();
   int ShowRecentConnections();
 
@@ -65,7 +127,7 @@ class Render {
   int DrawMainWindow();
   int DrawStreamWindow();
   int ConfirmDeleteConnection();
-  int NetTrafficStats();
+  int NetTrafficStats(SubStreamWindowProperties &properties);
 
  public:
   static void OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
@@ -94,9 +156,6 @@ class Render {
                                            const SDL_Point *area, void *data);
 
  private:
-  int ProcessMouseKeyEvent(SDL_Event &event);
-  int ProcessMouseEvent(SDL_Event &event);
-
   int SendKeyEvent(int key_code, bool is_down);
   int ProcessKeyEvent(int key_code, bool is_down);
 
@@ -125,7 +184,7 @@ class Render {
   int AudioDeviceDestroy();
 
  private:
-  typedef struct {
+  struct CDCache {
     char client_id[10];
     char password[7];
     int language;
@@ -136,64 +195,51 @@ class Render {
 
     unsigned char key[16];
     unsigned char iv[16];
-  } CDCache;
+  };
 
  private:
   CDCache cd_cache_;
   std::mutex cd_cache_mutex_;
-
   ConfigCenter config_center_;
   ConfigCenter::LANGUAGE localization_language_ =
       ConfigCenter::LANGUAGE::CHINESE;
-
   int localization_language_index_ = -1;
   int localization_language_index_last_ = -1;
-
   bool modules_inited_ = false;
 
- private:
-  std::string window_title = "Remote Desk Client";
-  std::string mac_addr_str_ = "";
-  std::string connect_button_label_ = "Connect";
-  std::string fullscreen_button_label_ = "Fullscreen";
-  std::string net_traffic_stats_button_label_ = "Show Net Traffic Stats";
-  std::string mouse_control_button_label_ = "Mouse Control";
-  std::string audio_capture_button_label_ = "Audio Capture";
-  std::string settings_button_label_ = "Setting";
-  char input_password_tmp_[7] = "";
-  char input_password_[7] = "";
-  std::string random_password_ = "";
-  char remote_password_[7] = "";
-  char new_password_[7] = "";
-  char remote_id_display_[12] = "";
-  std::string remote_id_ = "";
-  char client_password_[20] = "";
-
- private:
+  /* ------ all windows property start ------ */
   float title_bar_width_ = 640;
   float title_bar_height_ = 30;
-  int screen_width_ = 1280;
-  int screen_height_ = 720;
+  /* ------ all windows property end ------ */
+
+  /* ------ main window property start ------ */
+  // thumbnail
+  unsigned char aes128_key_[16];
+  unsigned char aes128_iv_[16];
+  std::unique_ptr<Thumbnail> thumbnail_;
+
+  // recent connections
+  std::map<std::string, SDL_Texture *> recent_connection_textures_;
+  int recent_connection_image_width_ = 160;
+  int recent_connection_image_height_ = 90;
+  uint32_t recent_connection_image_save_time_ = 0;
+
+  // main window render
+  SDL_Window *main_window_ = nullptr;
+  SDL_Renderer *main_renderer_ = nullptr;
+  ImGuiContext *main_ctx_ = nullptr;
+
+  // main window properties
+  int main_window_width_real_ = 720;
+  int main_window_height_real_ = 540;
+  float main_window_dpi_scaling_w_ = 1.0f;
+  float main_window_dpi_scaling_h_ = 1.0f;
   float main_window_width_default_ = 640;
   float main_window_height_default_ = 480;
   float main_window_width_ = 640;
   float main_window_height_ = 480;
   float main_window_width_last_ = 640;
   float main_window_height_last_ = 480;
-  int stream_window_width_default_ = 1280;
-  int stream_window_height_default_ = 720;
-  float stream_window_width_ = 1280;
-  float stream_window_height_ = 720;
-  int stream_window_width_last_ = 1280;
-  int stream_window_height_last_ = 720;
-  float stream_window_width_before_maximized_ = 1280;
-  float stream_window_height_before_maximized_ = 720;
-  float control_window_min_width_ = 20;
-  float control_window_max_width_ = 200;
-  float control_window_min_height_ = 40;
-  float control_window_max_height_ = 150;
-  float control_window_width_ = 200;
-  float control_window_height_ = 40;
   float local_window_width_ = 320;
   float local_window_height_ = 235;
   float remote_window_width_ = 320;
@@ -212,79 +258,46 @@ class Render {
   float notification_window_height_ = 80;
   float about_window_width_ = 200;
   float about_window_height_ = 150;
+  int screen_width_ = 1280;
+  int screen_height_ = 720;
+  std::string connect_button_label_ = "Connect";
+  char input_password_tmp_[7] = "";
+  char input_password_[7] = "";
+  std::string random_password_ = "";
+  char remote_password_[7] = "";
+  char new_password_[7] = "";
+  char remote_id_display_[12] = "";
+  std::string remote_id_ = "";
+  unsigned char audio_buffer_[720];
+  int audio_len_ = 0;
+  bool audio_buffer_fresh_ = false;
 
-  float control_bar_pos_x_ = 0;
-  float control_bar_pos_y_ = 30;
-  float mouse_diff_control_bar_pos_x_ = 0;
-  float mouse_diff_control_bar_pos_y_ = 0;
-  int mouse_pos_x_ = 0;
-  int mouse_pos_y_ = 0;
-  int mouse_pos_x_last_ = 0;
-  int mouse_pos_y_last_ = 0;
+  // stream window render
+  SDL_Window *stream_window_ = nullptr;
+  SDL_Renderer *stream_renderer_ = nullptr;
+  SDL_Texture *stream_texture_ = nullptr;
+  ImGuiContext *stream_ctx_ = nullptr;
 
-  int main_window_width_real_ = 720;
-  int main_window_height_real_ = 540;
-  float main_window_dpi_scaling_w_ = 1.0f;
-  float main_window_dpi_scaling_h_ = 1.0f;
-
+  // stream window properties
+  bool stream_window_created_ = false;
+  bool stream_window_inited_ = false;
+  int stream_window_width_default_ = 1280;
+  int stream_window_height_default_ = 720;
+  float stream_window_width_ = 1280;
+  float stream_window_height_ = 720;
+  uint32_t stream_pixformat_ = 0;
   int stream_window_width_real_ = 1280;
   int stream_window_height_real_ = 720;
   float stream_window_dpi_scaling_w_ = 1.0f;
   float stream_window_dpi_scaling_h_ = 1.0f;
 
-  int texture_width_ = 1280;
-  int texture_height_ = 720;
-
-  int video_width_ = 1280;
-  int video_height_ = 720;
-  size_t video_size_ = 1280 * 720 * 3;
-
-  SDL_Window *main_window_ = nullptr;
-  SDL_Renderer *main_renderer_ = nullptr;
-  ImGuiContext *main_ctx_ = nullptr;
-
-  SDL_Window *stream_window_ = nullptr;
-  SDL_Renderer *stream_renderer_ = nullptr;
-  ImGuiContext *stream_ctx_ = nullptr;
-  bool stream_window_created_ = false;
-  bool stream_window_inited_ = false;
-
-  // recent connections
-  std::map<std::string, SDL_Texture *> recent_connection_textures_;
-  int recent_connection_image_width_ = 160;
-  int recent_connection_image_height_ = 90;
-  uint32_t recent_connection_image_save_time_ = 0;
-
-  // video window
-  SDL_Texture *stream_texture_ = nullptr;
-  SDL_Rect stream_render_rect_;
-  SDL_Rect stream_render_rect_last_;
-  uint32_t stream_pixformat_ = 0;
-  std::string host_name_ = "";
-
-  unsigned char aes128_key_[16];
-  unsigned char aes128_iv_[16];
-  std::unique_ptr<Thumbnail> thumbnail_;
-
-  bool resizable_ = false;
   bool label_inited_ = false;
-  bool exit_ = false;
-  bool exit_video_window_ = false;
-  bool connection_established_ = false;
   bool connect_button_pressed_ = false;
   bool password_validating_ = false;
   uint32_t password_validating_time_ = 0;
-  bool fullscreen_button_pressed_ = false;
-  bool net_traffic_stats_button_pressed_ = false;
-  bool mouse_control_button_pressed_ = false;
-  bool audio_capture_button_pressed_ = false;
   bool show_settings_window_ = false;
   bool is_create_connection_ = false;
-  bool audio_buffer_fresh_ = false;
   bool rejoin_ = false;
-  bool control_mouse_ = false;
-  bool stream_window_grabbed_ = false;
-  bool audio_capture_ = true;
   bool local_id_copied_ = false;
   bool show_password_ = true;
   bool password_inited_ = false;
@@ -292,61 +305,26 @@ class Render {
   bool show_about_window_ = false;
   bool show_connection_status_window_ = false;
   bool show_reset_password_window_ = false;
+  bool fullscreen_button_pressed_ = false;
   bool focus_on_input_widget_ = true;
-  bool window_maximized_ = false;
-  bool streaming_ = false;
   bool is_client_mode_ = false;
-  bool is_control_bar_in_left_ = true;
-  bool is_control_bar_in_top_ = true;
-  bool control_bar_hovered_ = false;
-  bool control_bar_expand_ = true;
-  bool reset_control_bar_pos_ = false;
-  bool control_window_width_is_changing_ = false;
-  bool control_window_height_is_changing_ = false;
   bool reload_recent_connections_ = true;
   bool hostname_sent_ = false;
   bool show_confirm_delete_connection_ = false;
   bool delete_connection_ = false;
   bool remember_password_ = false;
   bool re_enter_remote_id_ = false;
-
   double copy_start_time_ = 0;
   double regenerate_password_start_time_ = 0;
-  double control_bar_button_pressed_time_ = 0;
-  double net_traffic_stats_button_pressed_time_ = 0;
-
-  ImVec2 control_winodw_pos_;
-
-  int fps_ = 0;
-  uint32_t start_time_;
-  uint32_t end_time_;
-  uint32_t elapsed_time_;
-  uint32_t frame_count_ = 0;
-
- private:
-  ConnectionStatus connection_status_ = ConnectionStatus::Closed;
   SignalStatus signal_status_ = SignalStatus::SignalClosed;
   std::string signal_status_str_ = "";
   std::string connection_status_str_ = "";
   bool signal_connected_ = false;
-  bool p2p_mode_ = true;
-
- private:
   PeerPtr *peer_ = nullptr;
   PeerPtr *peer_reserved_ = nullptr;
   Params params_;
-  TraversalMode traversal_mode_ = TraversalMode::UnknownMode;
-  XNetTrafficStats net_traffic_stats_;
-
- private:
   SDL_AudioDeviceID input_dev_;
   SDL_AudioDeviceID output_dev_;
-  unsigned char audio_buffer_[720];
-  int audio_len_ = 0;
-  unsigned char *dst_buffer_ = nullptr;
-  size_t dst_buffer_capacity_ = 0;
-
- private:
   ScreenCapturerFactory *screen_capturer_factory_ = nullptr;
   ScreenCapturer *screen_capturer_ = nullptr;
   SpeakerCapturerFactory *speaker_capturer_factory_ = nullptr;
@@ -355,8 +333,6 @@ class Render {
   MouseController *mouse_controller_ = nullptr;
   KeyboardCapturer *keyboard_capturer_ = nullptr;
   uint64_t last_frame_time_;
-
- private:
   char client_id_[10] = "";
   char client_id_display_[12] = "";
   char password_saved_[7] = "";
@@ -365,23 +341,18 @@ class Render {
   int video_encode_format_button_value_ = 0;
   bool enable_hardware_video_codec_ = false;
   bool enable_turn_ = false;
-
   int language_button_value_last_ = 0;
   int video_quality_button_value_last_ = 0;
   int video_encode_format_button_value_last_ = 0;
   bool enable_hardware_video_codec_last_ = false;
   bool enable_turn_last_ = false;
-
- private:
-  std::atomic<bool> start_screen_capturer_{false};
-  std::atomic<bool> start_mouse_controller_{false};
-  std::atomic<bool> start_keyboard_capturer_{false};
-  std::atomic<bool> screen_capturer_is_started_{false};
-  std::atomic<bool> mouse_controller_is_started_{false};
-  std::atomic<bool> keyboard_capturer_is_started_{false};
-
- private:
   bool settings_window_pos_reset_ = true;
+  /* ------ main window property end ------ */
+
+  /* ------ sub stream window property start ------ */
+  std::unordered_map<std::string, SubStreamWindowProperties>
+      connection_properties_;
+  /* ------ stream window property end ------ */
 };
 
 #endif

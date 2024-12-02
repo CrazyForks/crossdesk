@@ -3,7 +3,7 @@
 #include "rd_log.h"
 #include "render.h"
 
-int Render::ConnectionStatusWindow() {
+int Render::ConnectionStatusWindow(SubStreamWindowProperties &properties) {
   if (show_connection_status_window_) {
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
 
@@ -33,11 +33,11 @@ int Render::ConnectionStatusWindow() {
     ImGui::SetWindowFontScale(0.5f);
     std::string text;
 
-    if (ConnectionStatus::Connecting == connection_status_) {
+    if (ConnectionStatus::Connecting == properties.connection_status_) {
       text = localization::p2p_connecting[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
-    } else if (ConnectionStatus::Connected == connection_status_) {
+    } else if (ConnectionStatus::Connected == properties.connection_status_) {
       text = localization::p2p_connected[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
@@ -48,7 +48,8 @@ int Render::ConnectionStatusWindow() {
           ImGui::IsKeyPressed(ImGuiKey_Escape)) {
         show_connection_status_window_ = false;
       }
-    } else if (ConnectionStatus::Disconnected == connection_status_) {
+    } else if (ConnectionStatus::Disconnected ==
+               properties.connection_status_) {
       text = localization::p2p_disconnected[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
@@ -59,7 +60,7 @@ int Render::ConnectionStatusWindow() {
           ImGui::IsKeyPressed(ImGuiKey_Escape)) {
         show_connection_status_window_ = false;
       }
-    } else if (ConnectionStatus::Failed == connection_status_) {
+    } else if (ConnectionStatus::Failed == properties.connection_status_) {
       text = localization::p2p_failed[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
@@ -70,7 +71,7 @@ int Render::ConnectionStatusWindow() {
           ImGui::IsKeyPressed(ImGuiKey_Escape)) {
         show_connection_status_window_ = false;
       }
-    } else if (ConnectionStatus::Closed == connection_status_) {
+    } else if (ConnectionStatus::Closed == properties.connection_status_) {
       text = localization::p2p_closed[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
@@ -81,7 +82,8 @@ int Render::ConnectionStatusWindow() {
           ImGui::IsKeyPressed(ImGuiKey_Escape)) {
         show_connection_status_window_ = false;
       }
-    } else if (ConnectionStatus::IncorrectPassword == connection_status_) {
+    } else if (ConnectionStatus::IncorrectPassword ==
+               properties.connection_status_) {
       if (!password_validating_) {
         if (password_validating_time_ == 1) {
           text = localization::input_password[localization_language_index_];
@@ -145,7 +147,8 @@ int Render::ConnectionStatusWindow() {
         ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
         ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
       }
-    } else if (ConnectionStatus::NoSuchTransmissionId == connection_status_) {
+    } else if (ConnectionStatus::NoSuchTransmissionId ==
+               properties.connection_status_) {
       text = localization::no_such_id[localization_language_index_];
       ImGui::SetCursorPosX(connection_status_window_width_ * 3 / 7);
       ImGui::SetCursorPosY(connection_status_window_height_ * 2 / 3);
