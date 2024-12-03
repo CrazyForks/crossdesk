@@ -31,7 +31,8 @@ typedef void (*OnConnectionStatus)(ConnectionStatus, const char *, const size_t,
                                    void *);
 
 typedef void (*NetStatusReport)(const char *, const size_t, TraversalMode,
-                                const XNetTrafficStats *, void *);
+                                const XNetTrafficStats *, const char *,
+                                const size_t, void *);
 
 typedef struct {
   bool use_cfg_file;
@@ -174,11 +175,6 @@ class PeerConnection {
 
   std::function<void(std::string, const std::string &)> on_ice_status_change_ =
       nullptr;
-  std::function<void(const std::string &, IceTransmission::TraversalType,
-                     const uint64_t, const uint64_t, const uint64_t,
-                     const uint64_t, const uint64_t, const uint64_t,
-                     const uint64_t, const uint64_t, void *)>
-      on_net_status_report_ = nullptr;
   bool ice_ready_ = false;
 
   OnReceiveBuffer on_receive_video_buffer_;

@@ -86,7 +86,8 @@ class IceTransmission {
 
   void SetOnReceiveNetStatusReportFunc(
       std::function<void(const char *, const size_t, TraversalMode,
-                         const XNetTrafficStats *, void *)>
+                         const XNetTrafficStats *, const char *, const size_t,
+                         void *)>
           on_receive_net_status_report) {
     on_receive_net_status_report_ = on_receive_net_status_report;
   }
@@ -175,7 +176,8 @@ class IceTransmission {
       nullptr;
 
   std::function<void(const char *, const size_t, TraversalMode,
-                     const XNetTrafficStats *, void *)>
+                     const XNetTrafficStats *, const char *, const size_t,
+                     void *)>
       on_receive_net_status_report_ = nullptr;
 
  private:

@@ -82,7 +82,8 @@ typedef void (*OnConnectionStatus)(ConnectionStatus, const char*, const size_t,
                                    void*);
 
 typedef void (*NetStatusReport)(const char*, const size_t, TraversalMode,
-                                const XNetTrafficStats*, void*);
+                                const XNetTrafficStats*, const char*,
+                                const size_t, void*);
 
 typedef struct {
   bool use_cfg_file;

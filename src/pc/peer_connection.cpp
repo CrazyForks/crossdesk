@@ -403,7 +403,7 @@ void PeerConnection::ProcessSignal(const std::string &signal) {
 
         net_status_report_(user_id_.data(), user_id_.size(),
                            TraversalMode::UnknownMode, &net_traffic_stats,
-                           user_data_);
+                           user_id_.data(), user_id_.size(), user_data_);
         LOG_INFO("Login success with id [{}]", user_id_);
         signal_status_ = SignalStatus::SignalConnected;
         on_signal_status_(SignalStatus::SignalConnected, user_data_);

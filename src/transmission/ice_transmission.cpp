@@ -67,9 +67,10 @@ int IceTransmission::InitIceTransmission(
 
           memcpy(&xnet_traffic_stats, &net_traffic_stats,
                  sizeof(XNetTrafficStats));
-          on_receive_net_status_report_(user_id_.data(), user_id_.size(),
-                                        TraversalMode(traversal_type_),
-                                        &xnet_traffic_stats, user_data_);
+          on_receive_net_status_report_(
+              user_id_.data(), user_id_.size(), TraversalMode(traversal_type_),
+              &xnet_traffic_stats, remote_user_id_.data(),
+              remote_user_id_.size(), user_data_);
         }
       });
 
@@ -346,7 +347,9 @@ int IceTransmission::InitIceTransmission(
               ice_transmission_obj->user_id_.data(),
               ice_transmission_obj->user_id_.size(),
               TraversalMode(ice_transmission_obj->traversal_type_),
-              &net_traffic_stats, ice_transmission_obj->user_data_);
+              &net_traffic_stats, ice_transmission_obj->remote_user_id_.data(),
+              ice_transmission_obj->remote_user_id_.size(),
+              ice_transmission_obj->user_data_);
         }
       },
       []([[maybe_unused]] NiceAgent *agent, [[maybe_unused]] guint stream_id,
