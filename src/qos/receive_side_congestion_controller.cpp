@@ -126,8 +126,8 @@ void ReceiveSideCongestionController::OnBitrateChanged(int bitrate_bps) {
       send_bandwidth_estimate);
 }
 
-TimeDelta ReceiveSideCongestionController::MaybeProcess() {
-  Timestamp now = env_.clock().CurrentTime();
+int64_t ReceiveSideCongestionController::MaybeProcess() {
+  int64_t now = env_.clock().CurrentTime();
   if (send_rfc8888_congestion_feedback_) {
     RTC_DCHECK_RUN_ON(&sequence_checker_);
     return congestion_control_feedback_generator_.Process(now);

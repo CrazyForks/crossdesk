@@ -1,15 +1,11 @@
 /*
- *  Copyright (c) 2013 The WebRTC project authors. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree. An additional intellectual property rights grant can be found
- *  in the file PATENTS.  All contributing project authors may
- *  be found in the AUTHORS file in the root of the source tree.
+ * @Author: DI JUNKUN
+ * @Date: 2024-12-18
+ * Copyright 2018 The WebRTC project authors. All Rights Reserved.
  */
 
-#ifndef MODULES_RTP_RTCP_SOURCE_BYTE_IO_H_
-#define MODULES_RTP_RTCP_SOURCE_BYTE_IO_H_
+#ifndef _BYTE_IO_H_
+#define _BYTE_IO_H_
 
 // This file contains classes for reading and writing integer types from/to
 // byte array representations. Signed/unsigned, partial (whole byte) sizes,
@@ -391,4 +387,4 @@ class ByteWriter<T, 8, false> {
   }
 };
 
-#endif  // MODULES_RTP_RTCP_SOURCE_BYTE_IO_H_
+#endif

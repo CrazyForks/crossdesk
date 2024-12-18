@@ -1,7 +1,7 @@
 /*
  * @Author: DI JUNKUN
  * @Date: 2024-12-18
- * Copyright (c) 2024 by DI JUNKUN, All Rights Reserved.
+ * Copyright 2018 The WebRTC project authors. All Rights Reserved.
  */
 
 #ifndef _ARRAY_VIEW_H_

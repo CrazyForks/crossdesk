@@ -4,17 +4,19 @@
 #include <tuple>
 #include <vector>
 
+#include "log.h"
+
 void CongestionControlFeedbackTracker::ReceivedPacket(
     const RtpPacketReceived& packet) {
   int64_t unwrapped_sequence_number =
       unwrapper_.Unwrap(packet.SequenceNumber());
   if (last_sequence_number_in_feedback_ &&
       unwrapped_sequence_number < *last_sequence_number_in_feedback_ + 1) {
-    RTC_LOG(LS_WARNING)
-        << "Received packet unorderered between feeedback. SSRC: "
-        << packet.Ssrc() << " Seq: " << packet.SequenceNumber()
-        << " last feedback: "
-        << static_cast<uint16_t>(*last_sequence_number_in_feedback_);
+    LOG_WARN(
+        "Received packet unorderered between feeedback. SSRC: {} Seq: {} last "
+        "feedback: {}",
+        packet.Ssrc(), packet.SequenceNumber(),
+        static_cast<uint16_t>(*last_sequence_number_in_feedback_));
     // TODO: bugs.webrtc.org/374550342 - According to spec, the old packets
     // should be reported again. But at the moment, we dont store history of
     // packet we already reported and thus, they will be reported as lost. Note
@@ -49,8 +51,14 @@ void CongestionControlFeedbackTracker::AddPacketsToFeedback(
   for (int64_t sequence_number = *last_sequence_number_in_feedback_ + 1;
        sequence_number <= packets_.back().unwrapped_sequence_number;
        ++sequence_number) {
-    RTC_DCHECK(packet_it != packets_.end());
-    RTC_DCHECK_EQ(ssrc, packet_it->ssrc);
+    if (packet_it == packets_.end()) {
+      LOG_FATAL("Invalid packet_it");
+      return;
+    }
+    if (ssrc != packet_it->ssrc) {
+      LOG_FATAL("Invalid ssrc");
+      return;
+    }
 
     rtc::EcnMarking ecn = rtc::EcnMarking::kNotEct;
     TimeDelta arrival_time_offset = TimeDelta::MinusInfinity();
@@ -70,9 +78,8 @@ void CongestionControlFeedbackTracker::AddPacketsToFeedback(
         if (packet_it->ecn == rtc::EcnMarking::kCe) {
           ecn = rtc::EcnMarking::kCe;
         }
-        RTC_LOG(LS_WARNING) << "Received duplicate packet ssrc:" << ssrc
-                            << " seq:" << static_cast<uint16_t>(sequence_number)
-                            << " ecn: " << static_cast<int>(ecn);
+        LOG_WARN("Received duplicate packet ssrc: {} seq: {} ecn: {}", ssrc,
+                 static_cast<uint16_t>(sequence_number), static_cast<int>(ecn));
         ++packet_it;
       }
     }  // else - the packet has not been received yet.

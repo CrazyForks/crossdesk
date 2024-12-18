@@ -9,12 +9,13 @@
 
 class ReceiveSideCongestionController {
  public:
+  enum MediaType { VIDEO, AUDIO, DATA };
+
+ public:
   ReceiveSideCongestionController();
   ~ReceiveSideCongestionController() override = default;
 
  public:
-  void EnablSendCongestionControlFeedbackAccordingToRfc8888();
-
   void OnReceivedPacket(const RtpPacketReceived& packet, MediaType media_type);
 
   // Implements CallStatsObserver.
@@ -39,13 +40,11 @@ class ReceiveSideCongestionController {
 
   // Runs periodic tasks if it is time to run them, returns time until next
   // call to `MaybeProcess` should be non idle.
-  TimeDelta MaybeProcess();
+  int64_t MaybeProcess();
 
  private:
-  void PickEstimator(bool has_absolute_send_time)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void PickEstimator(bool has_absolute_send_time);
 
-  const Environment env_;
   RembThrottler remb_throttler_;
 
   // TODO: bugs.webrtc.org/42224904 - Use sequence checker for all usage of
