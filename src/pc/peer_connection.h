@@ -13,7 +13,7 @@
 
 #include "audio_decoder.h"
 #include "audio_encoder.h"
-#include "ice_transmission.h"
+#include "ice_transport.h"
 #include "video_decoder_factory.h"
 #include "video_encoder_factory.h"
 #include "ws_client.h"
@@ -169,9 +169,8 @@ class PeerConnection {
   std::string sdp_without_cands_ = "";
 
  private:
-  std::map<std::string, std::unique_ptr<IceTransmission>>
-      ice_transmission_list_;
-  std::map<std::string, bool> is_ice_transmission_ready_;
+  std::map<std::string, std::unique_ptr<IceTransport>> ice_transport_list_;
+  std::map<std::string, bool> is_ice_transport_ready_;
 
   std::function<void(std::string, const std::string &)> on_ice_status_change_ =
       nullptr;

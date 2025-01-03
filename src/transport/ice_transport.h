@@ -1,17 +1,21 @@
 /*
  * @Author: DI JUNKUN
- * @Date: 2023-11-24
- * Copyright (c) 2023 by DI JUNKUN, All Rights Reserved.
+ * @Date: 2025-01-03
+ * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
  */
 
-#ifndef _ICE_TRANSMISSION_H_
-#define _ICE_TRANSMISSION_H_
+#ifndef _ICE_TRANSPORT_H_
+#define _ICE_TRANSPORT_H_
 
 #include <iostream>
 
 #include "audio_decoder.h"
 #include "audio_encoder.h"
-#include "congestion_control.h"
+// #include "congestion_control.h"
+#include "audio_channel_receive.h"
+#include "audio_channel_send.h"
+#include "data_channel_receive.h"
+#include "data_channel_send.h"
 #include "ice_agent.h"
 #include "io_statistics.h"
 #include "ringbuffer.h"
@@ -23,11 +27,13 @@
 #include "rtp_packet.h"
 #include "rtp_video_receiver.h"
 #include "rtp_video_sender.h"
+#include "video_channel_receive.h"
+#include "video_channel_send.h"
 #include "video_decoder_factory.h"
 #include "video_encoder_factory.h"
 #include "ws_client.h"
 
-class IceTransmission {
+class IceTransport {
  public:
   typedef enum { VIDEO = 96, AUDIO = 97, DATA = 127 } DATA_TYPE;
   typedef enum { H264 = 96, AV1 = 99 } VIDEO_TYPE;
@@ -40,13 +46,13 @@ class IceTransmission {
   enum TraversalType { TP2P = 0, TRelay = 1, TUnknown = 2 };
 
  public:
-  IceTransmission(bool offer_peer, std::string &transmission_id,
-                  std::string &user_id, std::string &remote_user_id,
-                  std::shared_ptr<WsClient> ice_ws_transmission,
-                  std::function<void(std::string, const std::string &)>
-                      on_ice_status_change,
-                  void *user_data);
-  ~IceTransmission();
+  IceTransport(bool offer_peer, std::string &transmission_id,
+               std::string &user_id, std::string &remote_user_id,
+               std::shared_ptr<WsClient> ice_ws_transmission,
+               std::function<void(std::string, const std::string &)>
+                   on_ice_status_change,
+               void *user_data);
+  ~IceTransport();
 
  public:
   int SetLocalCapabilities(bool hardware_acceleration, bool use_trickle_ice,
@@ -131,6 +137,7 @@ class IceTransmission {
   int CreateAudioCodec();
 
  private:
+  uint8_t CheckIsRtpPacket(const char *buffer, size_t size);
   uint8_t CheckIsRtcpPacket(const char *buffer, size_t size);
   uint8_t CheckIsVideoPacket(const char *buffer, size_t size);
   uint8_t CheckIsAudioPacket(const char *buffer, size_t size);
@@ -164,7 +171,7 @@ class IceTransmission {
   std::unique_ptr<IceAgent> ice_agent_ = nullptr;
   bool is_closed_ = false;
   std::shared_ptr<WsClient> ice_ws_transport_ = nullptr;
-  CongestionControl *congestion_control_ = nullptr;
+  //   CongestionControl *congestion_control_ = nullptr;
   std::function<void(const XVideoFrame *, const char *, const size_t, void *)>
       on_receive_video_ = nullptr;
   std::function<void(const char *, size_t, const char *, const size_t, void *)>
@@ -181,6 +188,13 @@ class IceTransmission {
       on_receive_net_status_report_ = nullptr;
 
  private:
+  std::unique_ptr<VideoChannelSend> video_channel_send_ = nullptr;
+  std::unique_ptr<VideoChannelReceive> video_channel_receive_ = nullptr;
+  std::unique_ptr<AudioChannelSend> audio_channel_send_ = nullptr;
+  std::unique_ptr<AudioChannelReceive> audio_channel_receive_ = nullptr;
+  std::unique_ptr<DataChannelSend> data_channel_send_ = nullptr;
+  std::unique_ptr<DataChannelReceive> data_channel_receive_ = nullptr;
+
   std::unique_ptr<RtpCodec> video_rtp_codec_ = nullptr;
   std::unique_ptr<RtpCodec> audio_rtp_codec_ = nullptr;
   std::unique_ptr<RtpCodec> data_rtp_codec_ = nullptr;

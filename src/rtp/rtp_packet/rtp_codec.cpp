@@ -31,7 +31,7 @@ uint32_t GenerateUniqueSsrc() {
   return new_ssrc;
 }
 
-RtpCodec ::RtpCodec(RtpPacket::PAYLOAD_TYPE payload_type)
+RtpCodec::RtpCodec(RtpPacket::PAYLOAD_TYPE payload_type)
     : version_(RTP_VERSION),
       has_padding_(false),
       has_extension_(false),
@@ -41,7 +41,7 @@ RtpCodec ::RtpCodec(RtpPacket::PAYLOAD_TYPE payload_type)
   fec_encoder_.Init();
 }
 
-RtpCodec ::~RtpCodec() {
+RtpCodec::~RtpCodec() {
   SSRCManager::Instance().DeleteSsrc(ssrc_);
 
   if (extension_data_) {
