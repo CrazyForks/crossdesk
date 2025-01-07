@@ -158,25 +158,28 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
     *position += 2;
     // num_reports
     uint16_t num_reports = packets.size();
-    RTC_DCHECK_EQ(static_cast<uint16_t>(
 
-                      packets[packets.size() - 1].sequence_number -
-                      packets[0].sequence_number + 1),
-                  packets.size())
-        << "Expected continous rtp sequence numbers.";
+    if (static_cast<uint16_t>(packets[packets.size() - 1].sequence_number -
+                              packets[0].sequence_number + 1) !=
+        packets.size()) {
+      LOG_FATAL("Expected continous rtp sequence numbers");
+      return false;
+    }
 
     // Each report block MUST NOT include more than 16384 packet metric
     // blocks (i.e., it MUST NOT report on more than one quarter of the
     // sequence number space in a single report).
     if (num_reports > 16384) {
       LOG_FATAL("Unexpected number of reports: {}", num_reports);
-      return;
+      return false;
     }
     ByteWriter<uint16_t>::WriteBigEndian(&buffer[*position], num_reports);
     *position += 2;
 
     for (const PacketInfo& packet : packets) {
-      bool received = packet.arrival_time_offset.IsFinite();
+      bool received =
+          (packet.arrival_time_offset != std::numeric_limits<int64_t>::min()) &&
+          (packet.arrival_time_offset != std::numeric_limits<int64_t>::max());
       uint16_t packet_info = 0;
       if (received) {
         packet_info = 0x8000 | To2BitEcn(packet.ecn) |
@@ -213,7 +216,9 @@ bool CongestionControlFeedback::Create(uint8_t* buffer, size_t* position,
                                        report_timestamp_compact_ntp_);
   *position += 4;
 
-  RTC_DCHECK_EQ(*position, position_end);
+  if (*position != position_end) {
+    return false;
+  }
   return true;
 }
 

@@ -86,7 +86,7 @@ target("rtcp")
     "src/rtcp/rtcp_packet",
     "src/rtcp/rtp_feedback", {public = true})
 
-target("rtp")
+target("rtp", "qos")
     set_kind("object")
     add_deps("log", "frame", "ringbuffer", "thread", "rtcp", "fec", "statistics")
     add_files("src/rtp/*.cpp", 
@@ -94,7 +94,8 @@ target("rtp")
     "src/rtp/rtp_packet/*.cpp")
     add_includedirs("src/rtp", 
     "src/rtp/rtp_endpoint", 
-    "src/rtp/rtp_packet", {public = true})
+    "src/rtp/rtp_packet",
+    "src/qos", {public = true})
 
 target("ice")
     set_kind("object")

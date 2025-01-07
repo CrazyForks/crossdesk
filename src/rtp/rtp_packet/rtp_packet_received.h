@@ -15,7 +15,7 @@ class RtpPacketReceived : public RtpPacket {
  public:
   RtpPacketReceived();
   explicit RtpPacketReceived(
-      int64_t arrival_time = std::numeric_limits<int64_t>::min());
+      int64_t arrival_time = (std::numeric_limits<int64_t>::min)());
   RtpPacketReceived(const RtpPacketReceived& packet);
   RtpPacketReceived(RtpPacketReceived&& packet);
 
@@ -25,7 +25,7 @@ class RtpPacketReceived : public RtpPacket {
   ~RtpPacketReceived();
 
  private:
-  int64_t arrival_time_ = std::numeric_limits<int64_t>::min();
+  int64_t arrival_time_ = (std::numeric_limits<int64_t>::min)();
 };
 
 #endif

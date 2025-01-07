@@ -20,17 +20,17 @@ static const uint32_t kTimeOffsetSwitchThreshold = 30;
 
 void ReceiveSideCongestionController::OnRttUpdate(int64_t avg_rtt_ms,
                                                   int64_t max_rtt_ms) {
-  MutexLock lock(&mutex_);
+  std::lock_guard<std::mutex> guard(mutex_);
   rbe_->OnRttUpdate(avg_rtt_ms, max_rtt_ms);
 }
 
 void ReceiveSideCongestionController::RemoveStream(uint32_t ssrc) {
-  MutexLock lock(&mutex_);
+  std::lock_guard<std::mutex> guard(mutex_);
   rbe_->RemoveStream(ssrc);
 }
 
-DataRate ReceiveSideCongestionController::LatestReceiveSideEstimate() const {
-  MutexLock lock(&mutex_);
+int64_t ReceiveSideCongestionController::LatestReceiveSideEstimate() const {
+  std::lock_guard<std::mutex> guard(mutex_);
   return rbe_->LatestEstimate();
 }
 
@@ -42,8 +42,8 @@ void ReceiveSideCongestionController::PickEstimator(
       RTC_LOG(LS_INFO)
           << "WrappingBitrateEstimator: Switching to absolute send time RBE.";
       using_absolute_send_time_ = true;
-      rbe_ = std::make_unique<RemoteBitrateEstimatorAbsSendTime>(
-          env_, &remb_throttler_);
+      // rbe_ = std::make_unique<RemoteBitrateEstimatorAbsSendTime>(
+      //     env_, &remb_throttler_);
     }
     packets_since_absolute_send_time_ = 0;
   } else {
@@ -55,8 +55,8 @@ void ReceiveSideCongestionController::PickEstimator(
             << "WrappingBitrateEstimator: Switching to transmission "
                "time offset RBE.";
         using_absolute_send_time_ = false;
-        rbe_ = std::make_unique<RemoteBitrateEstimatorSingleStream>(
-            env_, &remb_throttler_);
+        // rbe_ = std::make_unique<RemoteBitrateEstimatorSingleStream>(
+        //     env_, &remb_throttler_);
       }
     }
   }
@@ -68,12 +68,10 @@ ReceiveSideCongestionController::ReceiveSideCongestionController(
     RembThrottler::RembSender remb_sender,
     absl::Nullable<NetworkStateEstimator*> network_state_estimator)
     : env_(env),
-      remb_throttler_(std::move(remb_sender), &env_.clock()),
-      transport_sequence_number_feedback_generator_(feedback_sender,
-                                                    network_state_estimator),
+      // remb_throttler_(std::move(remb_sender), &env_.clock()),,
       congestion_control_feedback_generator_(env, feedback_sender),
-      rbe_(std::make_unique<RemoteBitrateEstimatorSingleStream>(
-          env_, &remb_throttler_)),
+      // rbe_(std::make_unique<RemoteBitrateEstimatorSingleStream>(
+      //     env_, &remb_throttler_)),
       using_absolute_send_time_(false),
       packets_since_absolute_send_time_(0) {
   FieldTrialParameter<bool> force_send_rfc8888_feedback("force_send", false);
@@ -87,41 +85,22 @@ ReceiveSideCongestionController::ReceiveSideCongestionController(
 
 void ReceiveSideCongestionController::
     EnablSendCongestionControlFeedbackAccordingToRfc8888() {
-  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  // RTC_DCHECK_RUN_ON(&sequence_checker_);
   send_rfc8888_congestion_feedback_ = true;
 }
 
 void ReceiveSideCongestionController::OnReceivedPacket(
     const RtpPacketReceived& packet, MediaType media_type) {
   if (send_rfc8888_congestion_feedback_) {
-    RTC_DCHECK_RUN_ON(&sequence_checker_);
+    // RTC_DCHECK_RUN_ON(&sequence_checker_);
     congestion_control_feedback_generator_.OnReceivedPacket(packet);
     return;
-  }
-  bool has_transport_sequence_number =
-      packet.HasExtension<TransportSequenceNumber>() ||
-      packet.HasExtension<TransportSequenceNumberV2>();
-  if (media_type == MediaType::AUDIO && !has_transport_sequence_number) {
-    // For audio, we only support send side BWE.
-    return;
-  }
-
-  if (has_transport_sequence_number) {
-    // Send-side BWE.
-    transport_sequence_number_feedback_generator_.OnReceivedPacket(packet);
-  } else {
-    // Receive-side BWE.
-    MutexLock lock(&mutex_);
-    PickEstimator(packet.HasExtension<AbsoluteSendTime>());
-    rbe_->IncomingPacket(packet);
   }
 }
 
 void ReceiveSideCongestionController::OnBitrateChanged(int bitrate_bps) {
-  RTC_DCHECK_RUN_ON(&sequence_checker_);
-  DataRate send_bandwidth_estimate = DataRate::BitsPerSec(bitrate_bps);
-  transport_sequence_number_feedback_generator_.OnSendBandwidthEstimateChanged(
-      send_bandwidth_estimate);
+  // RTC_DCHECK_RUN_ON(&sequence_checker_);
+  int64_t send_bandwidth_estimate = int64_t::BitsPerSec(bitrate_bps);
   congestion_control_feedback_generator_.OnSendBandwidthEstimateChanged(
       send_bandwidth_estimate);
 }
@@ -129,28 +108,19 @@ void ReceiveSideCongestionController::OnBitrateChanged(int bitrate_bps) {
 int64_t ReceiveSideCongestionController::MaybeProcess() {
   int64_t now = env_.clock().CurrentTime();
   if (send_rfc8888_congestion_feedback_) {
-    RTC_DCHECK_RUN_ON(&sequence_checker_);
+    // RTC_DCHECK_RUN_ON(&sequence_checker_);
     return congestion_control_feedback_generator_.Process(now);
   }
-  mutex_.Lock();
-  TimeDelta time_until_rbe = rbe_->Process();
-  mutex_.Unlock();
-  TimeDelta time_until_rep =
-      transport_sequence_number_feedback_generator_.Process(now);
-  TimeDelta time_until = std::min(time_until_rbe, time_until_rep);
-  return std::max(time_until, TimeDelta::Zero());
 }
 
 void ReceiveSideCongestionController::SetMaxDesiredReceiveBitrate(
-    DataRate bitrate) {
-  remb_throttler_.SetMaxDesiredReceiveBitrate(bitrate);
+    int64_t bitrate) {
+  // remb_throttler_.SetMaxDesiredReceiveBitrate(bitrate);
 }
 
 void ReceiveSideCongestionController::SetTransportOverhead(
-    DataSize overhead_per_packet) {
-  RTC_DCHECK_RUN_ON(&sequence_checker_);
-  transport_sequence_number_feedback_generator_.SetTransportOverhead(
-      overhead_per_packet);
+    int64_t overhead_per_packet) {
+  // RTC_DCHECK_RUN_ON(&sequence_checker_);
   congestion_control_feedback_generator_.SetTransportOverhead(
       overhead_per_packet);
 }

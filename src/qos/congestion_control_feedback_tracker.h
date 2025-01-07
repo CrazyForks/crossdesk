@@ -10,6 +10,7 @@
 #include <optional>
 #include <vector>
 
+#include "congestion_control_feedback.h"
 #include "rtp_packet_received.h"
 
 class CongestionControlFeedbackTracker {
@@ -31,7 +32,7 @@ class CongestionControlFeedbackTracker {
     uint32_t ssrc;
     int64_t unwrapped_sequence_number = 0;
     int64_t arrival_time;
-    rtc::EcnMarking ecn = rtc::EcnMarking::kNotEct;
+    EcnMarking ecn = EcnMarking::kNotEct;
   };
 
   std::optional<int64_t> last_sequence_number_in_feedback_;

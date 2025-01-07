@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "common_header.h"
 #include "rtcp_packet.h"
 
 // RTPFB: Transport layer feedback message.

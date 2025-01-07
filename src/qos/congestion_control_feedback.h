@@ -12,6 +12,7 @@
 #include <limits>
 #include <vector>
 
+#include "array_view.h"
 #include "rtp_feedback.h"
 
 // L4S Explicit Congestion Notification (ECN) .
@@ -45,7 +46,7 @@ class CongestionControlFeedback : public RtpFeedback {
     //  Time offset from report timestamp. Minus infinity if the packet has not
     //  been received.
     int64_t arrival_time_offset = std::numeric_limits<int64_t>::min();
-    rtc::EcnMarking ecn = rtc::EcnMarking::kNotEct;
+    EcnMarking ecn = EcnMarking::kNotEct;
   };
 
   static constexpr uint8_t kFeedbackMessageType = 11;
@@ -59,7 +60,7 @@ class CongestionControlFeedback : public RtpFeedback {
 
   bool Parse(const CommonHeader& packet);
 
-  rtc::ArrayView<const PacketInfo> packets() const { return packets_; }
+  ArrayView<const PacketInfo> packets() const { return packets_; }
 
   uint32_t report_timestamp_compact_ntp() const {
     return report_timestamp_compact_ntp_;

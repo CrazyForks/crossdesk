@@ -8,6 +8,7 @@
 
 #include "fec_decoder.h"
 #include "io_statistics.h"
+#include "receive_side_congestion_controller.h"
 #include "ringbuffer.h"
 #include "rtcp_receiver_report.h"
 #include "rtp_codec.h"
@@ -83,6 +84,9 @@ class RtpVideoReceiver : public ThreadBase {
   std::atomic<bool> rtcp_stop_ = false;
   int rtcp_rr_interval_ms_ = 5000;
   int rtcp_tcc_interval_ms_ = 200;
+
+ private:
+  ReceiveSideCongestionController congestion_controller_;
 };
 
 #endif

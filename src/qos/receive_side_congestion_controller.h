@@ -7,6 +7,11 @@
 #ifndef _RECEIVE_SIDE_CONGESTION_CONTROLLER_H_
 #define _RECEIVE_SIDE_CONGESTION_CONTROLLER_H_
 
+#include <mutex>
+
+#include "congestion_control_feedback_generator.h"
+#include "rtp_packet_received.h"
+
 class ReceiveSideCongestionController {
  public:
   enum MediaType { VIDEO, AUDIO, DATA };
@@ -26,13 +31,13 @@ class ReceiveSideCongestionController {
 
   // Ensures the remote party is notified of the receive bitrate no larger than
   // `bitrate` using RTCP REMB.
-  void SetMaxDesiredReceiveBitrate(DataRate bitrate);
+  void SetMaxDesiredReceiveBitrate(int64_t bitrate);
 
-  void SetTransportOverhead(DataSize overhead_per_packet);
+  void SetTransportOverhead(int64_t overhead_per_packet);
 
   // Returns latest receive side bandwidth estimation.
   // Returns zero if receive side bandwidth estimation is unavailable.
-  DataRate LatestReceiveSideEstimate() const;
+  int64_t LatestReceiveSideEstimate() const;
 
   // Removes stream from receive side bandwidth estimation.
   // Noop if receive side bwe is not used or stream doesn't participate in it.
@@ -45,23 +50,20 @@ class ReceiveSideCongestionController {
  private:
   void PickEstimator(bool has_absolute_send_time);
 
-  RembThrottler remb_throttler_;
+  //   RembThrottler remb_throttler_;
 
   // TODO: bugs.webrtc.org/42224904 - Use sequence checker for all usage of
   // ReceiveSideCongestionController. At the time of
   // writing OnReceivedPacket and MaybeProcess can unfortunately be called on an
   // arbitrary thread by external projects.
-  SequenceChecker sequence_checker_;
+  //   SequenceChecker sequence_checker_;
 
   bool send_rfc8888_congestion_feedback_ = false;
-  TransportSequenceNumberFeedbackGenenerator
-      transport_sequence_number_feedback_generator_;
-  CongestionControlFeedbackGenerator congestion_control_feedback_generator_
-      RTC_GUARDED_BY(sequence_checker_);
+  CongestionControlFeedbackGenerator congestion_control_feedback_generator_;
 
-  mutable Mutex mutex_;
-  std::unique_ptr<RemoteBitrateEstimator> rbe_ RTC_GUARDED_BY(mutex_);
-  bool using_absolute_send_time_ RTC_GUARDED_BY(mutex_);
+  std::mutex mutex_;
+  std::unique_ptr<RemoteBitrateEstimator> rbe_;
+  bool using_absolute_send_time_;
   uint32_t packets_since_absolute_send_time_ RTC_GUARDED_BY(mutex_);
 };
 

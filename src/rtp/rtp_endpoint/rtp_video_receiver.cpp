@@ -72,7 +72,7 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
 
     rtcp_rr.Encode();
 
-    // SendRtcpRR(rtcp_rr);
+    SendRtcpRR(rtcp_rr);
   }
   if (rtp_packet.PayloadType() == RtpPacket::PAYLOAD_TYPE::AV1) {
     ProcessAv1RtpPacket(rtp_packet);
@@ -371,7 +371,7 @@ void RtpVideoReceiver::RtcpThread() {
       if (rtcp_stop_) break;
       send_rtcp_rr_triggered_ = false;
     } else {
-      LOG_ERROR("Send video tcc");
+      // LOG_ERROR("Send video tcc");
       auto now = std::chrono::steady_clock::now();
       auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                          now - last_send_rtcp_rr_ts_)
