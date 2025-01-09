@@ -127,6 +127,22 @@ RtpPacket::~RtpPacket() {
   payload_size_ = 0;
 }
 
+bool RtpPacket::Build(const uint8_t *buffer, uint32_t size) {
+  if (size > 0) {
+    buffer_ = (uint8_t *)malloc(size);
+    if (NULL == buffer_) {
+      LOG_ERROR("Malloc failed");
+    } else {
+      memcpy(buffer_, buffer, size);
+    }
+    size_ = size;
+
+    // TryToDecodeH264RtpPacket(buffer_);
+    return true;
+  }
+  return false;
+}
+
 const uint8_t *RtpPacket::Encode(uint8_t *payload, size_t payload_size) {
   buffer_[0] = (version_ << 6) | (has_padding_ << 5) | (has_extension_ << 4) |
                total_csrc_number_;

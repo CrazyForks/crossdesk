@@ -193,6 +193,9 @@ class RtpPacket {
   virtual ~RtpPacket();
 
  public:
+  bool Build(const uint8_t *buffer, uint32_t size);
+
+ public:
   // Set Header
   void SetVerion(uint8_t version) { version_ = version; }
   void SetHasPadding(bool has_padding) { has_padding_ = has_padding; }

@@ -39,15 +39,16 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     rtp_statistics_->Start();
   }
 
-  RtpPacketReceived* rtp_packet_received;
-  rtp_packet_received = dynamic_cast<RtpPacketReceived*>(&rtp_packet);
-  rtp_packet_received->set_arrival_time(
+  RtpPacketReceived rtp_packet_received;
+  rtp_packet_received.Build(rtp_packet.Buffer(), rtp_packet.Size());
+
+  rtp_packet_received.set_arrival_time(
       std::chrono::system_clock::now().time_since_epoch().count());
-  rtp_packet_received->set_ecn(EcnMarking::kEct0);
-  rtp_packet_received->set_recovered(false);
-  rtp_packet_received->set_payload_type_frequency(0);
+  rtp_packet_received.set_ecn(EcnMarking::kEct0);
+  rtp_packet_received.set_recovered(false);
+  rtp_packet_received.set_payload_type_frequency(0);
   receive_side_congestion_controller_.OnReceivedPacket(
-      *rtp_packet_received, ReceiveSideCongestionController::MediaType::VIDEO);
+      rtp_packet_received, ReceiveSideCongestionController::MediaType::VIDEO);
 
   last_recv_bytes_ = (uint32_t)rtp_packet.PayloadSize();
   total_rtp_payload_recv_ += (uint32_t)rtp_packet.PayloadSize();
@@ -346,7 +347,19 @@ int RtpVideoReceiver::SendRtcpRR(RtcpReceiverReport& rtcp_rr) {
 }
 
 void RtpVideoReceiver::SendCombinedRtcpPacket(
-    std::vector<std::unique_ptr<RtcpPacket>> packets) {}
+    std::vector<std::unique_ptr<RtcpPacket>> packets) {
+  if (!data_send_func_) {
+    LOG_ERROR("data_send_func_ is nullptr");
+  }
+
+  LOG_ERROR("Send combined rtcp packet");
+
+  for (auto& packet : packets) {
+    if (data_send_func_((const char*)packet->Buffer(), packet->Size())) {
+      LOG_ERROR("Send CCB failed");
+    }
+  }
+}
 
 bool RtpVideoReceiver::CheckIsTimeSendRR() {
   uint32_t now_ts = static_cast<uint32_t>(
