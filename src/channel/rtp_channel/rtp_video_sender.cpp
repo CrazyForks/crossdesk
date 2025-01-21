@@ -86,7 +86,7 @@ int RtpVideoSender::SendRtpPacket(RtpPacket& rtp_packet) {
     report.lsr = 0;
     report.dlsr = 0;
 
-    rtcp_sr.SetReportBlock(report);
+    // rtcp_sr.SetReportBlock(report);
 
     rtcp_sr.Encode();
 

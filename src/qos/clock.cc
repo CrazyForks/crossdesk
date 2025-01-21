@@ -55,4 +55,9 @@ class RealTimeClock : public Clock {
     return TimeMicrosToNtp(timestamp.us());
   }
 };
+
+Clock* Clock::GetRealTimeClock() {
+  static Clock* const clock = new RealTimeClock();
+  return clock;
+}
 }  // namespace webrtc

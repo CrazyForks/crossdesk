@@ -41,9 +41,12 @@ target("log")
 
 target("common")
     set_kind("object")
+    add_deps("log")
     add_files("src/common/common.cpp", 
+    "src/common/rtc_base/*.cc",
     "src/common/rtc_base/numerics/*.cc",
-    "src/common/api/units/*.cc")
+    "src/common/api/units/*.cc",
+    "src/common/api/transport/*.cc")
     add_includedirs("src/common", {public = true})
 
 target("inih")

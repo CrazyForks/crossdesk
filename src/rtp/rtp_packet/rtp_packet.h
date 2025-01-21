@@ -213,12 +213,12 @@ class RtpPacket {
   void SetCsrcs(std::vector<uint32_t> &csrcs) { csrcs_ = csrcs; }
 
   void SetExtensionProfile(uint16_t extension_profile) {
-    extension_profile_ = extension_profile;
+    // extension_profile_ = extension_profile;
   }
   void SetExtensionData(uint8_t *extension_data, uint16_t extension_len) {
-    extension_len_ = extension_len;
-    extension_data_ = new uint8_t[extension_len_];
-    memcpy(extension_data_, extension_data, extension_len_);
+    // extension_len_ = extension_len;
+    // extension_data_ = new uint8_t[extension_len_];
+    // memcpy(extension_data_, extension_data, extension_len_);
   }
 
   void SetAbsoluteSendTimestamp(uint32_t abs_send_time) {
@@ -228,9 +228,10 @@ class RtpPacket {
 
     // Allocate memory for the extension data if not already allocated
     if (extension_data_ == nullptr) {
-      extension_data_ = new uint8_t[4];  // 2 bytes for profile, 2 bytes for
-                                         // length, 3 bytes for abs_send_time
-      extension_len_ = 4;
+      extension_data_ =
+          (uint8_t *)malloc(5);  // 2 bytes for profile, 2 bytes for length, 3
+                                 // bytes for abs_send_time
+      extension_len_ = 5;
     }
 
     // Set the extension profile to 0xBEDE (one-byte header)

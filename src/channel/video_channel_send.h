@@ -11,6 +11,7 @@
 #include "ice_agent.h"
 #include "rtp_codec.h"
 #include "rtp_video_sender.h"
+#include "transport_feedback.h"
 #include "transport_feedback_adapter.h"
 
 class VideoChannelSend {

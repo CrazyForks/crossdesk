@@ -7,7 +7,7 @@
 #include "nvcodec_common.h"
 
 // #define SAVE_RECEIVED_NV12_STREAM
-// #define SAVE_ENCODED_H264_STREAM
+#define SAVE_ENCODED_H264_STREAM
 
 NvidiaVideoEncoder::NvidiaVideoEncoder() {}
 NvidiaVideoEncoder::~NvidiaVideoEncoder() {

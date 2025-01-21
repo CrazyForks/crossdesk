@@ -449,6 +449,14 @@ void RtpCodec::Encode(uint8_t* buffer, uint32_t size,
       RtpPacket rtp_packet;
       rtp_packet.SetVerion(version_);
       rtp_packet.SetHasPadding(has_padding_);
+
+      has_extension_ = true;
+      uint32_t abs_send_time =
+          std::chrono::duration_cast<std::chrono::microseconds>(
+              std::chrono::system_clock::now().time_since_epoch())
+              .count();
+      rtp_packet.SetAbsoluteSendTimestamp(abs_send_time);
+
       rtp_packet.SetHasExtension(has_extension_);
       rtp_packet.SetMarker(1);
       rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
@@ -490,6 +498,14 @@ void RtpCodec::Encode(uint8_t* buffer, uint32_t size,
         RtpPacket rtp_packet;
         rtp_packet.SetVerion(version_);
         rtp_packet.SetHasPadding(has_padding_);
+
+        has_extension_ = true;
+        uint32_t abs_send_time =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::system_clock::now().time_since_epoch())
+                .count();
+        rtp_packet.SetAbsoluteSendTimestamp(abs_send_time);
+
         rtp_packet.SetHasExtension(has_extension_);
         rtp_packet.SetMarker(index == packet_num - 1 ? 1 : 0);
         rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
@@ -541,6 +557,14 @@ void RtpCodec::Encode(uint8_t* buffer, uint32_t size,
         RtpPacket rtp_packet;
         rtp_packet.SetVerion(version_);
         rtp_packet.SetHasPadding(has_padding_);
+
+        has_extension_ = true;
+        uint32_t abs_send_time =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::system_clock::now().time_since_epoch())
+                .count();
+        rtp_packet.SetAbsoluteSendTimestamp(abs_send_time);
+
         rtp_packet.SetHasExtension(has_extension_);
         rtp_packet.SetMarker(1);
         rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));
@@ -569,6 +593,14 @@ void RtpCodec::Encode(uint8_t* buffer, uint32_t size,
           RtpPacket rtp_packet;
           rtp_packet.SetVerion(version_);
           rtp_packet.SetHasPadding(has_padding_);
+
+          has_extension_ = true;
+          uint32_t abs_send_time =
+              std::chrono::duration_cast<std::chrono::microseconds>(
+                  std::chrono::system_clock::now().time_since_epoch())
+                  .count();
+          rtp_packet.SetAbsoluteSendTimestamp(abs_send_time);
+
           rtp_packet.SetHasExtension(has_extension_);
           rtp_packet.SetMarker(index == packet_num - 1 ? 1 : 0);
           rtp_packet.SetPayloadType(RtpPacket::PAYLOAD_TYPE(payload_type_));

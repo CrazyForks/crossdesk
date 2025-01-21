@@ -74,6 +74,7 @@ class IceTransport {
       std::function<void(const XVideoFrame *, const char *, const size_t,
                          void *)>
           on_receive_video) {
+    LOG_ERROR("!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     on_receive_video_ = on_receive_video;
   }
 
@@ -240,7 +241,6 @@ class IceTransport {
   std::unique_ptr<RtpAudioSender> rtp_audio_sender_ = nullptr;
   std::unique_ptr<RtpDataReceiver> rtp_data_receiver_ = nullptr;
   std::unique_ptr<RtpDataSender> rtp_data_sender_ = nullptr;
-  RtpPacket pop_packet_;
   bool start_send_packet_ = false;
 
   uint32_t last_complete_frame_ts_ = 0;

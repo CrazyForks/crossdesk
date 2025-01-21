@@ -131,8 +131,10 @@ void IceTransport::InitializeChannels(
   data_channel_send_->Initialize(RtpPacket::PAYLOAD_TYPE::DATA);
 
   video_channel_receive_ = std::make_unique<VideoChannelReceive>(
-      ice_agent_, ice_io_statistics_,
-      [this](VideoFrame &video_frame) { OnReceiveCompleteFrame(video_frame); });
+      ice_agent_, ice_io_statistics_, [this](VideoFrame &video_frame) {
+        LOG_ERROR("ccccccc");
+        OnReceiveCompleteFrame(video_frame);
+      });
 
   audio_channel_receive_ = std::make_unique<AudioChannelReceive>(
       ice_agent_, ice_io_statistics_, [this](const char *data, size_t size) {
@@ -356,11 +358,14 @@ bool IceTransport::HandleCongestionControlFeedback(
   if (!feedback.Parse(rtcp_block) || feedback.packets().empty()) {
     return false;
   }
-  uint32_t first_media_source_ssrc = feedback.packets()[0].ssrc;
-  if (first_media_source_ssrc == local_media_ssrc() ||
-      registered_ssrcs_.contains(first_media_source_ssrc)) {
-    rtcp_packet_info->congestion_control_feedback.emplace(std::move(feedback));
-  }
+  // uint32_t first_media_source_ssrc = feedback.packets()[0].ssrc;
+  // if (first_media_source_ssrc == local_media_ssrc() ||
+  //     registered_ssrcs_.contains(first_media_source_ssrc)) {
+  //   rtcp_packet_info->congestion_control_feedback.emplace(std::move(feedback));
+  // }
+
+  video_channel_send_->OnCongestionControlFeedback(
+      std::chrono::system_clock::now().time_since_epoch().count(), feedback);
   return true;
 }
 
@@ -374,6 +379,7 @@ void IceTransport::OnReceiveCompleteFrame(VideoFrame &video_frame) {
           x_video_frame.width = video_frame.Width();
           x_video_frame.height = video_frame.Height();
           x_video_frame.size = video_frame.Size();
+          LOG_ERROR("ccccccc 2222222");
           on_receive_video_(&x_video_frame, remote_user_id_.data(),
                             remote_user_id_.size(), user_data_);
         }

@@ -15,6 +15,7 @@
 #include <memory>
 
 #include "log.h"
+#include "rtc_base/numerics/safe_compare.h"
 #include "rtc_base/numerics/safe_conversions.h"
 
 namespace webrtc {

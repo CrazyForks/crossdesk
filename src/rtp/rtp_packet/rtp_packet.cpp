@@ -35,7 +35,7 @@ void RtpPacket::ParseRtpData() {
 
 RtpPacket::RtpPacket() : buffer_(new uint8_t[DEFAULT_MTU]), size_(DEFAULT_MTU) {
   memset(buffer_, 0, DEFAULT_MTU);
-  ParseRtpData();
+  // ParseRtpData();
 }
 
 RtpPacket::RtpPacket(uint32_t size) : buffer_(new uint8_t[size]), size_(size) {}

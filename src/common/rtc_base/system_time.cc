@@ -16,14 +16,14 @@
 
 #include <limits>
 
-#if defined(WEBRTC_POSIX)
+#if defined(__POSIX__)
 #include <sys/time.h>
-#if defined(WEBRTC_MAC)
+#if defined(__APPLE__)
 #include <mach/mach_time.h>
 #endif
 #endif
 
-#if defined(WEBRTC_WIN)
+#if defined(_WIN32)
 // clang-format off
 // clang formatting would put <windows.h> last,
 // which leads to compilation failure.
@@ -41,7 +41,7 @@ namespace rtc {
 
 int64_t SystemTimeNanos() {
   int64_t ticks;
-#if defined(WEBRTC_MAC)
+#if defined(__APPLE__)
   static mach_timebase_info_data_t timebase;
   if (timebase.denom == 0) {
     // Get the timebase if this is the first time we run.
@@ -54,7 +54,7 @@ int64_t SystemTimeNanos() {
     return rtc::dchecked_cast<int64_t>(a * b);
   };
   ticks = mul(mach_absolute_time(), timebase.numer) / timebase.denom;
-#elif defined(WEBRTC_POSIX)
+#elif defined(__POSIX__)
   struct timespec ts;
   // TODO(deadbeef): Do we need to handle the case when CLOCK_MONOTONIC is not
   // supported?
@@ -63,11 +63,13 @@ int64_t SystemTimeNanos() {
           static_cast<int64_t>(ts.tv_nsec);
 #elif defined(WINUWP)
   ticks = WinUwpSystemTimeNanos();
-#elif defined(WEBRTC_WIN)
+#elif defined(_WIN32)
   // TODO(webrtc:14601): Fix the volatile increment instead of suppressing the
   // warning.
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-volatile"
+#endif
   static volatile LONG last_timegettime = 0;
   static volatile int64_t num_wrap_timegettime = 0;
   volatile LONG* last_timegettime_ptr = &last_timegettime;
@@ -84,9 +86,13 @@ int64_t SystemTimeNanos() {
   }
   ticks = now + (num_wrap_timegettime << 32);
   // TODO(deadbeef): Calculate with nanosecond precision. Otherwise, we're
-  // just wasting a multiply and divide when doing Time() on Windows.
-  ticks = ticks * kNumNanosecsPerMillisec;
+#if defined(__clang__)
 #pragma clang diagnostic pop
+#endif
+  ticks = ticks * kNumNanosecsPerMillisec;
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #else
 #error Unsupported platform.
 #endif

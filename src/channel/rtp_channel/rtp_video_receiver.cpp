@@ -107,7 +107,7 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
 
     rtcp_rr.Encode();
 
-    SendRtcpRR(rtcp_rr);
+    // SendRtcpRR(rtcp_rr);
   }
   if (rtp_packet.PayloadType() == RtpPacket::PAYLOAD_TYPE::AV1) {
     ProcessAv1RtpPacket(rtp_packet);

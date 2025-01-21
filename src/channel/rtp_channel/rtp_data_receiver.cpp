@@ -60,7 +60,7 @@ void RtpDataReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
 
     rtcp_rr.Encode();
 
-    SendRtcpRR(rtcp_rr);
+    // SendRtcpRR(rtcp_rr);
   }
 
   if (on_receive_data_) {

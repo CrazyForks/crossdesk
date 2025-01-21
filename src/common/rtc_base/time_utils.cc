@@ -10,23 +10,23 @@
 
 #include <stdint.h>
 
-#if defined(WEBRTC_POSIX)
+#if defined(__POSIX__)
 #include <sys/time.h>
 #endif
 
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/time_utils.h"
 #include "system_time.h"
-#if defined(WEBRTC_WIN)
+#if defined(_WIN32)
 #include "rtc_base/win32.h"
 #endif
-#if defined(WEBRTC_WIN)
+#if defined(_WIN32)
 #include <minwinbase.h>
 #endif
 
 namespace rtc {
 
-#if defined(WEBRTC_WIN) || defined(WINUWP)
+#if defined(_WIN32) || defined(WINUWP)
 // FileTime (January 1st 1601) to Unix time (January 1st 1970)
 // offset in units of 100ns.
 static constexpr uint64_t kFileTimeToUnixTimeEpochOffset =
@@ -161,10 +161,7 @@ int64_t TimeMillis() { return TimeNanos() / kNumNanosecsPerMillisec; }
 
 int64_t TimeMicros() { return TimeNanos() / kNumNanosecsPerMicrosec; }
 
-int64_t TimeAfter(int64_t elapsed) {
-  RTC_DCHECK_GE(elapsed, 0);
-  return TimeMillis() + elapsed;
-}
+int64_t TimeAfter(int64_t elapsed) { return TimeMillis() + elapsed; }
 
 int32_t TimeDiff32(uint32_t later, uint32_t earlier) { return later - earlier; }
 
@@ -215,13 +212,13 @@ int64_t TimeUTCMicros() {
   if (g_clock) {
     return g_clock->TimeNanos() / kNumNanosecsPerMicrosec;
   }
-#if defined(WEBRTC_POSIX)
+#if defined(__POSIX__)
   struct timeval time;
   gettimeofday(&time, nullptr);
   // Convert from second (1.0) and microsecond (1e-6).
   return (static_cast<int64_t>(time.tv_sec) * rtc::kNumMicrosecsPerSec +
           time.tv_usec);
-#elif defined(WEBRTC_WIN)
+#elif defined(_WIN32)
   FILETIME ft;
   // This will give us system file in UTC format in multiples of 100ns.
   GetSystemTimeAsFileTime(&ft);

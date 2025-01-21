@@ -14,6 +14,8 @@
 #define RTC_BASE_NUMERICS_SAFE_CONVERSIONS_IMPL_H_
 
 #include <limits>
+#undef max
+#undef min
 
 namespace rtc {
 namespace internal {
@@ -27,8 +29,7 @@ enum DstRange { OVERLAPS_RANGE, CONTAINS_RANGE };
 // Helper templates to statically determine if our destination type can contain
 // all values represented by the source type.
 
-template <typename Dst,
-          typename Src,
+template <typename Dst, typename Src,
           DstSign IsDstSigned =
               std::numeric_limits<Dst>::is_signed ? DST_SIGNED : DST_UNSIGNED,
           SrcSign IsSrcSigned =
@@ -85,8 +86,7 @@ enum RangeCheckResult {
   RangeCheckResult(((is_in_upper_bound) ? 0 : TYPE_OVERFLOW) |                \
                    ((is_in_lower_bound) ? 0 : TYPE_UNDERFLOW))
 
-template <typename Dst,
-          typename Src,
+template <typename Dst, typename Src,
           DstSign IsDstSigned =
               std::numeric_limits<Dst>::is_signed ? DST_SIGNED : DST_UNSIGNED,
           SrcSign IsSrcSigned =
