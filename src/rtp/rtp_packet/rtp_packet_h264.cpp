@@ -17,9 +17,6 @@ bool RtpPacketH264::GetFrameHeaderInfo() {
 
   if (rtp::NAL_UNIT_TYPE::NALU == fu_indicator_.nal_unit_type) {
     add_offset_to_payload(1);
-    LOG_ERROR("2 [{} {} {}]", (int)fu_indicator_.forbidden_bit,
-              (int)fu_indicator_.nal_reference_idc,
-              (int)fu_indicator_.nal_unit_type);
   } else if (rtp::NAL_UNIT_TYPE::FU_A == fu_indicator_.nal_unit_type) {
     fu_header_.start = (frame_buffer[1] >> 7) & 0x01;
     fu_header_.end = (frame_buffer[1] >> 6) & 0x01;

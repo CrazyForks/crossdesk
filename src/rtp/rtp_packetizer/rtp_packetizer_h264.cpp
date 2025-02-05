@@ -7,7 +7,7 @@ RtpPacketizerH264::RtpPacketizerH264()
       csrc_count_(0),
       marker_(false),
       payload_type_(rtp::PAYLOAD_TYPE::H264),
-      sequence_number_(1),
+      sequence_number_(0),
       timestamp_(0),
       ssrc_(0),
       profile_(0),
@@ -23,7 +23,6 @@ std::vector<RtpPacket> RtpPacketizerH264::Build(uint8_t* payload,
     return BuildNalu(payload, payload_size);
   } else {
     return BuildFua(payload, payload_size);
-    // return std::vector<RtpPacket>();
   }
 }
 
@@ -70,7 +69,6 @@ void RtpPacketizerH264::AddAbsSendTimeExtension(
 
 std::vector<RtpPacket> RtpPacketizerH264::BuildNalu(uint8_t* payload,
                                                     uint32_t payload_size) {
-  LOG_ERROR("payload_size_ = {}", payload_size);
   std::vector<RtpPacket> rtp_packets;
 
   version_ = kRtpVersion;
@@ -120,20 +118,15 @@ std::vector<RtpPacket> RtpPacketizerH264::BuildNalu(uint8_t* payload,
     AddAbsSendTimeExtension(rtp_packet_frame_);
   }
 
-  rtp_packet_frame_.push_back(fu_indicator.forbidden_bit << 7 |
-                              fu_indicator.nal_reference_idc << 6 |
+  rtp_packet_frame_.push_back((fu_indicator.forbidden_bit << 7) |
+                              (fu_indicator.nal_reference_idc << 5) |
                               fu_indicator.nal_unit_type);
-
-  LOG_ERROR("1 [{} {} {}]", (int)fu_indicator.forbidden_bit,
-            (int)fu_indicator.nal_reference_idc,
-            (int)fu_indicator.nal_unit_type);
 
   rtp_packet_frame_.insert(rtp_packet_frame_.end(), payload,
                            payload + payload_size);
 
   RtpPacket rtp_packet;
   rtp_packet.Build(rtp_packet_frame_.data(), rtp_packet_frame_.size());
-
   rtp_packets.emplace_back(rtp_packet);
 
   return rtp_packets;
@@ -157,7 +150,7 @@ std::vector<RtpPacket> RtpPacketizerH264::BuildFua(uint8_t* payload,
     has_padding_ = false;
     has_extension_ = true;
     csrc_count_ = 0;
-    marker_ = index == packet_num - 1 ? 1 : 0;
+    marker_ = (index == (packet_num - 1)) ? 1 : 0;
     payload_type_ = rtp::PAYLOAD_TYPE(payload_type_);
     sequence_number_++;
     timestamp_ = timestamp_;
@@ -193,11 +186,12 @@ std::vector<RtpPacket> RtpPacketizerH264::BuildFua(uint8_t* payload,
     rtp_packet_frame_.push_back((ssrc_ >> 8) & 0xFF);
     rtp_packet_frame_.push_back(ssrc_ & 0xFF);
 
-    for (uint32_t index = 0; index < csrc_count_ && !csrcs_.empty(); index++) {
-      rtp_packet_frame_.push_back((csrcs_[index] >> 24) & 0xFF);
-      rtp_packet_frame_.push_back((csrcs_[index] >> 16) & 0xFF);
-      rtp_packet_frame_.push_back((csrcs_[index] >> 8) & 0xFF);
-      rtp_packet_frame_.push_back(csrcs_[index] & 0xFF);
+    for (uint32_t csrc_index = 0; csrc_index < csrc_count_ && !csrcs_.empty();
+         csrc_index++) {
+      rtp_packet_frame_.push_back((csrcs_[csrc_index] >> 24) & 0xFF);
+      rtp_packet_frame_.push_back((csrcs_[csrc_index] >> 16) & 0xFF);
+      rtp_packet_frame_.push_back((csrcs_[csrc_index] >> 8) & 0xFF);
+      rtp_packet_frame_.push_back(csrcs_[csrc_index] & 0xFF);
     }
 
     if (has_extension_) {
@@ -205,19 +199,21 @@ std::vector<RtpPacket> RtpPacketizerH264::BuildFua(uint8_t* payload,
     }
 
     rtp_packet_frame_.push_back(fu_indicator.forbidden_bit << 7 |
-                                fu_indicator.nal_reference_idc << 6 |
+                                fu_indicator.nal_reference_idc << 5 |
                                 fu_indicator.nal_unit_type);
 
     rtp_packet_frame_.push_back(fu_header.start << 7 | fu_header.end << 6 |
-                                fu_header.remain_bit << 1 |
+                                fu_header.remain_bit << 5 |
                                 fu_header.nal_unit_type);
 
     if (index == packet_num - 1 && last_packet_size > 0) {
-      rtp_packet_frame_.insert(rtp_packet_frame_.end(), payload,
-                               payload + last_packet_size);
+      rtp_packet_frame_.insert(
+          rtp_packet_frame_.end(), payload + index * MAX_NALU_LEN,
+          payload + index * MAX_NALU_LEN + last_packet_size);
     } else {
-      rtp_packet_frame_.insert(rtp_packet_frame_.end(), payload,
-                               payload + MAX_NALU_LEN);
+      rtp_packet_frame_.insert(rtp_packet_frame_.end(),
+                               payload + index * MAX_NALU_LEN,
+                               payload + index * MAX_NALU_LEN + MAX_NALU_LEN);
     }
 
     RtpPacket rtp_packet;
@@ -225,6 +221,7 @@ std::vector<RtpPacket> RtpPacketizerH264::BuildFua(uint8_t* payload,
 
     rtp_packets.emplace_back(rtp_packet);
   }
+
   return rtp_packets;
 }
 

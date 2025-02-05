@@ -4,7 +4,7 @@
 #include "nvcodec_api.h"
 
 // #define SAVE_DECODED_NV12_STREAM
-#define SAVE_RECEIVED_H264_STREAM
+// #define SAVE_RECEIVED_H264_STREAM
 
 NvidiaVideoDecoder::NvidiaVideoDecoder() {}
 NvidiaVideoDecoder::~NvidiaVideoDecoder() {

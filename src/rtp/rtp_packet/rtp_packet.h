@@ -263,6 +263,10 @@ class RtpPacket {
   CopyOnWriteBuffer Buffer() const { return buffer_; }
   size_t Size() const { return size_; }
 
+  // Header
+  const uint8_t *Header() { return Buffer().data(); };
+  size_t HeaderSize() { return payload_offset_; }
+
   // For webrtc module use
   size_t headers_size() const { return payload_offset_; }
   size_t payload_size() const { return payload_size_; }

@@ -287,7 +287,7 @@ TransportFeedbackAdapter::ProcessCongestionControlFeedback(
 
   if (failed_lookups > 0) {
     LOG_WARN(
-        "Failed to lookup send time for {} packet {}. Packets reordered or "
+        "Failed to lookup send time for {} packet{}. Packets reordered or "
         "send time history too small?",
         failed_lookups, (failed_lookups > 1 ? "s" : ""));
   }

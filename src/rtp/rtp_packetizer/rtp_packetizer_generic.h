@@ -19,6 +19,9 @@ class RtpPacketizerGeneric : public RtpPacketizer {
                                uint32_t payload_size) override;
 
  private:
+  void AddAbsSendTimeExtension(std::vector<uint8_t>& rtp_packet_frame);
+
+ private:
   uint8_t version_;
   bool has_padding_;
   bool has_extension_;

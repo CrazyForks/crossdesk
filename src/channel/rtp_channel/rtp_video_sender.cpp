@@ -4,7 +4,7 @@
 
 #include "log.h"
 
-#define SAVE_RTP_SENT_STREAM 1
+// #define SAVE_RTP_SENT_STREAM
 
 #define RTCP_SR_INTERVAL 1000
 
@@ -63,8 +63,6 @@ int RtpVideoSender::SendRtpPacket(RtpPacket& rtp_packet) {
   }
 
 #ifdef SAVE_RTP_SENT_STREAM
-  // fwrite((unsigned char*)rtp_packet.Buffer().data(), 1, rtp_packet.Size(),
-  //        file_rtp_sent_);
   fwrite((unsigned char*)rtp_packet.Payload(), 1, rtp_packet.PayloadSize(),
          file_rtp_sent_);
 #endif

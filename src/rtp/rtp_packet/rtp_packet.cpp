@@ -2,13 +2,7 @@
 
 #include <string>
 
-static FILE *file_1_ = nullptr;
-static FILE *file_2_ = nullptr;
-
-RtpPacket::RtpPacket() {
-  if (file_1_ == nullptr) file_1_ = fopen("file_1_.h264", "w+b");
-  if (file_2_ == nullptr) file_2_ = fopen("file_2_.h264", "w+b");
-}
+RtpPacket::RtpPacket() {}
 
 RtpPacket::RtpPacket(size_t size) : buffer_(size) {}
 
@@ -20,25 +14,14 @@ RtpPacket &RtpPacket::operator=(const RtpPacket &rtp_packet) = default;
 
 RtpPacket &RtpPacket::operator=(RtpPacket &&rtp_packet) = default;
 
-RtpPacket::~RtpPacket() {
-  // if (file_1_ != nullptr) {
-  //   fclose(file_1_);
-  //   file_1_ = nullptr;
-  // }
-  // if (file_2_ != nullptr) {
-  //   fclose(file_2_);
-  //   file_2_ = nullptr;
-  // }
-}
+RtpPacket::~RtpPacket() {}
 
 bool RtpPacket::Build(const uint8_t *buffer, uint32_t size) {
-  fwrite((unsigned char *)buffer, 1, size, file_1_);
   if (!Parse(buffer, size)) {
     LOG_WARN("RtpPacket::Build: parse failed");
     return false;
   }
   buffer_.SetData(buffer, size);
-  fwrite((unsigned char *)Payload(), 1, PayloadSize(), file_2_);
   size_ = size;
   return true;
 }

@@ -4,7 +4,7 @@
 #include "log.h"
 #include "rtcp_sender.h"
 
-#define SAVE_RTP_RECV_STREAM 1
+// #define SAVE_RTP_RECV_STREAM
 
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
@@ -73,13 +73,10 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     rtp_statistics_->Start();
   }
 
-  // #ifdef SAVE_RTP_RECV_STREAM
-  //   // fwrite((unsigned char*)rtp_packet.Buffer().data(), 1,
-  //   rtp_packet.Size(),
-  //   //        file_rtp_recv_);
-  //   fwrite((unsigned char*)rtp_packet.Payload(), 1, rtp_packet.PayloadSize(),
-  //          file_rtp_recv_);
-  // #endif
+#ifdef SAVE_RTP_RECV_STREAM
+  fwrite((unsigned char*)rtp_packet.Payload(), 1, rtp_packet.PayloadSize(),
+         file_rtp_recv_);
+#endif
 
   webrtc::RtpPacketReceived rtp_packet_received;
   rtp_packet_received.Build(rtp_packet.Buffer().data(), rtp_packet.Size());
@@ -312,6 +309,7 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(
         }
 
         size_t complete_frame_size = 0;
+        int frame_fragment_count = 0;
         for (uint16_t start = it->first;
              start <= rtp_packet_h264.SequenceNumber(); start++) {
           memcpy(nv12_data_ + complete_frame_size,
@@ -321,6 +319,7 @@ bool RtpVideoReceiver::CheckIsH264FrameCompleted(
           complete_frame_size +=
               incomplete_h264_frame_list_[start].PayloadSize();
           incomplete_h264_frame_list_.erase(start);
+          frame_fragment_count++;
         }
         compelete_video_frame_queue_.push(
             VideoFrame(nv12_data_, complete_frame_size));
@@ -462,10 +461,11 @@ bool RtpVideoReceiver::Process() {
       // last_complete_frame_ts_ = now_complete_frame_ts;
 
       on_receive_complete_frame_(video_frame);
-#ifdef SAVE_RTP_RECV_STREAM
-      fwrite((unsigned char*)video_frame.Buffer(), 1, video_frame.Size(),
-             file_rtp_recv_);
-#endif
+      // #ifdef SAVE_RTP_RECV_STREAM
+      //       fwrite((unsigned char*)video_frame.Buffer(), 1,
+      //       video_frame.Size(),
+      //              file_rtp_recv_);
+      // #endif
     }
   }
 
