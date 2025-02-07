@@ -11,7 +11,7 @@
 
 class RtpPacketizerGeneric : public RtpPacketizer {
  public:
-  RtpPacketizerGeneric();
+  RtpPacketizerGeneric(uint32_t ssrc);
 
   virtual ~RtpPacketizerGeneric();
 

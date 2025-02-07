@@ -1,6 +1,6 @@
 #include "rtp_packetizer_generic.h"
 
-RtpPacketizerGeneric::RtpPacketizerGeneric()
+RtpPacketizerGeneric::RtpPacketizerGeneric(uint32_t ssrc)
     : version_(kRtpVersion),
       has_padding_(false),
       has_extension_(true),
@@ -9,7 +9,7 @@ RtpPacketizerGeneric::RtpPacketizerGeneric()
       payload_type_(rtp::PAYLOAD_TYPE::DATA),
       sequence_number_(0),
       timestamp_(0),
-      ssrc_(0),
+      ssrc_(ssrc),
       profile_(0),
       extension_profile_(0),
       extension_len_(0),

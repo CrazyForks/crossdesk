@@ -5,17 +5,19 @@
 VideoChannelReceive::VideoChannelReceive() {}
 
 VideoChannelReceive::VideoChannelReceive(
-    std::shared_ptr<IceAgent> ice_agent,
+    std::shared_ptr<webrtc::Clock> clock, std::shared_ptr<IceAgent> ice_agent,
     std::shared_ptr<IOStatistics> ice_io_statistics,
     std::function<void(VideoFrame &)> on_receive_complete_frame)
     : ice_agent_(ice_agent),
       ice_io_statistics_(ice_io_statistics),
-      on_receive_complete_frame_(on_receive_complete_frame) {}
+      on_receive_complete_frame_(on_receive_complete_frame),
+      clock_(clock) {}
 
 VideoChannelReceive::~VideoChannelReceive() {}
 
 void VideoChannelReceive::Initialize(rtp::PAYLOAD_TYPE payload_type) {
-  rtp_video_receiver_ = std::make_unique<RtpVideoReceiver>(ice_io_statistics_);
+  rtp_video_receiver_ =
+      std::make_unique<RtpVideoReceiver>(clock_, ice_io_statistics_);
   rtp_video_receiver_->SetOnReceiveCompleteFrame(
       [this](VideoFrame &video_frame) -> void {
         on_receive_complete_frame_(video_frame);

@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include "common.h"
 #include "log.h"
 
 #define RTCP_SR_INTERVAL 1000
@@ -9,7 +10,7 @@
 RtpDataSender::RtpDataSender() {}
 
 RtpDataSender::RtpDataSender(std::shared_ptr<IOStatistics> io_statistics)
-    : io_statistics_(io_statistics) {
+    : ssrc_(GenerateUniqueSsrc()), io_statistics_(io_statistics) {
   SetPeriod(std::chrono::milliseconds(5));
 }
 
@@ -17,6 +18,8 @@ RtpDataSender::~RtpDataSender() {
   if (rtp_statistics_) {
     rtp_statistics_->Stop();
   }
+
+  SSRCManager::Instance().DeleteSsrc(ssrc_);
 }
 
 void RtpDataSender::Enqueue(std::vector<RtpPacket>& rtp_packets) {

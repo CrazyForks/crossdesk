@@ -7,6 +7,7 @@
 #ifndef _VIDEO_CHANNEL_RECEIVE_H_
 #define _VIDEO_CHANNEL_RECEIVE_H_
 
+#include "clock.h"
 #include "ice_agent.h"
 #include "rtp_video_receiver.h"
 
@@ -14,7 +15,7 @@ class VideoChannelReceive {
  public:
   VideoChannelReceive();
   VideoChannelReceive(
-      std::shared_ptr<IceAgent> ice_agent,
+      std::shared_ptr<webrtc::Clock> clock, std::shared_ptr<IceAgent> ice_agent,
       std::shared_ptr<IOStatistics> ice_io_statistics,
       std::function<void(VideoFrame &)> on_receive_complete_frame);
 
@@ -31,6 +32,9 @@ class VideoChannelReceive {
   std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpVideoReceiver> rtp_video_receiver_ = nullptr;
   std::function<void(VideoFrame &)> on_receive_complete_frame_ = nullptr;
+
+ private:
+  std::shared_ptr<Clock> clock_;
 };
 
 #endif

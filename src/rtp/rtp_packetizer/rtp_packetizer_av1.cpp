@@ -1,6 +1,6 @@
 #include "rtp_packetizer_av1.h"
 
-RtpPacketizerAv1::RtpPacketizerAv1() {}
+RtpPacketizerAv1::RtpPacketizerAv1(uint32_t ssrc) {}
 
 RtpPacketizerAv1::~RtpPacketizerAv1() {}
 

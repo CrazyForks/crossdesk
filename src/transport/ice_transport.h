@@ -14,6 +14,7 @@
 // #include "congestion_control.h"
 #include "audio_channel_receive.h"
 #include "audio_channel_send.h"
+#include "clock.h"
 #include "data_channel_receive.h"
 #include "data_channel_send.h"
 #include "ice_agent.h"
@@ -219,6 +220,7 @@ class IceTransport : public std::enable_shared_from_this<IceTransport> {
       on_receive_net_status_report_ = nullptr;
 
  private:
+  std::shared_ptr<webrtc::Clock> clock_;
   std::unique_ptr<VideoChannelSend> video_channel_send_ = nullptr;
   std::unique_ptr<VideoChannelReceive> video_channel_receive_ = nullptr;
   std::unique_ptr<AudioChannelSend> audio_channel_send_ = nullptr;

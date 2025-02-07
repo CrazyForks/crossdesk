@@ -15,7 +15,8 @@
 
 class RtpPacketizer {
  public:
-  static std::unique_ptr<RtpPacketizer> Create(uint32_t payload_type);
+  static std::unique_ptr<RtpPacketizer> Create(uint32_t payload_type,
+                                               uint32_t ssrc);
 
   virtual ~RtpPacketizer() = default;
 

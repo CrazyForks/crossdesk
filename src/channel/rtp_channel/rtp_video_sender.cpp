@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include "common.h"
 #include "log.h"
 
 // #define SAVE_RTP_SENT_STREAM
@@ -11,7 +12,7 @@
 RtpVideoSender::RtpVideoSender() {}
 
 RtpVideoSender::RtpVideoSender(std::shared_ptr<IOStatistics> io_statistics)
-    : io_statistics_(io_statistics) {
+    : ssrc_(GenerateUniqueSsrc()), io_statistics_(io_statistics) {
   SetPeriod(std::chrono::milliseconds(5));
 #ifdef SAVE_RTP_SENT_STREAM
   file_rtp_sent_ = fopen("rtp_sent_stream.h264", "w+b");
@@ -25,6 +26,8 @@ RtpVideoSender::~RtpVideoSender() {
   if (rtp_statistics_) {
     rtp_statistics_->Stop();
   }
+
+  SSRCManager::Instance().DeleteSsrc(ssrc_);
 
 #ifdef SAVE_RTP_SENT_STREAM
   if (file_rtp_sent_) {
@@ -51,10 +54,24 @@ void RtpVideoSender::SetSendDataFunc(
   data_send_func_ = data_send_func;
 }
 
+void RtpVideoSender::SetOnSentPacketFunc(
+    std::function<void(const webrtc::RtpPacketToSend&)> on_sent_packet_func) {
+  on_sent_packet_func_ = on_sent_packet_func;
+}
+
 int RtpVideoSender::SendRtpPacket(RtpPacket& rtp_packet) {
   if (!data_send_func_) {
     LOG_ERROR("data_send_func_ is nullptr");
     return -1;
+  }
+
+  if (on_sent_packet_func_) {
+    webrtc::RtpPacketToSend rtp_packet_to_send;
+    rtp_packet_to_send.SetSequenceNumber(rtp_packet.SequenceNumber());
+    rtp_packet_to_send.SetSsrc(rtp_packet.Ssrc());
+    rtp_packet_to_send.set_transport_sequence_number(transport_seq_++);
+    rtp_packet_to_send.set_packet_type(webrtc::RtpPacketMediaType::kVideo);
+    on_sent_packet_func_(rtp_packet_to_send);
   }
 
   if (0 != data_send_func_((const char*)rtp_packet.Buffer().data(),

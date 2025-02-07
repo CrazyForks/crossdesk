@@ -8,6 +8,7 @@
 #define _VIDEO_CHANNEL_SEND_H_
 
 #include "api/transport/network_types.h"
+#include "clock.h"
 #include "congestion_control.h"
 #include "congestion_control_feedback.h"
 #include "ice_agent.h"
@@ -19,7 +20,8 @@
 class VideoChannelSend {
  public:
   VideoChannelSend();
-  VideoChannelSend(std::shared_ptr<IceAgent> ice_agent,
+  VideoChannelSend(std::shared_ptr<webrtc::Clock> clock,
+                   std::shared_ptr<IceAgent> ice_agent,
                    std::shared_ptr<IOStatistics> ice_io_statistics);
   ~VideoChannelSend();
 
@@ -47,6 +49,7 @@ class VideoChannelSend {
   std::unique_ptr<RtpVideoSender> rtp_video_sender_ = nullptr;
 
  private:
+  std::shared_ptr<Clock> clock_;
   int64_t current_offset_ = std::numeric_limits<int64_t>::min();
   // Used by RFC 8888 congestion control feedback to track base time.
   std::optional<uint32_t> last_feedback_compact_ntp_time_;

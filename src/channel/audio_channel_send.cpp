@@ -12,8 +12,10 @@ AudioChannelSend::AudioChannelSend(
     : ice_agent_(ice_agent), ice_io_statistics_(ice_io_statistics) {}
 
 void AudioChannelSend::Initialize(rtp::PAYLOAD_TYPE payload_type) {
-  rtp_packetizer_ = RtpPacketizer::Create(payload_type);
   rtp_audio_sender_ = std::make_unique<RtpAudioSender>(ice_io_statistics_);
+  rtp_packetizer_ =
+      RtpPacketizer::Create(payload_type, rtp_audio_sender_->GetSsrc());
+
   rtp_audio_sender_->SetSendDataFunc(
       [this](const char *data, size_t size) -> int {
         if (!ice_agent_) {

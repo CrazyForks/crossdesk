@@ -94,6 +94,7 @@ void CongestionControlFeedbackGenerator::SendFeedback(Timestamp now) {
   for (auto& [unused, tracker] : feedback_trackers_) {
     tracker.AddPacketsToFeedback(now, rtcp_packet_info);
   }
+
   marker_bit_seen_ = false;
   first_arrival_time_since_feedback_ = std::nullopt;
 

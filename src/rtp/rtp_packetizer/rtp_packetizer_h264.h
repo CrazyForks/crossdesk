@@ -11,7 +11,7 @@
 
 class RtpPacketizerH264 : public RtpPacketizer {
  public:
-  RtpPacketizerH264();
+  RtpPacketizerH264(uint32_t ssrc);
 
   virtual ~RtpPacketizerH264();
 

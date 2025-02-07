@@ -25,6 +25,7 @@ class RtpDataSender : public ThreadBase {
  public:
   void Enqueue(std::vector<RtpPacket> &rtp_packets);
   void SetSendDataFunc(std::function<int(const char *, size_t)> data_send_func);
+  uint32_t GetSsrc() { return ssrc_; }
 
  private:
  private:
@@ -41,6 +42,7 @@ class RtpDataSender : public ThreadBase {
   RingBuffer<RtpPacket> rtp_packe_queue_;
 
  private:
+  uint32_t ssrc_ = 0;
   std::unique_ptr<RtpStatistics> rtp_statistics_ = nullptr;
   std::shared_ptr<IOStatistics> io_statistics_ = nullptr;
   uint32_t last_send_bytes_ = 0;

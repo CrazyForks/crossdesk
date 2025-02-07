@@ -297,6 +297,9 @@ bool CongestionControlFeedback::Parse(const rtcp::CommonHeader& packet) {
 
       uint16_t seq_no = base_seqno + i;
       bool received = (packet_info & 0x8000);
+      TimeDelta arrival_time_offset = AtoToTimeDelta(packet_info);
+      LOG_ERROR("received:{} = [{} {}]", received,
+                ToString(arrival_time_offset), arrival_time_offset.IsFinite());
       packets_.push_back(
           {ssrc, seq_no,
            received ? AtoToTimeDelta(packet_info) : TimeDelta::MinusInfinity(),

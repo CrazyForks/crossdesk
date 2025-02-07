@@ -262,6 +262,7 @@ TransportFeedbackAdapter::ProcessCongestionControlFeedback(
   int failed_lookups = 0;
   bool supports_ecn = true;
   std::vector<PacketResult> packet_result_vector;
+  LOG_ERROR("20");
   for (const rtcp::CongestionControlFeedback::PacketInfo& packet_info :
        feedback.packets()) {
     std::optional<PacketFeedback> packet_feedback = RetrievePacketFeedback(
@@ -277,7 +278,9 @@ TransportFeedbackAdapter::ProcessCongestionControlFeedback(
     }
     PacketResult result;
     result.sent_packet = packet_feedback->sent;
+    LOG_ERROR("21");
     if (packet_info.arrival_time_offset.IsFinite()) {
+      LOG_ERROR("22");
       result.receive_time = current_offset_ - packet_info.arrival_time_offset;
       supports_ecn &= packet_info.ecn != EcnMarking::kNotEct;
     }

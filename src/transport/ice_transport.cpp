@@ -25,7 +25,8 @@ IceTransport::IceTransport(
       remote_user_id_(remote_user_id),
       ice_ws_transport_(ice_ws_transmission),
       on_ice_status_change_(on_ice_status_change),
-      user_data_(user_data) {}
+      user_data_(user_data),
+      clock_(webrtc::Clock::GetRealTimeClockShared()) {}
 
 IceTransport::~IceTransport() {
   user_data_ = nullptr;
@@ -119,8 +120,8 @@ void IceTransport::InitializeChannels(
     rtp::PAYLOAD_TYPE video_codec_payload_type) {
   video_codec_payload_type_ = video_codec_payload_type;
 
-  video_channel_send_ =
-      std::make_unique<VideoChannelSend>(ice_agent_, ice_io_statistics_);
+  video_channel_send_ = std::make_unique<VideoChannelSend>(clock_, ice_agent_,
+                                                           ice_io_statistics_);
   audio_channel_send_ =
       std::make_unique<AudioChannelSend>(ice_agent_, ice_io_statistics_);
   data_channel_send_ =
@@ -132,7 +133,7 @@ void IceTransport::InitializeChannels(
 
   std::weak_ptr<IceTransport> weak_self = shared_from_this();
   video_channel_receive_ = std::make_unique<VideoChannelReceive>(
-      ice_agent_, ice_io_statistics_,
+      clock_, ice_agent_, ice_io_statistics_,
       [this, weak_self](VideoFrame &video_frame) {
         if (auto self = weak_self.lock()) {
           OnReceiveCompleteFrame(video_frame);

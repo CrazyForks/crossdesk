@@ -19,12 +19,12 @@ class RTCPSender {
   RTCPSender(std::function<int(const uint8_t*, size_t)> callback,
              size_t max_packet_size)
       : callback_(callback), max_packet_size_(max_packet_size) {
-    if (max_packet_size > IP_PACKET_SIZE) {
+    if (max_packet_size >= IP_PACKET_SIZE) {
       LOG_ERROR("max_packet_size must be less than IP_PACKET_SIZE");
     }
   }
   ~RTCPSender() {
-    if (index_ == 0) {
+    if (index_ != 0) {
       LOG_ERROR("Unsent rtcp packet");
     }
   }

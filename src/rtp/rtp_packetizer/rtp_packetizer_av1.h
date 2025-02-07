@@ -11,7 +11,7 @@
 
 class RtpPacketizerAv1 : public RtpPacketizer {
  public:
-  RtpPacketizerAv1();
+  RtpPacketizerAv1(uint32_t ssrc);
 
   virtual ~RtpPacketizerAv1();
 

@@ -23,8 +23,9 @@ using namespace webrtc;
 
 class RtpVideoReceiver : public ThreadBase {
  public:
-  RtpVideoReceiver();
-  RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics);
+  RtpVideoReceiver(std::shared_ptr<Clock> clock);
+  RtpVideoReceiver(std::shared_ptr<Clock> clock,
+                   std::shared_ptr<IOStatistics> io_statistics);
   virtual ~RtpVideoReceiver();
 
  public:

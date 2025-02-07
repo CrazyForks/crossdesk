@@ -9,34 +9,35 @@
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
 
-RtpVideoReceiver::RtpVideoReceiver()
+RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<Clock> clock)
     : feedback_ssrc_(GenerateUniqueSsrc()),
       active_remb_module_(nullptr),
       receive_side_congestion_controller_(
-          clock_,
+          clock,
           [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
             SendCombinedRtcpPacket(std::move(packets));
           },
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(Clock::GetRealTimeClockShared()) {
+      clock_(clock) {
   SetPeriod(std::chrono::milliseconds(5));
   // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 }
 
-RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<IOStatistics> io_statistics)
+RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<Clock> clock,
+                                   std::shared_ptr<IOStatistics> io_statistics)
     : io_statistics_(io_statistics),
       feedback_ssrc_(GenerateUniqueSsrc()),
       receive_side_congestion_controller_(
-          clock_,
+          clock,
           [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
             SendCombinedRtcpPacket(std::move(packets));
           },
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(Clock::GetRealTimeClockShared()) {
+      clock_(clock) {
   SetPeriod(std::chrono::milliseconds(5));
   // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 
@@ -404,6 +405,21 @@ int RtpVideoReceiver::SendRtcpRR(RtcpReceiverReport& rtcp_rr) {
   return 0;
 }
 
+TimeDelta AtoToTimeDelta(uint16_t receive_info) {
+  // receive_info
+  // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  // |R|ECN|  Arrival time offset    |
+  // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  const uint16_t ato = receive_info & 0x1FFF;
+  if (ato == 0x1FFE) {
+    return TimeDelta::PlusInfinity();
+  }
+  if (ato == 0x1FFF) {
+    return TimeDelta::MinusInfinity();
+  }
+  return TimeDelta::Seconds(ato) / 1024;
+}
+
 void RtpVideoReceiver::SendCombinedRtcpPacket(
     std::vector<std::unique_ptr<RtcpPacket>> rtcp_packets) {
   if (!data_send_func_) {
@@ -414,9 +430,18 @@ void RtpVideoReceiver::SendCombinedRtcpPacket(
 
   RTCPSender rtcp_sender(
       [this](const uint8_t* buffer, size_t size) -> int {
+        webrtc::rtcp::CommonHeader rtcp_block;
+        // bool valid = true;
+        // if (!rtcp_block.Parse(buffer, size)) {
+        //   valid = false;
+        // }
+
+        webrtc::rtcp::CongestionControlFeedback feedback;
+        feedback.Parse(rtcp_block);
+
         return data_send_func_((const char*)buffer, size);
       },
-      IP_PACKET_SIZE);
+      1200);
 
   for (auto& rtcp_packet : rtcp_packets) {
     rtcp_packet->SetSenderSsrc(feedback_ssrc_);

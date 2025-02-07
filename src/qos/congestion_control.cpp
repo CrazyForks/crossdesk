@@ -114,6 +114,8 @@ NetworkControlUpdate CongestionControl::OnTransportPacketsFeedback(
     if (report.feedback_time > next_loss_update_) {
       next_loss_update_ =
           report.feedback_time + TimeDelta::Millis(kLossUpdateInterval);
+      LOG_WARN("lost_packets_since_last_loss_update_ = [{}]",
+               lost_packets_since_last_loss_update_);
       bandwidth_estimation_->UpdatePacketsLost(
           lost_packets_since_last_loss_update_,
           expected_packets_since_last_loss_update_, report.feedback_time);

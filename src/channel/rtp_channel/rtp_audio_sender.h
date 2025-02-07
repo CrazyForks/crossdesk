@@ -25,8 +25,8 @@ class RtpAudioSender : public ThreadBase {
  public:
   void Enqueue(std::vector<RtpPacket> &rtp_packets);
   void SetSendDataFunc(std::function<int(const char *, size_t)> data_send_func);
+  uint32_t GetSsrc() { return ssrc_; }
 
- private:
  private:
   int SendRtpPacket(RtpPacket &rtp_packet);
   int SendRtcpSR(RtcpSenderReport &rtcp_sr);
@@ -39,6 +39,9 @@ class RtpAudioSender : public ThreadBase {
  private:
   std::function<int(const char *, size_t)> data_send_func_ = nullptr;
   RingBuffer<RtpPacket> rtp_packe_queue_;
+
+ private:
+  uint32_t ssrc_ = 0;
   std::unique_ptr<RtpStatistics> rtp_statistics_ = nullptr;
   std::shared_ptr<IOStatistics> io_statistics_ = nullptr;
   uint32_t last_send_bytes_ = 0;

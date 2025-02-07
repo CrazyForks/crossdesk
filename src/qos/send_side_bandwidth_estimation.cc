@@ -204,6 +204,7 @@ void SendSideBandwidthEstimation::SetBitrates(
 
 void SendSideBandwidthEstimation::SetSendBitrate(DataRate bitrate,
                                                  Timestamp at_time) {
+  LOG_ERROR("3");
   // Reset to avoid being capped by the estimate.
   delay_based_limit_ = DataRate::PlusInfinity();
   UpdateTargetBitrate(bitrate, at_time);
@@ -244,6 +245,7 @@ DataRate SendSideBandwidthEstimation::GetEstimatedLinkCapacity() const {
 
 void SendSideBandwidthEstimation::UpdateReceiverEstimate(Timestamp at_time,
                                                          DataRate bandwidth) {
+  LOG_ERROR("6");
   // TODO(srte): Ensure caller passes PlusInfinity, not zero, to represent no
   // limitation.
   receiver_limit_ = bandwidth.IsZero() ? DataRate::PlusInfinity() : bandwidth;
@@ -252,6 +254,7 @@ void SendSideBandwidthEstimation::UpdateReceiverEstimate(Timestamp at_time,
 
 void SendSideBandwidthEstimation::UpdateDelayBasedEstimate(Timestamp at_time,
                                                            DataRate bitrate) {
+  LOG_ERROR("7");
   link_capacity_.UpdateDelayBasedEstimate(at_time, bitrate);
   // TODO(srte): Ensure caller passes PlusInfinity, not zero, to represent no
   // limitation.
@@ -342,7 +345,9 @@ void SendSideBandwidthEstimation::UpdateRtt(TimeDelta rtt, Timestamp at_time) {
 }
 
 void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
+  LOG_ERROR("1");
   if (rtt_backoff_.IsRttAboveLimit()) {
+    LOG_ERROR("11");
     if (at_time - time_last_decrease_ >= rtt_backoff_.drop_interval_ &&
         current_target_ > rtt_backoff_.bandwidth_floor_) {
       time_last_decrease_ = at_time;
@@ -357,7 +362,7 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
     ApplyTargetLimits(at_time);
     return;
   }
-
+  LOG_ERROR("111");
   // We trust the REMB and/or delay-based estimate during the first 2 seconds if
   // we haven't had any packet loss reported, to allow startup bitrate probing.
   if (last_fraction_loss_ == 0 && IsInStartPhase(at_time)) {
@@ -376,22 +381,28 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
       return;
     }
   }
+  LOG_ERROR("112");
   UpdateMinHistory(at_time);
   if (last_loss_packet_report_.IsInfinite()) {
     // No feedback received.
     // TODO(srte): This is likely redundant in most cases.
+    LOG_ERROR("113");
     ApplyTargetLimits(at_time);
     return;
   }
 
   TimeDelta time_since_loss_packet_report = at_time - last_loss_packet_report_;
   if (time_since_loss_packet_report < 1.2 * kMaxRtcpFeedbackInterval) {
+    LOG_ERROR("114");
     // We only care about loss above a given bitrate threshold.
     float loss = last_fraction_loss_ / 256.0f;
+    LOG_ERROR("current_target_ = [{}], loss = [{}]", ToString(current_target_),
+              loss);
     // We only make decisions based on loss when the bitrate is above a
     // threshold. This is a crude way of handling loss which is uncorrelated
     // to congestion.
     if (current_target_ < bitrate_threshold_ || loss <= low_loss_threshold_) {
+      LOG_ERROR("115");
       // Loss < 2%: Increase rate by 8% of the min bitrate in the last
       // kBweIncreaseInterval.
       // Note that by remembering the bitrate over the last second one can
@@ -412,14 +423,18 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
       UpdateTargetBitrate(new_bitrate, at_time);
       return;
     } else if (current_target_ > bitrate_threshold_) {
+      LOG_ERROR("116");
       if (loss <= high_loss_threshold_) {
+        LOG_ERROR("117");
         // Loss between 2% - 10%: Do nothing.
       } else {
+        LOG_ERROR("118");
         // Loss > 10%: Limit the rate decreases to once a kBweDecreaseInterval
         // + rtt.
         if (!has_decreased_since_last_fraction_loss_ &&
             (at_time - time_last_decrease_) >=
                 (kBweDecreaseInterval + last_round_trip_time_)) {
+          LOG_ERROR("119");
           time_last_decrease_ = at_time;
 
           // Reduce rate:
@@ -436,6 +451,7 @@ void SendSideBandwidthEstimation::UpdateEstimate(Timestamp at_time) {
       }
     }
   }
+  LOG_ERROR("120");
   // TODO(srte): This is likely redundant in most cases.
   ApplyTargetLimits(at_time);
 }
@@ -447,6 +463,7 @@ void SendSideBandwidthEstimation::UpdatePropagationRtt(
 
 void SendSideBandwidthEstimation::OnSentPacket(const SentPacket& sent_packet) {
   // Only feedback-triggering packets will be reported here.
+  LOG_ERROR("5");
   rtt_backoff_.last_packet_sent_ = sent_packet.send_time;
 }
 
@@ -495,6 +512,7 @@ void SendSideBandwidthEstimation::MaybeLogLowBitrateWarning(DataRate bitrate,
 void SendSideBandwidthEstimation::UpdateTargetBitrate(DataRate new_bitrate,
                                                       Timestamp at_time) {
   new_bitrate = std::min(new_bitrate, GetUpperLimit());
+  LOG_WARN("new_bitrate: [{}]", ToString(new_bitrate).c_str());
   if (new_bitrate < min_bitrate_configured_) {
     MaybeLogLowBitrateWarning(new_bitrate, at_time);
     new_bitrate = min_bitrate_configured_;
@@ -504,6 +522,7 @@ void SendSideBandwidthEstimation::UpdateTargetBitrate(DataRate new_bitrate,
 }
 
 void SendSideBandwidthEstimation::ApplyTargetLimits(Timestamp at_time) {
+  LOG_ERROR("2");
   UpdateTargetBitrate(current_target_, at_time);
 }
 
