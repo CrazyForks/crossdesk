@@ -9,6 +9,7 @@
 #include "clock.h"
 #include "fec_decoder.h"
 #include "io_statistics.h"
+#include "nack_requester.h"
 #include "receive_side_congestion_controller.h"
 #include "ringbuffer.h"
 #include "rtcp_receiver_report.h"
@@ -21,7 +22,10 @@
 
 using namespace webrtc;
 
-class RtpVideoReceiver : public ThreadBase {
+class RtpVideoReceiver : public ThreadBase,
+                         public LossNotificationSender,
+                         public KeyFrameRequestSender,
+                         public NackSender {
  public:
   RtpVideoReceiver(std::shared_ptr<Clock> clock);
   RtpVideoReceiver(std::shared_ptr<Clock> clock,
@@ -103,6 +107,65 @@ class RtpVideoReceiver : public ThreadBase {
   ReceiveSideCongestionController receive_side_congestion_controller_;
   RtcpFeedbackSenderInterface* active_remb_module_;
   uint32_t feedback_ssrc_ = 0;
+
+  std::unique_ptr<NackRequester> nack_;
+
+ private:
+  class RtcpFeedbackBuffer : public KeyFrameRequestSender,
+                             public NackSender,
+                             public LossNotificationSender {
+   public:
+    RtcpFeedbackBuffer(KeyFrameRequestSender* key_frame_request_sender,
+                       NackSender* nack_sender,
+                       LossNotificationSender* loss_notification_sender);
+
+    ~RtcpFeedbackBuffer() override = default;
+
+    // KeyFrameRequestSender implementation.
+    void RequestKeyFrame() override;
+
+    // NackSender implementation.
+    void SendNack(const std::vector<uint16_t>& sequence_numbers,
+                  bool buffering_allowed) override;
+
+    // LossNotificationSender implementation.
+    void SendLossNotification(uint16_t last_decoded_seq_num,
+                              uint16_t last_received_seq_num,
+                              bool decodability_flag,
+                              bool buffering_allowed) override;
+
+    // Send all RTCP feedback messages buffered thus far.
+    void SendBufferedRtcpFeedback();
+
+    void ClearLossNotificationState();
+
+   private:
+    // LNTF-related state.
+    struct LossNotificationState {
+      LossNotificationState(uint16_t last_decoded_seq_num,
+                            uint16_t last_received_seq_num,
+                            bool decodability_flag)
+          : last_decoded_seq_num(last_decoded_seq_num),
+            last_received_seq_num(last_received_seq_num),
+            decodability_flag(decodability_flag) {}
+
+      uint16_t last_decoded_seq_num;
+      uint16_t last_received_seq_num;
+      bool decodability_flag;
+    };
+
+    KeyFrameRequestSender* const key_frame_request_sender_;
+    NackSender* const nack_sender_;
+    LossNotificationSender* const loss_notification_sender_;
+
+    // Key-frame-request-related state.
+    bool request_key_frame_;
+
+    // NACK-related state.
+    std::vector<uint16_t> nack_sequence_numbers_;
+    std::optional<LossNotificationState> lntf_state_;
+  };
+  RtcpFeedbackBuffer rtcp_feedback_buffer_;
 
  private:
   FILE* file_rtp_recv_ = nullptr;

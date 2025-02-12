@@ -115,7 +115,7 @@ class IceTransportController
   bool audio_codec_inited_ = false;
 
  private:
-  uint64_t target_bitrate_ = 0;
+  int64_t target_bitrate_ = 0;
 };
 
 #endif

@@ -20,7 +20,10 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<Clock> clock)
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(clock) {
+      clock_(clock),
+      rtcp_feedback_buffer_(this, this, this),
+      nack_(std::make_unique<NackRequester>(clock, &rtcp_feedback_buffer_,
+                                            &rtcp_feedback_buffer_)) {
   SetPeriod(std::chrono::milliseconds(5));
   // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 }
@@ -37,7 +40,10 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<Clock> clock,
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(clock) {
+      clock_(clock),
+      rtcp_feedback_buffer_(this, this, this),
+      nack_(std::make_unique<NackRequester>(clock, &rtcp_feedback_buffer_,
+                                            &rtcp_feedback_buffer_)) {
   SetPeriod(std::chrono::milliseconds(5));
   // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 
