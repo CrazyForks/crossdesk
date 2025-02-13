@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "congestion_control_feedback.h"
+#include "nack.h"
 
 struct RtcpPacketInfo {
   uint32_t packet_type_flags = 0;  // RTCPPacketTypeFlags bit field.

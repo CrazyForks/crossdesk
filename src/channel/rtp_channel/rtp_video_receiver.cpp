@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "log.h"
+#include "nack.h"
 #include "rtcp_sender.h"
 
 // #define SAVE_RTP_RECV_STREAM
@@ -21,9 +22,12 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<Clock> clock)
             SendRemb(bitrate_bps, ssrcs);
           }),
       clock_(clock),
-      rtcp_feedback_buffer_(this, this, this),
-      nack_(std::make_unique<NackRequester>(clock, &rtcp_feedback_buffer_,
-                                            &rtcp_feedback_buffer_)) {
+      rtcp_sender_(std::make_unique<RtcpSender>(
+          [this](const uint8_t* buffer, size_t size) -> int {
+            return data_send_func_((const char*)buffer, size);
+          },
+          1200)),
+      nack_(std::make_unique<NackRequester>(clock, this, this)) {
   SetPeriod(std::chrono::milliseconds(5));
   // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 }
@@ -41,9 +45,12 @@ RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<Clock> clock,
             SendRemb(bitrate_bps, ssrcs);
           }),
       clock_(clock),
-      rtcp_feedback_buffer_(this, this, this),
-      nack_(std::make_unique<NackRequester>(clock, &rtcp_feedback_buffer_,
-                                            &rtcp_feedback_buffer_)) {
+      rtcp_sender_(std::make_unique<RtcpSender>(
+          [this](const uint8_t* buffer, size_t size) -> int {
+            return data_send_func_((const char*)buffer, size);
+          },
+          1200)),
+      nack_(std::make_unique<NackRequester>(clock, this, this)) {
   SetPeriod(std::chrono::milliseconds(5));
   // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 
@@ -83,6 +90,8 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
     rtp_statistics_->Start();
   }
 
+  remote_ssrc_ = rtp_packet.Ssrc();
+
 #ifdef SAVE_RTP_RECV_STREAM
   fwrite((unsigned char*)rtp_packet.Payload(), 1, rtp_packet.PayloadSize(),
          file_rtp_recv_);
@@ -90,13 +99,14 @@ void RtpVideoReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
 
   webrtc::RtpPacketReceived rtp_packet_received;
   rtp_packet_received.Build(rtp_packet.Buffer().data(), rtp_packet.Size());
-
   rtp_packet_received.set_arrival_time(clock_->CurrentTime());
   rtp_packet_received.set_ecn(EcnMarking::kEct0);
   rtp_packet_received.set_recovered(false);
   rtp_packet_received.set_payload_type_frequency(0);
   receive_side_congestion_controller_.OnReceivedPacket(rtp_packet_received,
                                                        MediaType::VIDEO);
+
+  nack_->OnReceivedPacket(rtp_packet.SequenceNumber());
 
   last_recv_bytes_ = (uint32_t)rtp_packet.PayloadSize();
   total_rtp_payload_recv_ += (uint32_t)rtp_packet.PayloadSize();
@@ -434,16 +444,10 @@ void RtpVideoReceiver::SendCombinedRtcpPacket(
 
   // LOG_ERROR("Send combined rtcp packet");
 
-  RTCPSender rtcp_sender(
-      [this](const uint8_t* buffer, size_t size) -> int {
-        return data_send_func_((const char*)buffer, size);
-      },
-      1200);
-
   for (auto& rtcp_packet : rtcp_packets) {
     rtcp_packet->SetSenderSsrc(feedback_ssrc_);
-    rtcp_sender.AppendPacket(*rtcp_packet);
-    rtcp_sender.Send();
+    rtcp_sender_->AppendPacket(*rtcp_packet);
+    rtcp_sender_->Send();
   }
 }
 
@@ -518,3 +522,25 @@ void RtpVideoReceiver::RtcpThread() {
     }
   }
 }
+
+/******************************************************************************/
+
+void RtpVideoReceiver::SendNack(const std::vector<uint16_t>& nack_list,
+                                bool buffering_allowed) {
+  if (!nack_list.empty()) {
+    webrtc::rtcp::Nack nack;
+    nack.SetSenderSsrc(feedback_ssrc_);
+    nack.SetMediaSsrc(remote_ssrc_);
+    nack.SetPacketIds(std::move(nack_list));
+
+    rtcp_sender_->AppendPacket(nack);
+    rtcp_sender_->Send();
+  }
+}
+
+void RtpVideoReceiver::RequestKeyFrame() {}
+
+void RtpVideoReceiver::SendLossNotification(uint16_t last_decoded_seq_num,
+                                            uint16_t last_received_seq_num,
+                                            bool decodability_flag,
+                                            bool buffering_allowed) {}

@@ -374,7 +374,7 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
   target_bitrate_ = update.target_rate.has_value()
                         ? update.target_rate->target_rate.bps()
                         : 0;
-  // LOG_WARN("Target bitrate [{}]bps", target_bitrate_);
+  LOG_WARN("Target bitrate [{}]bps", target_bitrate_);
   video_encoder_->SetTargetBitrate(target_bitrate_);
 }
 

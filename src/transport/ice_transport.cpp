@@ -232,15 +232,19 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
       LOG_INFO("Receiver report");
       // valid = HandleReceiverReport(rtcp_block, rtcp_packet_info);
       break;
-    case RtcpPacket::PAYLOAD_TYPE::TCC:
+    case RtpFeedback::kPacketType:
       switch (rtcp_block.fmt()) {
         case webrtc::rtcp::CongestionControlFeedback::kFeedbackMessageType:
           valid = HandleCongestionControlFeedback(rtcp_block, rtcp_packet_info);
+          break;
+        case webrtc::rtcp::Nack::kFeedbackMessageType:
+          valid = HandleNack(rtcp_block, rtcp_packet_info);
           break;
         default:
           break;
       }
       break;
+
     // case rtcp::Psfb::kPacketType:
     //   switch (rtcp_block.fmt()) {
     //     case rtcp::Pli::kFeedbackMessageType:
@@ -311,6 +315,24 @@ bool IceTransport::HandleCongestionControlFeedback(
   if (ice_transport_controller_) {
     ice_transport_controller_->OnCongestionControlFeedback(feedback);
   }
+  return true;
+}
+
+bool IceTransport::HandleNack(const webrtc::rtcp::CommonHeader &rtcp_block,
+                              RtcpPacketInfo *rtcp_packet_info) {
+  webrtc::rtcp::Nack nack;
+  if (!nack.Parse(rtcp_block)) {
+    return false;
+  }
+
+  // uint32_t first_media_source_ssrc = nack.ssrc();
+  // if (first_media_source_ssrc == local_media_ssrc() ||
+  //     registered_ssrcs_.contains(first_media_source_ssrc)) {
+  //   rtcp_packet_info->nack.emplace(std::move(nack));
+  // }
+
+  LOG_INFO("Nack [{}]", nack.packet_ids().size());
+
   return true;
 }
 

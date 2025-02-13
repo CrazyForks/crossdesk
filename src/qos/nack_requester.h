@@ -40,7 +40,7 @@ class NackRequester {
   };
 
  public:
-  NackRequester(Clock* clock, NackSender* nack_sender,
+  NackRequester(std::shared_ptr<Clock> clock, NackSender* nack_sender,
                 KeyFrameRequestSender* keyframe_request_sender);
   ~NackRequester();
 
@@ -57,7 +57,7 @@ class NackRequester {
   int WaitNumberOfPackets(float probability) const;
 
  private:
-  Clock* const clock_;
+  std::shared_ptr<Clock> clock_;
   NackSender* const nack_sender_;
   KeyFrameRequestSender* const keyframe_request_sender_;
 

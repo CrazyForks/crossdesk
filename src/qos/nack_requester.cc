@@ -38,7 +38,8 @@ NackRequester::NackInfo::NackInfo(uint16_t seq_num, uint16_t send_at_seq_num,
       sent_at_time(Timestamp::MinusInfinity()),
       retries(0) {}
 
-NackRequester::NackRequester(Clock* clock, NackSender* nack_sender,
+NackRequester::NackRequester(std::shared_ptr<Clock> clock,
+                             NackSender* nack_sender,
                              KeyFrameRequestSender* keyframe_request_sender)
     : clock_(clock),
       nack_sender_(nack_sender),
@@ -96,9 +97,7 @@ int NackRequester::OnReceivedPacket(uint16_t seq_num, bool is_recovered) {
   // Are there any nacks that are waiting for this seq_num.
   std::vector<uint16_t> nack_batch = GetNackBatch(kSeqNumOnly);
   if (!nack_batch.empty()) {
-    // This batch of NACKs is triggered externally; the initiator can
-    // batch them with other feedback messages.
-    nack_sender_->SendNack(nack_batch, /*buffering_allowed=*/true);
+    nack_sender_->SendNack(nack_batch, false);
   }
 
   return 0;

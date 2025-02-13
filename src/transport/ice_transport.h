@@ -132,6 +132,9 @@ class IceTransport {
       const webrtc::rtcp::CommonHeader &rtcp_block,
       RtcpPacketInfo *rtcp_packet_info);
 
+  bool HandleNack(const webrtc::rtcp::CommonHeader &rtcp_block,
+                  RtcpPacketInfo *rtcp_packet_info);
+
  private:
   bool hardware_acceleration_ = false;
   bool use_trickle_ice_ = true;
