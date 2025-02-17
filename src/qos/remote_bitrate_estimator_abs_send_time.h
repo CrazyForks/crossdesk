@@ -20,11 +20,11 @@
 #include <vector>
 
 #include "aimd_rate_control.h"
+#include "api/clock/clock.h"
 #include "api/units/data_rate.h"
 #include "api/units/data_size.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
-#include "clock.h"
 #include "inter_arrival.h"
 #include "overuse_detector.h"
 #include "overuse_estimator.h"

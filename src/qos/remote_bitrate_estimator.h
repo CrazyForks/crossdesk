@@ -16,9 +16,9 @@
 #include <cstdint>
 #include <vector>
 
+#include "api/clock/clock.h"
 #include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
-#include "clock.h"
 #include "module_common_types.h"
 #include "rtp_packet_received.h"
 

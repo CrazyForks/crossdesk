@@ -18,7 +18,8 @@ VideoChannelSend::VideoChannelSend(
       clock_(clock){};
 
 void VideoChannelSend::Initialize(rtp::PAYLOAD_TYPE payload_type) {
-  rtp_video_sender_ = std::make_unique<RtpVideoSender>(ice_io_statistics_);
+  rtp_video_sender_ =
+      std::make_unique<RtpVideoSender>(clock_, ice_io_statistics_);
   rtp_packetizer_ =
       RtpPacketizer::Create(payload_type, rtp_video_sender_->GetSsrc());
   rtp_video_sender_->SetSendDataFunc(

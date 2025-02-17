@@ -8,7 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "ntp_time_util.h"
+#include "api/ntp/ntp_time_util.h"
 
 #include <algorithm>
 #include <cstdint>

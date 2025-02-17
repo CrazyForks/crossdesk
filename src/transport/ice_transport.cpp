@@ -331,6 +331,13 @@ bool IceTransport::HandleNack(const webrtc::rtcp::CommonHeader &rtcp_block,
   //   rtcp_packet_info->nack.emplace(std::move(nack));
   // }
 
+  // int64_t rtt = rtt_ms();
+  // if (rtt == 0) {
+  //   if (std::optional<TimeDelta> average_rtt = rtcp_receiver_.AverageRtt()) {
+  //     rtt = average_rtt->ms();
+  //   }
+  // }
+
   LOG_INFO("Nack [{}]", nack.packet_ids().size());
 
   return true;

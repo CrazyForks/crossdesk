@@ -7,9 +7,9 @@
 #ifndef _VIDEO_CHANNEL_SEND_H_
 #define _VIDEO_CHANNEL_SEND_H_
 
+#include "api/clock/clock.h"
 #include "api/transport/network_types.h"
 #include "api/units/timestamp.h"
-#include "clock.h"
 #include "congestion_control.h"
 #include "congestion_control_feedback.h"
 #include "ice_agent.h"

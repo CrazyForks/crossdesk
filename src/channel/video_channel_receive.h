@@ -7,7 +7,7 @@
 #ifndef _VIDEO_CHANNEL_RECEIVE_H_
 #define _VIDEO_CHANNEL_RECEIVE_H_
 
-#include "clock.h"
+#include "api/clock/clock.h"
 #include "ice_agent.h"
 #include "rtp_video_receiver.h"
 

@@ -13,8 +13,8 @@
 #include <set>
 #include <vector>
 
+#include "api/clock/clock.h"
 #include "api/units/timestamp.h"
-#include "clock.h"
 #include "histogram.h"
 #include "module_common_types.h"
 #include "rtc_base/numerics/sequence_number_util.h"

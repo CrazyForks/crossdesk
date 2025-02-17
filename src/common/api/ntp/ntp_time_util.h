@@ -13,8 +13,8 @@
 
 #include <stdint.h>
 
+#include "api/ntp/ntp_time.h"
 #include "api/units/time_delta.h"
-#include "ntp_time.h"
 #include "rtc_base/numerics/safe_conversions.h"
 
 namespace webrtc {
