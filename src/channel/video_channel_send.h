@@ -7,9 +7,9 @@
 #ifndef _VIDEO_CHANNEL_SEND_H_
 #define _VIDEO_CHANNEL_SEND_H_
 
-#include "api/clock/clock.h"
 #include "api/transport/network_types.h"
 #include "api/units/timestamp.h"
+#include "clock/system_clock.h"
 #include "congestion_control.h"
 #include "congestion_control_feedback.h"
 #include "ice_agent.h"
@@ -20,7 +20,7 @@
 class VideoChannelSend {
  public:
   VideoChannelSend();
-  VideoChannelSend(std::shared_ptr<webrtc::Clock> clock,
+  VideoChannelSend(std::shared_ptr<SystemClock> clock,
                    std::shared_ptr<IceAgent> ice_agent,
                    std::shared_ptr<IOStatistics> ice_io_statistics,
                    std::function<void(const webrtc::RtpPacketToSend& packet)>
@@ -52,7 +52,7 @@ class VideoChannelSend {
       on_sent_packet_func_ = nullptr;
 
  private:
-  std::shared_ptr<Clock> clock_;
+  std::shared_ptr<SystemClock> clock_;
 };
 
 #endif

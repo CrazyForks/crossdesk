@@ -10,47 +10,47 @@
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
 
-RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<Clock> clock)
+RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<SystemClock> clock)
     : feedback_ssrc_(GenerateUniqueSsrc()),
       active_remb_module_(nullptr),
       receive_side_congestion_controller_(
-          clock,
+          clock_,
           [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
             SendCombinedRtcpPacket(std::move(packets));
           },
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(clock),
       rtcp_sender_(std::make_unique<RtcpSender>(
           [this](const uint8_t* buffer, size_t size) -> int {
             return data_send_func_((const char*)buffer, size);
           },
           1200)),
-      nack_(std::make_unique<NackRequester>(clock, this, this)) {
+      nack_(std::make_unique<NackRequester>(clock_, this, this)),
+      clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
   SetPeriod(std::chrono::milliseconds(5));
   // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 }
 
-RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<Clock> clock,
+RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<SystemClock> clock,
                                    std::shared_ptr<IOStatistics> io_statistics)
     : io_statistics_(io_statistics),
       feedback_ssrc_(GenerateUniqueSsrc()),
       receive_side_congestion_controller_(
-          clock,
+          clock_,
           [this](std::vector<std::unique_ptr<RtcpPacket>> packets) {
             SendCombinedRtcpPacket(std::move(packets));
           },
           [this](int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
             SendRemb(bitrate_bps, ssrcs);
           }),
-      clock_(clock),
       rtcp_sender_(std::make_unique<RtcpSender>(
           [this](const uint8_t* buffer, size_t size) -> int {
             return data_send_func_((const char*)buffer, size);
           },
           1200)),
-      nack_(std::make_unique<NackRequester>(clock, this, this)) {
+      nack_(std::make_unique<NackRequester>(clock_, this, this)),
+      clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
   SetPeriod(std::chrono::milliseconds(5));
   // rtcp_thread_ = std::thread(&RtpVideoReceiver::RtcpThread, this);
 

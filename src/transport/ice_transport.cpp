@@ -11,11 +11,13 @@
 using nlohmann::json;
 
 IceTransport::IceTransport(
-    bool offer_peer, std::string &transmission_id, std::string &user_id,
+    std::shared_ptr<SystemClock> clock, bool offer_peer,
+    std::string &transmission_id, std::string &user_id,
     std::string &remote_user_id, std::shared_ptr<WsClient> ice_ws_transmission,
     std::function<void(std::string, const std::string &)> on_ice_status_change,
     void *user_data)
-    : offer_peer_(offer_peer),
+    : clock_(clock),
+      offer_peer_(offer_peer),
       transmission_id_(transmission_id),
       user_id_(user_id),
       remote_user_id_(remote_user_id),
@@ -46,7 +48,7 @@ int IceTransport::InitIceTransmission(
     std::string &stun_ip, int stun_port, std::string &turn_ip, int turn_port,
     std::string &turn_username, std::string &turn_password,
     rtp::PAYLOAD_TYPE video_codec_payload_type) {
-  ice_transport_controller_ = std::make_shared<IceTransportController>();
+  ice_transport_controller_ = std::make_shared<IceTransportController>(clock_);
   ice_agent_ = std::make_unique<IceAgent>(
       offer_peer_, use_trickle_ice_, use_reliable_ice_, enable_turn_,
       force_turn_, stun_ip, stun_port, turn_ip, turn_port, turn_username,

@@ -5,7 +5,7 @@
 VideoChannelReceive::VideoChannelReceive() {}
 
 VideoChannelReceive::VideoChannelReceive(
-    std::shared_ptr<webrtc::Clock> clock, std::shared_ptr<IceAgent> ice_agent,
+    std::shared_ptr<SystemClock> clock, std::shared_ptr<IceAgent> ice_agent,
     std::shared_ptr<IOStatistics> ice_io_statistics,
     std::function<void(VideoFrame &)> on_receive_complete_frame)
     : ice_agent_(ice_agent),

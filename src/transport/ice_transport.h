@@ -9,6 +9,7 @@
 
 #include <iostream>
 
+#include "clock/system_clock.h"
 #include "ice_agent.h"
 #include "ice_transport_controller.h"
 #include "io_statistics.h"
@@ -30,8 +31,9 @@ class IceTransport {
   enum TraversalType { TP2P = 0, TRelay = 1, TUnknown = 2 };
 
  public:
-  IceTransport(bool offer_peer, std::string &transmission_id,
-               std::string &user_id, std::string &remote_user_id,
+  IceTransport(std::shared_ptr<SystemClock> clock, bool offer_peer,
+               std::string &transmission_id, std::string &user_id,
+               std::string &remote_user_id,
                std::shared_ptr<WsClient> ice_ws_transmission,
                std::function<void(std::string, const std::string &)>
                    on_ice_status_change,
@@ -160,6 +162,7 @@ class IceTransport {
   void *user_data_ = nullptr;
 
  private:
+  std::shared_ptr<SystemClock> clock_;
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   bool is_closed_ = false;
   std::shared_ptr<WsClient> ice_ws_transport_ = nullptr;

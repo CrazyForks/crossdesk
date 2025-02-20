@@ -43,25 +43,51 @@ NtpTime TimeMicrosToNtp(int64_t time_us) {
 
 }  // namespace
 
-class RealTimeClock : public Clock {
+class WebrtcClock : public Clock {
  public:
-  RealTimeClock() = default;
+  WebrtcClock(std::shared_ptr<SystemClock> system_clock)
+      : system_clock_(system_clock) {}
+  WebrtcClock() = delete;
 
   Timestamp CurrentTime() override {
-    return Timestamp::Micros(rtc::TimeMicros());
+    return Timestamp::Micros(system_clock_->CurrentTimeUs());
   }
 
   NtpTime ConvertTimestampToNtpTime(Timestamp timestamp) override {
-    return TimeMicrosToNtp(timestamp.us());
+    int64_t time_us = timestamp.us();
+    constexpr int64_t kNtpJan1970Sec = 2208988800;
+    int64_t clock_time = system_clock_->CurrentTimeUs();
+    int64_t utc_time = system_clock_->CurrentUtcTimeUs();
+    static int64_t ntp_offset_us =
+        utc_time - clock_time + kNtpJan1970Sec * rtc::kNumMicrosecsPerSec;
+
+    int64_t time_ntp_us = time_us + ntp_offset_us;
+
+    // Convert seconds to uint32 through uint64 for a well-defined cast.
+    // A wrap around, which will happen in 2036, is expected for NTP time.
+    uint32_t ntp_seconds =
+        static_cast<uint64_t>(time_ntp_us / rtc::kNumMicrosecsPerSec);
+
+    // Scale fractions of the second to NTP resolution.
+    constexpr int64_t kNtpFractionsInSecond = 1LL << 32;
+    int64_t us_fractions = time_ntp_us % rtc::kNumMicrosecsPerSec;
+    uint32_t ntp_fractions =
+        us_fractions * kNtpFractionsInSecond / rtc::kNumMicrosecsPerSec;
+
+    return NtpTime(ntp_seconds, ntp_fractions);
   }
+
+ private:
+  std::shared_ptr<SystemClock> system_clock_;
 };
 
-Clock* Clock::GetRealTimeClock() {
-  static Clock* const clock = new RealTimeClock();
+Clock* Clock::GetWebrtcClock(std::shared_ptr<SystemClock> system_clock) {
+  static Clock* const clock = new WebrtcClock(system_clock);
   return clock;
 }
 
-std::shared_ptr<Clock> Clock::GetRealTimeClockShared() {
-  return std::make_shared<RealTimeClock>();
+std::shared_ptr<Clock> Clock::GetWebrtcClockShared(
+    std::shared_ptr<SystemClock> system_clock) {
+  return std::make_shared<WebrtcClock>(system_clock);
 }
 }  // namespace webrtc

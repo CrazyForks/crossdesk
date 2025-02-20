@@ -69,15 +69,15 @@ int64_t SystemClock::CurrentNtpTime() {
 }
 
 int64_t SystemClock::CurrentNtpTimeMs() {
-  return CurrentTimeMs() + kNtpEpochOffset * 1000LL;
+  return CurrentUtcTimeMs() + kNtpEpochOffset * 1000LL;
 }
 
 int64_t SystemClock::CurrentNtpTimeUs() {
-  return CurrentTimeUs() + kNtpEpochOffset * 1000000LL;
+  return CurrentUtcTimeUs() + kNtpEpochOffset * 1000000LL;
 }
 
 int64_t SystemClock::CurrentNtpTimeNs() {
-  return CurrentTimeNs() + kNtpEpochOffset * 1000000000LL;
+  return CurrentUtcTimeNs() + kNtpEpochOffset * 1000000000LL;
 }
 
 int64_t SystemClock::CurrentUtcTimeNs() {
@@ -110,13 +110,4 @@ int64_t SystemClock::CurrentUtcTimeMs() {
 
 int64_t SystemClock::CurrentUtcTime() {
   return CurrentUtcTimeNs() / 1000000000LL;
-}
-
-static SystemClock* GetSystemClock() {
-  static SystemClock* const clock = new SystemClock();
-  return clock;
-}
-
-static std::shared_ptr<SystemClock> GetSystemClockShared() {
-  return std::make_shared<SystemClock>();
 }

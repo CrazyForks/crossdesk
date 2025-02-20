@@ -33,7 +33,4 @@ class SystemClock {
   int64_t CurrentUtcTimeNs();
 };
 
-static SystemClock* GetSystemClock();
-static std::shared_ptr<SystemClock> GetSystemClockShared();
-
 #endif

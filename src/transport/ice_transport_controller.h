@@ -14,6 +14,7 @@
 #include "audio_channel_send.h"
 #include "audio_decoder.h"
 #include "audio_encoder.h"
+#include "clock/system_clock.h"
 #include "congestion_control.h"
 #include "congestion_control_feedback.h"
 #include "data_channel_receive.h"
@@ -35,7 +36,7 @@ typedef void (*OnReceiveData)(const char *, size_t, const char *, const size_t,
 class IceTransportController
     : public std::enable_shared_from_this<IceTransportController> {
  public:
-  IceTransportController();
+  IceTransportController(std::shared_ptr<SystemClock> clock);
   ~IceTransportController();
 
  public:
@@ -97,7 +98,7 @@ class IceTransportController
   void *user_data_ = nullptr;
 
  private:
-  std::shared_ptr<Clock> clock_;
+  std::shared_ptr<SystemClock> clock_;
   webrtc::TransportFeedbackAdapter transport_feedback_adapter_;
   std::unique_ptr<CongestionControl> controller_;
 

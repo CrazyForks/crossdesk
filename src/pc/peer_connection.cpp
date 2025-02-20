@@ -184,6 +184,7 @@ int PeerConnection::Init(PeerConnectionParams params,
     }
   };
 
+  clock_ = std::make_shared<SystemClock>();
   ws_transport_ = std::make_shared<WsClient>(on_receive_ws_msg_, on_ws_status_);
   uri_ = "ws://" + cfg_signal_server_ip_ + ":" + cfg_signal_server_port_;
   if (ws_transport_) {
@@ -595,8 +596,8 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
 
       for (auto &remote_user_id : user_id_list) {
         ice_transport_list_[remote_user_id] = std::make_shared<IceTransport>(
-            true, transmission_id, user_id_, remote_user_id, ws_transport_,
-            on_ice_status_change_, user_data_);
+            clock_, true, transmission_id, user_id_, remote_user_id,
+            ws_transport_, on_ice_status_change_, user_data_);
 
         ice_transport_list_[remote_user_id]->SetLocalCapabilities(
             hardware_acceleration_, trickle_ice_, reliable_ice_, enable_turn_,
@@ -639,8 +640,8 @@ void PeerConnection::ProcessIceWorkMsg(const IceWorkMsg &msg) {
           ice_transport_list_.find(remote_user_id)) {
         // Enable TURN for answer peer by default
         ice_transport_list_[remote_user_id] = std::make_shared<IceTransport>(
-            false, transmission_id, user_id_, remote_user_id, ws_transport_,
-            on_ice_status_change_, user_data_);
+            clock_, false, transmission_id, user_id_, remote_user_id,
+            ws_transport_, on_ice_status_change_, user_data_);
 
         ice_transport_list_[remote_user_id]->SetLocalCapabilities(
             hardware_acceleration_, trickle_ice_, reliable_ice_, enable_turn_,

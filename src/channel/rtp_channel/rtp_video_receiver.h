@@ -7,6 +7,7 @@
 #include <set>
 
 #include "api/clock/clock.h"
+#include "clock/system_clock.h"
 #include "fec_decoder.h"
 #include "io_statistics.h"
 #include "nack_requester.h"
@@ -28,8 +29,8 @@ class RtpVideoReceiver : public ThreadBase,
                          public KeyFrameRequestSender,
                          public NackSender {
  public:
-  RtpVideoReceiver(std::shared_ptr<Clock> clock);
-  RtpVideoReceiver(std::shared_ptr<Clock> clock,
+  RtpVideoReceiver(std::shared_ptr<SystemClock> clock);
+  RtpVideoReceiver(std::shared_ptr<SystemClock> clock,
                    std::shared_ptr<IOStatistics> io_statistics);
   virtual ~RtpVideoReceiver();
 
@@ -113,7 +114,7 @@ class RtpVideoReceiver : public ThreadBase,
   int rtcp_tcc_interval_ms_ = 200;
 
  private:
-  std::shared_ptr<Clock> clock_;
+  std::shared_ptr<webrtc::Clock> clock_;
   ReceiveSideCongestionController receive_side_congestion_controller_;
   RtcpFeedbackSenderInterface* active_remb_module_;
   uint32_t feedback_ssrc_ = 0;

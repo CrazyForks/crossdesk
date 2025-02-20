@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include "api/clock/clock.h"
 #include "common.h"
 #include "log.h"
 
@@ -11,12 +12,12 @@
 
 RtpVideoSender::RtpVideoSender() {}
 
-RtpVideoSender::RtpVideoSender(std::shared_ptr<webrtc::Clock> clock,
+RtpVideoSender::RtpVideoSender(std::shared_ptr<SystemClock> clock,
                                std::shared_ptr<IOStatistics> io_statistics)
     : ssrc_(GenerateUniqueSsrc()),
-      clock_(clock),
       io_statistics_(io_statistics),
-      rtp_packet_history_(std::make_unique<RtpPacketHistory>(clock)) {
+      rtp_packet_history_(std::make_unique<RtpPacketHistory>(clock_)),
+      clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
   SetPeriod(std::chrono::milliseconds(5));
 #ifdef SAVE_RTP_SENT_STREAM
   file_rtp_sent_ = fopen("rtp_sent_stream.h264", "w+b");

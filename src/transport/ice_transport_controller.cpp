@@ -4,13 +4,14 @@
 #include "nvcodec_api.h"
 #endif
 
-IceTransportController::IceTransportController()
-    : b_force_i_frame_(true),
+IceTransportController::IceTransportController(
+    std::shared_ptr<SystemClock> clock)
+    : clock_(clock),
+      b_force_i_frame_(true),
       video_codec_inited_(false),
       audio_codec_inited_(false),
       load_nvcodec_dll_success_(false),
-      hardware_acceleration_(false),
-      clock_(webrtc::Clock::GetRealTimeClockShared()) {}
+      hardware_acceleration_(false) {}
 
 IceTransportController::~IceTransportController() {
   user_data_ = nullptr;
@@ -334,7 +335,7 @@ void IceTransportController::OnCongestionControlFeedback(
     const webrtc::rtcp::CongestionControlFeedback& feedback) {
   std::optional<webrtc::TransportPacketsFeedback> feedback_msg =
       transport_feedback_adapter_.ProcessCongestionControlFeedback(
-          feedback, clock_->CurrentTime());
+          feedback, Timestamp::Micros(clock_->CurrentTimeUs()));
   if (feedback_msg) {
     HandleTransportPacketsFeedback(*feedback_msg);
   }
@@ -353,13 +354,13 @@ void IceTransportController::OnSentRtpPacket(
   webrtc::PacedPacketInfo pacing_info;
   size_t transport_overhead_bytes_per_packet_ = 0;
   webrtc::Timestamp creation_time =
-      webrtc::Timestamp::Millis(clock_->TimeInMilliseconds());
+      webrtc::Timestamp::Millis(clock_->CurrentTimeMs());
   transport_feedback_adapter_.AddPacket(
       packet, pacing_info, transport_overhead_bytes_per_packet_, creation_time);
 
   rtc::SentPacket sent_packet;
   sent_packet.packet_id = packet.transport_sequence_number().value();
-  sent_packet.send_time_ms = clock_->TimeInMilliseconds();
+  sent_packet.send_time_ms = clock_->CurrentTimeMs();
   sent_packet.info.included_in_feedback = true;
   sent_packet.info.included_in_allocation = true;
   sent_packet.info.packet_size_bytes = packet.size();

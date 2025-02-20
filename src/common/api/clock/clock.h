@@ -18,6 +18,7 @@
 
 #include "api/ntp/ntp_time.h"
 #include "api/units/timestamp.h"
+#include "clock/system_clock.h"
 
 namespace webrtc {
 
@@ -65,8 +66,9 @@ class Clock {
   }
 
   // Returns an instance of the real-time system clock implementation.
-  static Clock* GetRealTimeClock();
-  static std::shared_ptr<Clock> GetRealTimeClockShared();
+  static Clock* GetWebrtcClock(std::shared_ptr<SystemClock> system_clock);
+  static std::shared_ptr<Clock> GetWebrtcClockShared(
+      std::shared_ptr<SystemClock> system_clock);
 };
 
 }  // namespace webrtc

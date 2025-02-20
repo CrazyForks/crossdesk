@@ -3,6 +3,8 @@
 
 #include <functional>
 
+#include "api/clock/clock.h"
+#include "clock/system_clock.h"
 #include "io_statistics.h"
 #include "ringbuffer.h"
 #include "rtp_packet.h"
@@ -15,7 +17,7 @@
 class RtpVideoSender : public ThreadBase {
  public:
   RtpVideoSender();
-  RtpVideoSender(std::shared_ptr<webrtc::Clock> clock,
+  RtpVideoSender(std::shared_ptr<SystemClock> clock,
                  std::shared_ptr<IOStatistics> io_statistics);
   virtual ~RtpVideoSender();
 

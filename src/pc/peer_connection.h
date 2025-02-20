@@ -13,6 +13,7 @@
 
 #include "audio_decoder.h"
 #include "audio_encoder.h"
+#include "clock/system_clock.h"
 #include "ice_transport.h"
 #include "video_decoder_factory.h"
 #include "video_encoder_factory.h"
@@ -152,6 +153,7 @@ class PeerConnection {
   std::vector<int> audio_payload_types_ = {rtp::PAYLOAD_TYPE::OPUS};
 
  private:
+  std::shared_ptr<SystemClock> clock_ = nullptr;
   std::shared_ptr<WsClient> ws_transport_ = nullptr;
   std::function<void(const std::string &)> on_receive_ws_msg_ = nullptr;
   std::function<void(WsStatus)> on_ws_status_ = nullptr;
