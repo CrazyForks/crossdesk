@@ -33,7 +33,8 @@ int RtcpCommonHeader::Create(uint8_t version, uint8_t has_padding,
   }
 
   uint16_t payload_size = length - kHeaderSizeBytes;
-  buffer[0] = (version << 6) | (has_padding << 5) | (count_or_format << 4);
+  buffer[0] = (version << 6) | (has_padding << 5) |
+              static_cast<uint8_t>(count_or_format);
   buffer[1] = payload_type;
   buffer[2] = payload_size >> 8 & 0xFF;
   buffer[3] = payload_size & 0xFF;
@@ -61,7 +62,7 @@ bool RtcpCommonHeader::Parse(const uint8_t* buffer, size_t size_bytes) {
   bool has_padding = (buffer[0] & 0x20) != 0;
   count_or_format_ = buffer[0] & 0x1F;
   packet_type_ = buffer[1];
-  payload_size_ = buffer[2] << 8 | buffer[3];
+  payload_size_ = ((static_cast<uint16_t>(buffer[2]) << 8) | buffer[3]) * 4;
   payload_ = buffer + kHeaderSizeBytes;
   padding_size_ = 0;
 

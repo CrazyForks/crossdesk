@@ -222,6 +222,7 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
   bool valid = true;
   if (!rtcp_block.Parse(buffer, size)) {
     valid = false;
+    return valid;
   }
 
   switch (rtcp_block.type()) {
@@ -296,7 +297,7 @@ bool IceTransport::ParseRtcpPacket(const uint8_t *buffer, size_t size,
   //       local_media_ssrc(), packet_type_counter_);
   // }
 
-  return true;
+  return valid;
 }
 
 void IceTransport::HandleReportBlock(const RtcpReportBlock &rtcp_report_block,
@@ -403,8 +404,6 @@ bool IceTransport::HandleNack(const RtcpCommonHeader &rtcp_block,
   //     rtt = average_rtt->ms();
   //   }
   // }
-
-  LOG_INFO("Nack [{}]", nack.packet_ids().size());
 
   return true;
 }

@@ -8,9 +8,9 @@
 #define DEFAULT_RTCP_HEADER_SIZE 4
 
 #define DEFAULT_SR_BLOCK_NUM 1
-#define DEFAULT_SR_SIZE 28
+#define DEFAULT_SR_SIZE 24
 #define DEFAULT_RR_BLOCK_NUM 1
-#define DEFAULT_RR_SIZE 32
+#define DEFAULT_RR_SIZE 4
 
 typedef enum {
   UNKNOWN = 0,

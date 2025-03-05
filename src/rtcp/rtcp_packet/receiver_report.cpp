@@ -20,8 +20,8 @@ void ReceiverReport::SetReportBlocks(
 }
 
 const uint8_t *ReceiverReport::Build() {
-  size_t buffer_size =
-      DEFAULT_RR_SIZE + reports_.size() * RtcpReportBlock::kLength;
+  size_t buffer_size = DEFAULT_RTCP_HEADER_SIZE + DEFAULT_RR_SIZE +
+                       reports_.size() * RtcpReportBlock::kLength;
   if (!buffer_ || buffer_size != size_) {
     delete[] buffer_;
     buffer_ = nullptr;
@@ -30,9 +30,9 @@ const uint8_t *ReceiverReport::Build() {
   buffer_ = new uint8_t[buffer_size];
   size_ = buffer_size;
 
-  int pos =
-      rtcp_common_header_.Create(DEFAULT_RTCP_VERSION, 0, DEFAULT_RR_BLOCK_NUM,
-                                 RTCP_TYPE::RR, DEFAULT_RR_SIZE, buffer_);
+  int pos = rtcp_common_header_.Create(
+      DEFAULT_RTCP_VERSION, 0, DEFAULT_RR_BLOCK_NUM, RTCP_TYPE::RR,
+      (buffer_size - DEFAULT_RTCP_HEADER_SIZE) / 4, buffer_);
 
   buffer_[pos] = sender_ssrc_ >> 24 & 0xFF;
   buffer_[pos + 1] = sender_ssrc_ >> 16 & 0xFF;
