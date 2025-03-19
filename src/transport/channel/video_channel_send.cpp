@@ -57,9 +57,9 @@ void VideoChannelSend::SetEnqueuePacketsFunc(
 }
 
 std::vector<std::unique_ptr<RtpPacket>> VideoChannelSend::GeneratePadding(
-    uint32_t payload_size, int64_t capture_timestamp_ms) {
+    uint32_t payload_size, int64_t capture_timestamp_us) {
   if (rtp_packetizer_) {
-    return rtp_packetizer_->BuildPadding(payload_size, capture_timestamp_ms,
+    return rtp_packetizer_->BuildPadding(payload_size, capture_timestamp_us,
                                          true);
   }
   return std::vector<std::unique_ptr<RtpPacket>>{};

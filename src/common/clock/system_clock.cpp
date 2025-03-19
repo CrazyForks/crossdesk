@@ -68,11 +68,11 @@ int64_t SystemClock::CurrentTimeNs() {
   return ticks;
 }
 
+int64_t SystemClock::CurrentTime() { return CurrentTimeNs() / 1000LL; }
+
 int64_t SystemClock::CurrentTimeUs() { return CurrentTimeNs() / 1000LL; }
 
 int64_t SystemClock::CurrentTimeMs() { return CurrentTimeNs() / 1000000LL; }
-
-int64_t SystemClock::CurrentTime() { return CurrentTimeNs() / 1000000000LL; }
 
 int64_t SystemClock::CurrentNtpTime() {
   return ConvertToNtpTime(CurrentTimeNs());

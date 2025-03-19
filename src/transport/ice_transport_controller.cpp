@@ -75,9 +75,9 @@ void IceTransportController::Create(
       });
 
   packet_sender_->SetGeneratePaddingFunc(
-      [this](uint32_t size, int64_t capture_timestamp_ms)
+      [this](uint32_t size, int64_t capture_timestamp_us)
           -> std::vector<std::unique_ptr<RtpPacket>> {
-        return video_channel_send_->GeneratePadding(size, capture_timestamp_ms);
+        return video_channel_send_->GeneratePadding(size, capture_timestamp_us);
       });
 
   audio_channel_send_ = std::make_unique<AudioChannelSend>(
@@ -170,6 +170,7 @@ int IceTransportController::SendVideo(const XVideoFrame* video_frame) {
   new_frame.width = video_frame->width;
   new_frame.height = video_frame->height;
   new_frame.size = video_frame->size;
+  new_frame.timestamp = video_frame->timestamp;
   if (target_width_.has_value() && target_height_.has_value()) {
     if (target_width_.value() < video_frame->width &&
         target_height_.value() < video_frame->height) {

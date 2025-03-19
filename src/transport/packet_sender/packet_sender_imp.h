@@ -38,7 +38,7 @@ class PacketSenderImp : public PacketSender,
   int Send() { return 0; }
 
   int EnqueueRtpPacket(std::vector<std::unique_ptr<RtpPacket>>& rtp_packets,
-                       int64_t capture_timestamp_ms);
+                       int64_t capture_timestamp_us);
 
   void SetOnSentPacketFunc(
       std::function<void(const webrtc::RtpPacketToSend&)> on_sent_packet_func) {
@@ -60,12 +60,6 @@ class PacketSenderImp : public PacketSender,
       }
 
       packet->UpdateSequenceNumber(ssrc_seq_[packet->Ssrc()]++);
-
-      webrtc::Timestamp now = clock_->CurrentTime();
-      webrtc::TimeDelta interval = now - last_send_time_;
-      webrtc::TimeDelta delay = now - packet->capture_time();
-      LOG_WARN("interval: {}, delay: {}", interval.ms(), delay.seconds());
-      last_send_time_ = now;
 
       on_sent_packet_func_(*packet);
     }

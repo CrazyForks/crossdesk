@@ -18,8 +18,8 @@ class SystemClock {
   ~SystemClock() = default;
 
   int64_t CurrentTime();
-  int64_t CurrentTimeMs();
   int64_t CurrentTimeUs();
+  int64_t CurrentTimeMs();
   int64_t CurrentTimeNs();
 
   int64_t CurrentNtpTime();

@@ -390,9 +390,9 @@ int PeerConnection::SendDataFrame(const char *data, size_t size) {
   return 0;
 }
 
-int64_t PeerConnection::CurrentNtpTimeMs() {
+int64_t PeerConnection::GetSystemTimeMicros() {
   if (clock_) {
-    return clock_->CurrentNtpTimeMs();
+    return clock_->CurrentTimeUs();
   }
   return 0;
 }

@@ -36,7 +36,7 @@ class VideoChannelSend {
           enqueue_packets_func);
 
   std::vector<std::unique_ptr<RtpPacket>> GeneratePadding(
-      uint32_t payload_size, int64_t capture_timestamp_ms);
+      uint32_t payload_size, int64_t capture_timestamp_us);
 
   int64_t GetTransportSeqAndIncrement() {
     int64_t transport_seq = rtp_video_sender_->GetTransportSequenceNumber();

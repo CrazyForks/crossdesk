@@ -134,7 +134,7 @@ DLLAPI int SendAudioFrame(PeerPtr* peer_ptr, const char* data, size_t size);
 
 DLLAPI int SendDataFrame(PeerPtr* peer_ptr, const char* data, size_t size);
 
-DLLAPI int64_t CurrentNtpTimeMs(PeerPtr* peer_ptr);
+DLLAPI int64_t GetSystemTimeMicros(PeerPtr* peer_ptr);
 
 #ifdef __cplusplus
 }
