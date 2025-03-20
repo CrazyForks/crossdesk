@@ -58,6 +58,8 @@ class RtpVideoReceiver : public ThreadBase,
   void ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264);
   bool CheckIsH264FrameCompletedFuaEndReceived(RtpPacketH264& rtp_packet_h264);
   bool CheckIsH264FrameCompletedMissSeqReceived(RtpPacketH264& rtp_packet_h264);
+  bool PopCompleteFrame(uint16_t start_seq, uint16_t end_seq,
+                        uint64_t timestamp);
 
  private:
   bool CheckIsTimeSendRR();

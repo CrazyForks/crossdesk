@@ -49,7 +49,8 @@ int AudioChannelSend::SendAudio(char *data, size_t size) {
   if (rtp_audio_sender_ && rtp_packetizer_) {
     std::vector<std::unique_ptr<RtpPacket>> rtp_packets =
         rtp_packetizer_->Build((uint8_t *)data, (uint32_t)size, 0, true);
-    packet_sender_->EnqueueRtpPacket(rtp_packets, 0);
+    // packet_sender_->EnqueueRtpPacket(rtp_packets, 0);
+    rtp_audio_sender_->Enqueue(rtp_packets);
   }
 
   return 0;

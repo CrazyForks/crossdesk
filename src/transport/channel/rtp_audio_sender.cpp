@@ -23,7 +23,7 @@ RtpAudioSender::~RtpAudioSender() {
 }
 
 void RtpAudioSender::Enqueue(
-    std::vector<std::unique_ptr<RtpPacket>> rtp_packets) {
+    std::vector<std::unique_ptr<RtpPacket>>& rtp_packets) {
   if (!rtp_statistics_) {
     rtp_statistics_ = std::make_unique<RtpStatistics>();
     rtp_statistics_->Start();

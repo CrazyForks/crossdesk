@@ -24,7 +24,7 @@ class RtpAudioSender : public ThreadBase {
   virtual ~RtpAudioSender();
 
  public:
-  void Enqueue(std::vector<std::unique_ptr<RtpPacket>> rtp_packets);
+  void Enqueue(std::vector<std::unique_ptr<RtpPacket>> &rtp_packets);
   void SetSendDataFunc(std::function<int(const char *, size_t)> data_send_func);
   uint32_t GetSsrc() { return ssrc_; }
   void OnReceiverReport(const ReceiverReport &receiver_report) {}

@@ -64,7 +64,7 @@ class PacketSenderImp : public PacketSender,
         ssrc_seq_[packet->Ssrc()] = 1;
       }
 
-      if (packet->packet_type() !=
+      if (packet->packet_type().value() !=
           webrtc::RtpPacketMediaType::kRetransmission) {
         packet->UpdateSequenceNumber(ssrc_seq_[packet->Ssrc()]++);
       }
