@@ -291,3 +291,9 @@ int PacketSenderImp::EnqueueRtpPacket(
   EnqueuePackets(std::move(to_send_rtp_packets));
   return 0;
 }
+
+int PacketSenderImp::EnqueueRtpPacket(
+    std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> &rtp_packets) {
+  EnqueuePackets(std::move(rtp_packets));
+  return 0;
+}

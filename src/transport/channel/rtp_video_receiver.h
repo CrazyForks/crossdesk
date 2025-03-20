@@ -5,6 +5,7 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "api/clock/clock.h"
@@ -55,7 +56,8 @@ class RtpVideoReceiver : public ThreadBase,
 
  private:
   void ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264);
-  bool CheckIsH264FrameCompleted(RtpPacketH264& rtp_packet_h264);
+  bool CheckIsH264FrameCompletedFuaEndReceived(RtpPacketH264& rtp_packet_h264);
+  bool CheckIsH264FrameCompletedMissSeqReceived(RtpPacketH264& rtp_packet_h264);
 
  private:
   bool CheckIsTimeSendRR();
@@ -113,7 +115,11 @@ class RtpVideoReceiver : public ThreadBase,
   // std::map<uint32_t, std::map<uint16_t, RtpPacket>> fec_repair_symbol_list_;
   std::set<uint64_t> incomplete_fec_frame_list_;
   std::map<uint64_t, std::map<uint16_t, RtpPacket>> incomplete_fec_packet_list_;
-  std::unordered_set<int> padding_sequence_numbers_;
+  std::unordered_set<uint16_t> padding_sequence_numbers_;
+  std::unordered_map<uint64_t, std::unordered_set<uint16_t>>
+      missing_sequence_numbers_;
+  std::unordered_map<uint64_t, uint16_t> fua_end_sequence_numbers_;
+  std::unordered_map<uint64_t, int64_t> missing_sequence_numbers_wait_time_;
 
  private:
   std::thread rtcp_thread_;

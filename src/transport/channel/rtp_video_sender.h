@@ -9,7 +9,6 @@
 #include "receiver_report.h"
 #include "ringbuffer.h"
 #include "rtp_packet.h"
-#include "rtp_packet_history.h"
 #include "rtp_packet_to_send.h"
 #include "rtp_statistics.h"
 #include "sender_report.h"
@@ -62,7 +61,6 @@ class RtpVideoSender : public ThreadBase {
   std::shared_ptr<webrtc::Clock> clock_ = nullptr;
   std::unique_ptr<RtpStatistics> rtp_statistics_ = nullptr;
   std::shared_ptr<IOStatistics> io_statistics_ = nullptr;
-  std::unique_ptr<RtpPacketHistory> rtp_packet_history_ = nullptr;
   uint32_t last_send_bytes_ = 0;
   uint32_t last_send_rtcp_sr_packet_ts_ = 0;
   uint32_t total_rtp_payload_sent_ = 0;

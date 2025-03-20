@@ -10,16 +10,16 @@
 
 IceTransportController::IceTransportController(
     std::shared_ptr<SystemClock> clock)
-    : last_report_block_time_(
+    : clock_(clock),
+      webrtc_clock_(webrtc::Clock::GetWebrtcClockShared(clock)),
+      last_report_block_time_(
           webrtc::Timestamp::Millis(webrtc_clock_->TimeInMilliseconds())),
       b_force_i_frame_(true),
       video_codec_inited_(false),
       audio_codec_inited_(false),
       load_nvcodec_dll_success_(false),
       hardware_acceleration_(false),
-      congestion_window_size_(DataSize::PlusInfinity()),
-      clock_(clock),
-      webrtc_clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
+      congestion_window_size_(DataSize::PlusInfinity()) {
   SetPeriod(std::chrono::milliseconds(25));
 }
 
@@ -60,10 +60,25 @@ void IceTransportController::Create(
   packet_sender_->SetSendBurstInterval(TimeDelta::Millis(40));
   packet_sender_->SetQueueTimeLimit(TimeDelta::Millis(2000));
   packet_sender_->SetOnSentPacketFunc(
-      [this](const webrtc::RtpPacketToSend& packet) {
+      [this](std::unique_ptr<webrtc::RtpPacketToSend> packet) {
         if (ice_agent_) {
-          ice_agent_->Send((const char*)packet.Buffer().data(), packet.Size());
-          OnSentRtpPacket(packet);
+          webrtc::Timestamp now = webrtc_clock_->CurrentTime();
+          ice_agent_->Send((const char*)packet->Buffer().data(),
+                           packet->Size());
+          OnSentRtpPacket(*packet);
+
+          if (packet->packet_type().has_value()) {
+            switch (packet->packet_type().value()) {
+              case webrtc::RtpPacketMediaType::kVideo:
+              case webrtc::RtpPacketMediaType::kRetransmission:
+                if (video_channel_send_) {
+                  video_channel_send_->OnSentRtpPacket(std::move(packet));
+                }
+                break;
+              default:
+                break;
+            }
+          }
         }
       });
 
@@ -448,12 +463,13 @@ void IceTransportController::OnReceiverReport(
         report_block.ExtendedHighSeqNum();
     last_loss_report.cumulative_lost = report_block.CumulativeLost();
   }
-  // Can only compute delta if there has been previous blocks to compare to. If
-  // not, total_packets_delta will be unchanged and there's nothing more to do.
+  // Can only compute delta if there has been previous blocks to compare to.
+  // If not, total_packets_delta will be unchanged and there's nothing more to
+  // do.
   if (!total_packets_delta) return;
   int packets_received_delta = total_packets_delta - total_packets_lost_delta;
-  // To detect lost packets, at least one packet has to be received. This check
-  // is needed to avoid bandwith detection update in
+  // To detect lost packets, at least one packet has to be received. This
+  // check is needed to avoid bandwith detection update in
   // VideoSendStreamTest.SuspendBelowMinBitrate
 
   if (packets_received_delta < 1) {
@@ -487,6 +503,13 @@ void IceTransportController::HandleTransportPacketsFeedback(
     PostUpdates(controller_->OnTransportPacketsFeedback(feedback));
 
   UpdateCongestedState();
+}
+
+void IceTransportController::OnReceiveNack(
+    const std::vector<uint16_t>& nack_sequence_numbers) {
+  if (video_channel_send_) {
+    video_channel_send_->OnReceiveNack(nack_sequence_numbers);
+  }
 }
 
 void IceTransportController::UpdateControllerWithTimeInterval() {

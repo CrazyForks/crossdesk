@@ -74,6 +74,7 @@ class IceTransportController
   void OnReceiverReport(const std::vector<RtcpReportBlock> &report_block_datas);
   void OnCongestionControlFeedback(
       const webrtc::rtcp::CongestionControlFeedback &feedback);
+  void OnReceiveNack(const std::vector<uint16_t> &nack_sequence_numbers);
 
  private:
   int CreateVideoCodec(std::shared_ptr<SystemClock> clock,

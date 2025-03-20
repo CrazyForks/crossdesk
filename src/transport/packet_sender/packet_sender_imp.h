@@ -35,13 +35,18 @@ class PacketSenderImp : public PacketSender,
   ~PacketSenderImp();
 
  public:
-  int Send() { return 0; }
+  int Send() override { return 0; }
 
   int EnqueueRtpPacket(std::vector<std::unique_ptr<RtpPacket>>& rtp_packets,
-                       int64_t captured_timestamp_us);
+                       int64_t captured_timestamp_us) override;
 
+  int EnqueueRtpPacket(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&
+                           rtp_packets) override;
+
+ public:
   void SetOnSentPacketFunc(
-      std::function<void(const webrtc::RtpPacketToSend&)> on_sent_packet_func) {
+      std::function<void(std::unique_ptr<webrtc::RtpPacketToSend>)>
+          on_sent_packet_func) {
     on_sent_packet_func_ = on_sent_packet_func;
   }
 
@@ -59,8 +64,12 @@ class PacketSenderImp : public PacketSender,
         ssrc_seq_[packet->Ssrc()] = 1;
       }
 
-      packet->UpdateSequenceNumber(ssrc_seq_[packet->Ssrc()]++);
-      on_sent_packet_func_(*packet);
+      if (packet->packet_type() !=
+          webrtc::RtpPacketMediaType::kRetransmission) {
+        packet->UpdateSequenceNumber(ssrc_seq_[packet->Ssrc()]++);
+      }
+
+      on_sent_packet_func_(std::move(packet));
     }
   }
   // Should be called after each call to SendPacket().
@@ -176,8 +185,8 @@ class PacketSenderImp : public PacketSender,
  private:
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   webrtc::PacingController pacing_controller_;
-  std::function<void(const webrtc::RtpPacketToSend&)> on_sent_packet_func_ =
-      nullptr;
+  std::function<void(std::unique_ptr<webrtc::RtpPacketToSend>)>
+      on_sent_packet_func_ = nullptr;
 
   std::function<std::vector<std::unique_ptr<RtpPacket>>(uint32_t, int64_t)>
       generat_padding_func_ = nullptr;

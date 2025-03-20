@@ -3,10 +3,6 @@
 #include "log.h"
 #include "rtc_base/network/sent_packet.h"
 
-VideoChannelSend::VideoChannelSend() {}
-
-VideoChannelSend::~VideoChannelSend() {}
-
 VideoChannelSend::VideoChannelSend(
     std::shared_ptr<SystemClock> clock, std::shared_ptr<IceAgent> ice_agent,
     std::shared_ptr<PacketSender> packet_sender,
@@ -19,7 +15,10 @@ VideoChannelSend::VideoChannelSend(
       on_sent_packet_func_(on_sent_packet_func),
       delta_ntp_internal_ms_(clock->CurrentNtpInMilliseconds() -
                              clock->CurrentTimeMs()),
+      rtp_packet_history_(clock),
       clock_(clock){};
+
+VideoChannelSend::~VideoChannelSend() {}
 
 void VideoChannelSend::Initialize(rtp::PAYLOAD_TYPE payload_type) {
   rtp_video_sender_ =
@@ -58,6 +57,39 @@ void VideoChannelSend::SetEnqueuePacketsFunc(
   rtp_video_sender_->SetEnqueuePacketsFunc(enqueue_packets_func);
 }
 
+void VideoChannelSend::OnSentRtpPacket(
+    std::unique_ptr<webrtc::RtpPacketToSend> packet) {
+  if (packet->retransmitted_sequence_number()) {
+    rtp_packet_history_.MarkPacketAsSent(
+        *packet->retransmitted_sequence_number());
+  } else if (packet->PayloadType() != rtp::PAYLOAD_TYPE::H264 - 1) {
+    rtp_packet_history_.PutRtpPacket(std::move(packet), clock_->CurrentTime());
+  }
+}
+
+void VideoChannelSend::OnReceiveNack(
+    const std::vector<uint16_t>& nack_sequence_numbers) {
+  // int64_t rtt = rtt_ms();
+  // if (rtt == 0) {
+  //   if (std::optional<webrtc::TimeDelta> average_rtt =
+  //           rtcp_receiver_.AverageRtt()) {
+  //     rtt = average_rtt->ms();
+  //   }
+  // }
+
+  int64_t avg_rtt = 10;
+  rtp_packet_history_.SetRtt(TimeDelta::Millis(5 + avg_rtt));
+  for (uint16_t seq_no : nack_sequence_numbers) {
+    const int32_t bytes_sent = ReSendPacket(seq_no);
+    if (bytes_sent < 0) {
+      // Failed to send one Sequence number. Give up the rest in this nack.
+      LOG_WARN("Failed resending RTP packet {}, Discard rest of packets",
+               seq_no);
+      break;
+    }
+  }
+}
+
 std::vector<std::unique_ptr<RtpPacket>> VideoChannelSend::GeneratePadding(
     uint32_t payload_size, int64_t captured_timestamp_us) {
   if (rtp_packetizer_) {
@@ -86,4 +118,47 @@ int VideoChannelSend::SendVideo(std::shared_ptr<EncodedFrame> encoded_frame) {
   }
 
   return 0;
+}
+
+int32_t VideoChannelSend::ReSendPacket(uint16_t packet_id) {
+  int32_t packet_size = 0;
+
+  std::unique_ptr<webrtc::RtpPacketToSend> packet =
+      rtp_packet_history_.GetPacketAndMarkAsPending(
+          packet_id, [&](const webrtc::RtpPacketToSend& stored_packet) {
+            // Check if we're overusing retransmission bitrate.
+            // TODO(sprang): Add histograms for nack success or failure
+            // reasons.
+            packet_size = stored_packet.size();
+            std::unique_ptr<webrtc::RtpPacketToSend> retransmit_packet;
+
+            retransmit_packet =
+                std::make_unique<webrtc::RtpPacketToSend>(stored_packet);
+
+            if (retransmit_packet) {
+              retransmit_packet->set_retransmitted_sequence_number(
+                  stored_packet.SequenceNumber());
+              retransmit_packet->set_original_ssrc(stored_packet.Ssrc());
+            }
+            return retransmit_packet;
+          });
+  if (packet_size == 0) {
+    // Packet not found or already queued for retransmission, ignore.
+    return 0;
+  }
+  if (!packet) {
+    // Packet was found, but lambda helper above chose not to create
+    // `retransmit_packet` out of it.
+    LOG_WARN("packet not found");
+    return -1;
+  }
+
+  packet->set_packet_type(webrtc::RtpPacketMediaType::kRetransmission);
+  packet->set_fec_protect_packet(false);
+  std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets;
+  packets.emplace_back(std::move(packet));
+
+  packet_sender_->EnqueueRtpPacket(std::move(packets));
+
+  return packet_size;
 }

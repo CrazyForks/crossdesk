@@ -100,9 +100,14 @@ PrioritizedPacketQueue::QueuedPacket
 PrioritizedPacketQueue::StreamQueue::DequeuePacket(int priority_level) {
   QueuedPacket packet = std::move(packets_[priority_level].front());
   packets_[priority_level].pop_front();
-  if (packet.packet->is_key_frame()) {
-    --num_keyframe_packets_;
+  if (!packet.packet) {
+    LOG_WARN("Packet is null");
+  } else {
+    if (packet.packet->is_key_frame()) {
+      --num_keyframe_packets_;
+    }
   }
+
   return packet;
 }
 
@@ -368,6 +373,12 @@ bool PrioritizedPacketQueue::HasKeyframePackets(uint32_t ssrc) const {
 
 void PrioritizedPacketQueue::DequeuePacketInternal(QueuedPacket& packet) {
   --size_packets_;
+
+  if (!packet.packet) {
+    LOG_WARN("Packet is null");
+    return;
+  }
+
   RtpPacketMediaType packet_type = packet.packet->packet_type().value();
   --size_packets_per_media_type_[static_cast<size_t>(packet_type)];
   size_payload_ -= packet.PacketSize();

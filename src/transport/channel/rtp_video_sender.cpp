@@ -16,7 +16,6 @@ RtpVideoSender::RtpVideoSender(std::shared_ptr<SystemClock> clock,
                                std::shared_ptr<IOStatistics> io_statistics)
     : ssrc_(GenerateUniqueSsrc()),
       io_statistics_(io_statistics),
-      rtp_packet_history_(std::make_unique<RtpPacketHistory>(clock_)),
       clock_(webrtc::Clock::GetWebrtcClockShared(clock)) {
   SetPeriod(std::chrono::milliseconds(5));
 #ifdef SAVE_RTP_SENT_STREAM
@@ -130,8 +129,6 @@ int RtpVideoSender::SendRtpPacket(
 
   if (on_sent_packet_func_) {
     on_sent_packet_func_(*rtp_packet_to_send);
-    rtp_packet_history_->AddPacket(std::move(rtp_packet_to_send),
-                                   clock_->CurrentTime());
   }
 
   return 0;

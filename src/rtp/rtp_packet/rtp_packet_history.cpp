@@ -3,10 +3,28 @@
 #include "log.h"
 #include "sequence_number_compare.h"
 
-RtpPacketHistory::RtpPacketHistory(std::shared_ptr<webrtc::Clock> clock)
-    : clock_(clock),
+RtpPacketHistory::StoredPacket::StoredPacket(
+    std::unique_ptr<webrtc::RtpPacketToSend> packet,
+    webrtc::Timestamp send_time, uint64_t insert_order)
+    : packet_(std::move(packet)),
+      pending_transmission_(false),
+      send_time_(send_time),
+      insert_order_(insert_order),
+      times_retransmitted_(0) {}
+
+RtpPacketHistory::StoredPacket::StoredPacket(StoredPacket&&) = default;
+RtpPacketHistory::StoredPacket& RtpPacketHistory::StoredPacket::operator=(
+    RtpPacketHistory::StoredPacket&&) = default;
+RtpPacketHistory::StoredPacket::~StoredPacket() = default;
+
+void RtpPacketHistory::StoredPacket::IncrementTimesRetransmitted() {
+  ++times_retransmitted_;
+}
+
+RtpPacketHistory::RtpPacketHistory(std::shared_ptr<SystemClock> clock)
+    : clock_(webrtc::Clock::GetWebrtcClockShared(clock)),
       rtt_(webrtc::TimeDelta::MinusInfinity()),
-      number_to_store_(0),
+      number_to_store_(kMaxCapacity),
       packets_inserted_(0) {}
 
 RtpPacketHistory::~RtpPacketHistory() {}
@@ -16,15 +34,14 @@ void RtpPacketHistory::SetRtt(webrtc::TimeDelta rtt) {
   RemoveDeadPackets();
 }
 
-void RtpPacketHistory::AddPacket(
-    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet,
-    webrtc::Timestamp send_time) {
+void RtpPacketHistory::PutRtpPacket(
+    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet, int64_t send_time) {
   RemoveDeadPackets();
   const uint16_t rtp_seq_no = rtp_packet->SequenceNumber();
   int packet_index = GetPacketIndex(rtp_packet->SequenceNumber());
   if (packet_index >= 0 &&
-      static_cast<size_t>(packet_index) < rtp_packet_history_.size() &&
-      rtp_packet_history_[packet_index].rtp_packet != nullptr) {
+      static_cast<size_t>(packet_index) < packet_history_.size() &&
+      packet_history_[packet_index].packet_ != nullptr) {
     LOG_WARN("Duplicate packet inserted: {}", rtp_seq_no);
     // Remove previous packet to avoid inconsistent state.
     RemovePacket(packet_index);
@@ -33,15 +50,16 @@ void RtpPacketHistory::AddPacket(
 
   // Packet to be inserted ahead of first packet, expand front.
   for (; packet_index < 0; ++packet_index) {
-    rtp_packet_history_.emplace_front();
+    packet_history_.emplace_front();
   }
   // Packet to be inserted behind last packet, expand back.
-  while (static_cast<int>(rtp_packet_history_.size()) <= packet_index) {
-    rtp_packet_history_.emplace_back();
+  while (static_cast<int>(packet_history_.size()) <= packet_index) {
+    packet_history_.emplace_back();
   }
 
-  rtp_packet_history_[packet_index] = {std::move(rtp_packet), send_time,
-                                       packets_inserted_++};
+  packet_history_[packet_index] = {std::move(rtp_packet),
+                                   webrtc::Timestamp::Micros(send_time),
+                                   packets_inserted_++};
 }
 
 void RtpPacketHistory::RemoveDeadPackets() {
@@ -50,23 +68,27 @@ void RtpPacketHistory::RemoveDeadPackets() {
       rtt_.IsFinite()
           ? (std::max)(kMinPacketDurationRtt * rtt_, kMinPacketDuration)
           : kMinPacketDuration;
-  while (!rtp_packet_history_.empty()) {
-    if (rtp_packet_history_.size() >= kMaxCapacity) {
+  while (!packet_history_.empty()) {
+    if (packet_history_.size() >= kMaxCapacity) {
       // We have reached the absolute max capacity, remove one packet
       // unconditionally.
       RemovePacket(0);
       continue;
     }
 
-    const RtpPacketToSendInfo& stored_packet = rtp_packet_history_.front();
+    const StoredPacket& stored_packet = packet_history_.front();
+    if (stored_packet.pending_transmission_) {
+      // Don't remove packets in the pacer queue, pending tranmission.
+      return;
+    }
 
-    if (stored_packet.send_time + packet_duration > now) {
+    if (stored_packet.send_time() + packet_duration > now) {
       // Don't cull packets too early to avoid failed retransmission requests.
       return;
     }
 
-    if (rtp_packet_history_.size() >= number_to_store_ ||
-        stored_packet.send_time +
+    if (packet_history_.size() >= number_to_store_ ||
+        stored_packet.send_time() +
                 (packet_duration * kPacketCullingDelayFactor) <=
             now) {
       // Too many packets in history, or this packet has timed out. Remove it
@@ -79,15 +101,80 @@ void RtpPacketHistory::RemoveDeadPackets() {
   }
 }
 
+std::unique_ptr<webrtc::RtpPacketToSend>
+RtpPacketHistory::GetPacketAndMarkAsPending(uint16_t sequence_number) {
+  return GetPacketAndMarkAsPending(
+      sequence_number, [](const webrtc::RtpPacketToSend& packet) {
+        return std::make_unique<webrtc::RtpPacketToSend>(packet);
+      });
+}
+
+std::unique_ptr<webrtc::RtpPacketToSend>
+RtpPacketHistory::GetPacketAndMarkAsPending(
+    uint16_t sequence_number,
+    std::function<std::unique_ptr<webrtc::RtpPacketToSend>(
+        const webrtc::RtpPacketToSend&)>
+        encapsulate) {
+  StoredPacket* packet = GetStoredPacket(sequence_number);
+  if (packet == nullptr) {
+    return nullptr;
+  }
+
+  if (packet->pending_transmission_) {
+    // Packet already in pacer queue, ignore this request.
+    return nullptr;
+  }
+
+  if (!VerifyRtt(*packet)) {
+    // Packet already resent within too short a time window, ignore.
+    return nullptr;
+  }
+
+  // Copy and/or encapsulate packet.
+  std::unique_ptr<webrtc::RtpPacketToSend> encapsulated_packet =
+      encapsulate(*packet->packet_);
+  if (encapsulated_packet) {
+    packet->pending_transmission_ = true;
+  }
+
+  return encapsulated_packet;
+}
+
+void RtpPacketHistory::MarkPacketAsSent(uint16_t sequence_number) {
+  StoredPacket* packet = GetStoredPacket(sequence_number);
+  if (packet == nullptr) {
+    return;
+  }
+
+  // Update send-time, mark as no longer in pacer queue, and increment
+  // transmission count.
+  packet->set_send_time(clock_->CurrentTime());
+  packet->pending_transmission_ = false;
+  packet->IncrementTimesRetransmitted();
+}
+
+bool RtpPacketHistory::VerifyRtt(
+    const RtpPacketHistory::StoredPacket& packet) const {
+  if (packet.times_retransmitted() > 0 &&
+      clock_->CurrentTime() - packet.send_time() < rtt_) {
+    // This packet has already been retransmitted once, and the time since
+    // that even is lower than on RTT. Ignore request as this packet is
+    // likely already in the network pipe.
+    return false;
+  }
+
+  return true;
+}
+
 std::unique_ptr<webrtc::RtpPacketToSend> RtpPacketHistory::RemovePacket(
     int packet_index) {
   // Move the packet out from the StoredPacket container.
   std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet =
-      std::move(rtp_packet_history_[packet_index].rtp_packet);
+      std::move(packet_history_[packet_index].packet_);
   if (packet_index == 0) {
-    while (!rtp_packet_history_.empty() &&
-           rtp_packet_history_.front().rtp_packet == nullptr) {
-      rtp_packet_history_.pop_front();
+    while (!packet_history_.empty() &&
+           packet_history_.front().packet_ == nullptr) {
+      packet_history_.pop_front();
     }
   }
 
@@ -95,11 +182,11 @@ std::unique_ptr<webrtc::RtpPacketToSend> RtpPacketHistory::RemovePacket(
 }
 
 int RtpPacketHistory::GetPacketIndex(uint16_t sequence_number) const {
-  if (rtp_packet_history_.empty()) {
+  if (packet_history_.empty()) {
     return 0;
   }
 
-  int first_seq = rtp_packet_history_.front().rtp_packet->SequenceNumber();
+  int first_seq = packet_history_.front().packet_->SequenceNumber();
   if (first_seq == sequence_number) {
     return 0;
   }
@@ -118,4 +205,14 @@ int RtpPacketHistory::GetPacketIndex(uint16_t sequence_number) const {
   }
 
   return packet_index;
+}
+
+RtpPacketHistory::StoredPacket* RtpPacketHistory::GetStoredPacket(
+    uint16_t sequence_number) {
+  int index = GetPacketIndex(sequence_number);
+  if (index < 0 || static_cast<size_t>(index) >= packet_history_.size() ||
+      packet_history_[index].packet_ == nullptr) {
+    return nullptr;
+  }
+  return &packet_history_[index];
 }

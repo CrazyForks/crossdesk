@@ -11,6 +11,7 @@
 
 #define NV12_BUFFER_SIZE (1280 * 720 * 3 / 2)
 #define RTCP_RR_INTERVAL 1000
+#define MAX_WAIT_TIME_MS 20  // 20ms
 
 RtpVideoReceiver::RtpVideoReceiver(std::shared_ptr<SystemClock> clock)
     : ssrc_(GenerateUniqueSsrc()),
@@ -231,8 +232,23 @@ void RtpVideoReceiver::ProcessH264RtpPacket(RtpPacketH264& rtp_packet_h264) {
       } else if (rtp::NAL_UNIT_TYPE::FU_A == nalu_type) {
         incomplete_h264_frame_list_[rtp_packet_h264.SequenceNumber()] =
             rtp_packet_h264;
-        bool complete = CheckIsH264FrameCompleted(rtp_packet_h264);
-        if (!complete) {
+        if (incomplete_h264_frame_list_.find(
+                rtp_packet_h264.SequenceNumber()) ==
+            incomplete_h264_frame_list_.end()) {
+          LOG_ERROR("missing seq {}", rtp_packet_h264.SequenceNumber());
+        }
+        if (rtp_packet_h264.FuAEnd()) {
+          CheckIsH264FrameCompletedFuaEndReceived(rtp_packet_h264);
+        } else {
+          auto missing_seqs_iter =
+              missing_sequence_numbers_.find(rtp_packet_h264.Timestamp());
+          if (missing_seqs_iter != missing_sequence_numbers_.end()) {
+            auto missing_seqs = missing_seqs_iter->second;
+            if (missing_seqs.find(rtp_packet_h264.SequenceNumber()) !=
+                missing_seqs.end()) {
+              CheckIsH264FrameCompletedMissSeqReceived(rtp_packet_h264);
+            }
+          }
         }
       }
     } else if (rtp::PAYLOAD_TYPE::H264 - 1 == rtp_packet_h264.PayloadType()) {
@@ -366,78 +382,181 @@ void RtpVideoReceiver::ProcessAv1RtpPacket(RtpPacketAv1& rtp_packet_av1) {
   // }
 }
 
-bool RtpVideoReceiver::CheckIsH264FrameCompleted(
+bool RtpVideoReceiver::CheckIsH264FrameCompletedFuaEndReceived(
     RtpPacketH264& rtp_packet_h264) {
-  if (rtp_packet_h264.FuAEnd()) {
-    uint16_t end_seq = rtp_packet_h264.SequenceNumber();
-    while (end_seq--) {
-      auto it = incomplete_h264_frame_list_.find(end_seq);
-      if (it == incomplete_h264_frame_list_.end()) {
-        if (padding_sequence_numbers_.find(end_seq) ==
-            padding_sequence_numbers_.end()) {
-          return false;
-        } else {
-          continue;
-        }
-      } else if (!it->second.FuAStart()) {
-        continue;
-      } else if (it->second.FuAStart()) {
-        if (!nv12_data_) {
-          nv12_data_ = new uint8_t[NV12_BUFFER_SIZE];
-        }
+  uint64_t timestamp = rtp_packet_h264.Timestamp();
+  uint16_t end_seq = rtp_packet_h264.SequenceNumber();
+  fua_end_sequence_numbers_[timestamp] = end_seq;
+  uint16_t start_seq = 0;
+  bool has_start = false;
+  bool has_missing = false;
+  missing_sequence_numbers_wait_time_[timestamp] = clock_->CurrentTime().ms();
 
-        size_t complete_frame_size = 0;
-        int frame_fragment_count = 0;
-        uint16_t start = it->first;
-        uint16_t end = rtp_packet_h264.SequenceNumber();
-        for (uint16_t seq = start; seq <= end; seq++) {
-          if (padding_sequence_numbers_.find(seq) ==
-              padding_sequence_numbers_.end()) {
-            complete_frame_size +=
-                incomplete_h264_frame_list_[seq].PayloadSize();
-          } else {
-            padding_sequence_numbers_.erase(seq);
-          }
-        }
+  for (uint16_t seq = end_seq; seq > 0; --seq) {
+    auto it = incomplete_h264_frame_list_.find(seq);
+    if (it == incomplete_h264_frame_list_.end()) {
+      if (padding_sequence_numbers_.find(seq) ==
+          padding_sequence_numbers_.end()) {
+        missing_sequence_numbers_[timestamp].insert(seq);
+        LOG_WARN("missing {}", seq);
+      }
+    } else if (it->second.FuAStart()) {
+      start_seq = seq;
+      has_start = true;
+      break;
+    }
+  }
 
-        if (!nv12_data_) {
-          nv12_data_ = new uint8_t[NV12_BUFFER_SIZE];
-        } else if (complete_frame_size > NV12_BUFFER_SIZE) {
-          delete[] nv12_data_;
-          nv12_data_ = new uint8_t[complete_frame_size];
-        }
+  if (!has_start) {
+    return false;
+  }
 
-        uint8_t* dest = nv12_data_;
-        for (uint16_t seq = start; seq <= end; seq++) {
-          size_t payload_size = incomplete_h264_frame_list_[seq].PayloadSize();
-          if (payload_size) {
-            memcpy(dest, incomplete_h264_frame_list_[seq].Payload(),
-                   payload_size);
-          }
-          dest += payload_size;
-          incomplete_h264_frame_list_.erase(seq);
-          frame_fragment_count++;
-        }
+  if (missing_sequence_numbers_.find(timestamp) !=
+      missing_sequence_numbers_.end()) {
+    if (!missing_sequence_numbers_[timestamp].empty()) {
+      return false;
+    }
+  }
 
-        ReceivedFrame received_frame(nv12_data_, complete_frame_size);
-        received_frame.SetReceivedTimestamp(clock_->CurrentTime().us());
-        received_frame.SetCapturedTimestamp(
-            (static_cast<int64_t>(rtp_packet_h264.Timestamp()) /
-                 rtp::kMsToRtpTimestamp -
-             delta_ntp_internal_ms_) *
-            1000);
-        compelete_video_frame_queue_.push(received_frame);
+  size_t complete_frame_size = 0;
+  int frame_fragment_count = 0;
 
-        return true;
-      } else {
-        LOG_WARN("What happened?");
+  for (uint16_t seq = start_seq; seq <= end_seq; ++seq) {
+    if (padding_sequence_numbers_.find(seq) !=
+        padding_sequence_numbers_.end()) {
+      padding_sequence_numbers_.erase(seq);
+      continue;
+    }
+    if (incomplete_h264_frame_list_.find(seq) !=
+        incomplete_h264_frame_list_.end()) {
+      complete_frame_size += incomplete_h264_frame_list_[seq].PayloadSize();
+    }
+  }
+
+  if (!nv12_data_) {
+    nv12_data_ = new uint8_t[NV12_BUFFER_SIZE];
+  } else if (complete_frame_size > NV12_BUFFER_SIZE) {
+    delete[] nv12_data_;
+    nv12_data_ = new uint8_t[complete_frame_size];
+  }
+
+  uint8_t* dest = nv12_data_;
+  for (uint16_t seq = start_seq; seq <= end_seq; ++seq) {
+    if (incomplete_h264_frame_list_.find(seq) !=
+        incomplete_h264_frame_list_.end()) {
+      size_t payload_size = incomplete_h264_frame_list_[seq].PayloadSize();
+      memcpy(dest, incomplete_h264_frame_list_[seq].Payload(), payload_size);
+      dest += payload_size;
+      incomplete_h264_frame_list_.erase(seq);
+      frame_fragment_count++;
+    }
+  }
+
+  ReceivedFrame received_frame(nv12_data_, complete_frame_size);
+  received_frame.SetReceivedTimestamp(clock_->CurrentTime().us());
+  received_frame.SetCapturedTimestamp(
+      (static_cast<int64_t>(timestamp) / rtp::kMsToRtpTimestamp -
+       delta_ntp_internal_ms_) *
+      1000);
+
+  fua_end_sequence_numbers_.erase(timestamp);
+  missing_sequence_numbers_wait_time_.erase(timestamp);
+  missing_sequence_numbers_.erase(timestamp);
+  compelete_video_frame_queue_.push(received_frame);
+
+  return true;
+}
+
+bool RtpVideoReceiver::CheckIsH264FrameCompletedMissSeqReceived(
+    RtpPacketH264& rtp_packet_h264) {
+  if (fua_end_sequence_numbers_.find(rtp_packet_h264.Timestamp()) ==
+      fua_end_sequence_numbers_.end()) {
+    return false;
+  }
+
+  uint64_t timestamp = rtp_packet_h264.Timestamp();
+  uint16_t end_seq = fua_end_sequence_numbers_[timestamp];
+  uint16_t start_seq = 0;
+  bool has_start = false;
+  bool has_missing = false;
+
+  for (uint16_t seq = end_seq; seq > 0; --seq) {
+    auto it = incomplete_h264_frame_list_.find(seq);
+    if (it == incomplete_h264_frame_list_.end()) {
+      if (padding_sequence_numbers_.find(seq) ==
+          padding_sequence_numbers_.end()) {
+        return false;
+      }
+    } else if (it->second.FuAStart()) {
+      start_seq = seq;
+      has_start = true;
+      break;
+    }
+  }
+
+  if (!has_start) {
+    return false;
+  }
+
+  if (missing_sequence_numbers_.find(timestamp) !=
+          missing_sequence_numbers_.end() &&
+      missing_sequence_numbers_wait_time_.find(timestamp) !=
+          missing_sequence_numbers_wait_time_.end()) {
+    if (!missing_sequence_numbers_[timestamp].empty()) {
+      int64_t wait_time = clock_->CurrentTime().us() -
+                          missing_sequence_numbers_wait_time_[timestamp];
+      if (wait_time < MAX_WAIT_TIME_MS) {
         return false;
       }
     }
-
-    return true;
   }
-  return false;
+
+  size_t complete_frame_size = 0;
+  int frame_fragment_count = 0;
+
+  for (uint16_t seq = start_seq; seq <= end_seq; ++seq) {
+    if (padding_sequence_numbers_.find(seq) !=
+        padding_sequence_numbers_.end()) {
+      padding_sequence_numbers_.erase(seq);
+      continue;
+    }
+    if (incomplete_h264_frame_list_.find(seq) !=
+        incomplete_h264_frame_list_.end()) {
+      complete_frame_size += incomplete_h264_frame_list_[seq].PayloadSize();
+    }
+  }
+
+  if (!nv12_data_) {
+    nv12_data_ = new uint8_t[NV12_BUFFER_SIZE];
+  } else if (complete_frame_size > NV12_BUFFER_SIZE) {
+    delete[] nv12_data_;
+    nv12_data_ = new uint8_t[complete_frame_size];
+  }
+
+  uint8_t* dest = nv12_data_;
+  for (uint16_t seq = start_seq; seq <= end_seq; ++seq) {
+    if (incomplete_h264_frame_list_.find(seq) !=
+        incomplete_h264_frame_list_.end()) {
+      size_t payload_size = incomplete_h264_frame_list_[seq].PayloadSize();
+      memcpy(dest, incomplete_h264_frame_list_[seq].Payload(), payload_size);
+      dest += payload_size;
+      incomplete_h264_frame_list_.erase(seq);
+      frame_fragment_count++;
+    }
+  }
+
+  ReceivedFrame received_frame(nv12_data_, complete_frame_size);
+  received_frame.SetReceivedTimestamp(clock_->CurrentTime().us());
+  received_frame.SetCapturedTimestamp(
+      (static_cast<int64_t>(timestamp) / rtp::kMsToRtpTimestamp -
+       delta_ntp_internal_ms_) *
+      1000);
+
+  missing_sequence_numbers_.erase(timestamp);
+  missing_sequence_numbers_wait_time_.erase(timestamp);
+  compelete_video_frame_queue_.push(received_frame);
+
+  return true;
 }
 
 bool RtpVideoReceiver::CheckIsAv1FrameCompleted(RtpPacketAv1& rtp_packet_av1) {

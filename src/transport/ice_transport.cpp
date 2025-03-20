@@ -399,20 +399,12 @@ bool IceTransport::HandleNack(const RtcpCommonHeader &rtcp_block,
     return false;
   }
 
-  // uint32_t first_media_source_ssrc = nack.ssrc();
-  // if (first_media_source_ssrc == local_media_ssrc() ||
-  //     registered_ssrcs_.contains(first_media_source_ssrc)) {
-  //   rtcp_packet_info->nack.emplace(std::move(nack));
-  // }
+  if (ice_transport_controller_) {
+    ice_transport_controller_->OnReceiveNack(nack.packet_ids());
+    return true;
+  }
 
-  // int64_t rtt = rtt_ms();
-  // if (rtt == 0) {
-  //   if (std::optional<TimeDelta> average_rtt = rtcp_receiver_.AverageRtt()) {
-  //     rtt = average_rtt->ms();
-  //   }
-  // }
-
-  return true;
+  return false;
 }
 
 bool IceTransport::HandleFir(const RtcpCommonHeader &rtcp_block,

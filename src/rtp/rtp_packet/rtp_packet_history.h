@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "api/clock/clock.h"
+#include "clock/system_clock.h"
 #include "rtp_packet_to_send.h"
 
 class RtpPacketHistory {
@@ -26,39 +27,70 @@ class RtpPacketHistory {
   static constexpr int kPacketCullingDelayFactor = 3;
 
  public:
-  RtpPacketHistory(std::shared_ptr<webrtc::Clock> clock);
+  RtpPacketHistory(std::shared_ptr<SystemClock> clock);
   ~RtpPacketHistory();
 
  public:
   void SetRtt(webrtc::TimeDelta rtt);
-  void AddPacket(std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet,
-                 webrtc::Timestamp send_time);
-  void RemoveDeadPackets();
+  void PutRtpPacket(std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet,
+                    int64_t send_time);
+  void MarkPacketAsSent(uint16_t sequence_number);
+
+  std::unique_ptr<webrtc::RtpPacketToSend> GetPacketAndMarkAsPending(
+      uint16_t sequence_number);
+
+  std::unique_ptr<webrtc::RtpPacketToSend> GetPacketAndMarkAsPending(
+      uint16_t sequence_number,
+      std::function<std::unique_ptr<webrtc::RtpPacketToSend>(
+          const webrtc::RtpPacketToSend&)>
+          encapsulate);
 
  private:
   std::unique_ptr<webrtc::RtpPacketToSend> RemovePacket(int packet_index);
   int GetPacketIndex(uint16_t sequence_number) const;
 
  private:
-  struct RtpPacketToSendInfo {
-    RtpPacketToSendInfo() = default;
-    RtpPacketToSendInfo(std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet,
-                        webrtc::Timestamp send_time, uint64_t index)
-        : rtp_packet(std::move(rtp_packet)),
-          send_time(send_time),
-          index(index) {}
-    RtpPacketToSendInfo(RtpPacketToSendInfo&&) = default;
-    RtpPacketToSendInfo& operator=(RtpPacketToSendInfo&&) = default;
-    ~RtpPacketToSendInfo() = default;
+  class StoredPacket {
+   public:
+    StoredPacket() = default;
+    StoredPacket(std::unique_ptr<webrtc::RtpPacketToSend> packet,
+                 webrtc::Timestamp send_time, uint64_t insert_order);
+    StoredPacket(StoredPacket&&);
+    StoredPacket& operator=(StoredPacket&&);
+    ~StoredPacket();
 
-    std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet;
-    webrtc::Timestamp send_time = webrtc::Timestamp::Zero();
-    uint64_t index;
+    uint64_t insert_order() const { return insert_order_; }
+    size_t times_retransmitted() const { return times_retransmitted_; }
+    void IncrementTimesRetransmitted();
+
+    // The time of last transmission, including retransmissions.
+    webrtc::Timestamp send_time() const { return send_time_; }
+    void set_send_time(webrtc::Timestamp value) { send_time_ = value; }
+
+    // The actual packet.
+    std::unique_ptr<webrtc::RtpPacketToSend> packet_;
+
+    // True if the packet is currently in the pacer queue pending transmission.
+    bool pending_transmission_;
+
+   private:
+    webrtc::Timestamp send_time_ = webrtc::Timestamp::Zero();
+
+    // Unique number per StoredPacket, incremented by one for each added
+    // packet. Used to sort on insert order.
+    uint64_t insert_order_;
+
+    // Number of times RE-transmitted, ie excluding the first transmission.
+    size_t times_retransmitted_;
   };
+
+  void RemoveDeadPackets();
+  bool VerifyRtt(const StoredPacket& packet) const;
+  StoredPacket* GetStoredPacket(uint16_t sequence_number);
 
  private:
   std::shared_ptr<webrtc::Clock> clock_;
-  std::deque<RtpPacketToSendInfo> rtp_packet_history_;
+  std::deque<StoredPacket> packet_history_;
   uint64_t packets_inserted_;
   webrtc::TimeDelta rtt_;
   size_t number_to_store_;

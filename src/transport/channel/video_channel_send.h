@@ -15,13 +15,13 @@
 #include "encoded_frame.h"
 #include "ice_agent.h"
 #include "packet_sender.h"
+#include "rtp_packet_history.h"
 #include "rtp_packetizer.h"
 #include "rtp_video_sender.h"
 #include "transport_feedback_adapter.h"
 
 class VideoChannelSend {
  public:
-  VideoChannelSend();
   VideoChannelSend(std::shared_ptr<SystemClock> clock,
                    std::shared_ptr<IceAgent> ice_agent,
                    std::shared_ptr<PacketSender> packet_sender,
@@ -35,14 +35,12 @@ class VideoChannelSend {
           void(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&)>
           enqueue_packets_func);
 
+  void OnSentRtpPacket(std::unique_ptr<webrtc::RtpPacketToSend> packet);
+
+  void OnReceiveNack(const std::vector<uint16_t>& nack_sequence_numbers);
+
   std::vector<std::unique_ptr<RtpPacket>> GeneratePadding(
       uint32_t payload_size, int64_t captured_timestamp_us);
-
-  int64_t GetTransportSeqAndIncrement() {
-    int64_t transport_seq = rtp_video_sender_->GetTransportSequenceNumber();
-    rtp_video_sender_->IncrementTransportSequenceNumber();
-    return transport_seq;
-  }
 
  public:
   void Initialize(rtp::PAYLOAD_TYPE payload_type);
@@ -57,10 +55,6 @@ class VideoChannelSend {
 
   int SendVideo(std::shared_ptr<EncodedFrame> encoded_frame);
 
-  void OnCongestionControlFeedback(
-      Timestamp recv_ts,
-      const webrtc::rtcp::CongestionControlFeedback& feedback);
-
   void OnReceiverReport(const ReceiverReport& receiver_report) {
     if (rtp_video_sender_) {
       rtp_video_sender_->OnReceiverReport(receiver_report);
@@ -68,9 +62,7 @@ class VideoChannelSend {
   }
 
  private:
-  void PostUpdates(webrtc::NetworkControlUpdate update);
-  void UpdateControlState();
-  void UpdateCongestedState();
+  int32_t ReSendPacket(uint16_t packet_id);
 
  private:
   std::shared_ptr<PacketSender> packet_sender_ = nullptr;
@@ -84,6 +76,7 @@ class VideoChannelSend {
 
  private:
   std::shared_ptr<SystemClock> clock_;
+  RtpPacketHistory rtp_packet_history_;
   int64_t delta_ntp_internal_ms_;
 };
 
