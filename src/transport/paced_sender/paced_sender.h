@@ -4,8 +4,8 @@
  * Copyright (c) 2025 by DI JUNKUN, All Rights Reserved.
  */
 
-#ifndef _PACKET_SENDER_IMP_H_
-#define _PACKET_SENDER_IMP_H_
+#ifndef _PACED_SENDER__H_
+#define _PACED_SENDER__H_
 
 #include <memory>
 
@@ -18,34 +18,31 @@
 #include "ice_agent.h"
 #include "log.h"
 #include "pacing_controller.h"
-#include "packet_sender.h"
 #include "rtc_base/numerics/exp_filter.h"
 #include "rtp_packet_pacer.h"
 #include "rtp_packet_to_send.h"
 #include "task_queue.h"
 
-class PacketSenderImp : public PacketSender,
-                        public webrtc::RtpPacketPacer,
-                        public webrtc::PacingController::PacketSender {
+class PacedSender : public webrtc::RtpPacketPacer,
+                    public webrtc::PacingController::PacketSender {
  public:
   static const int kNoPacketHoldback;
 
-  PacketSenderImp(std::shared_ptr<IceAgent> ice_agent,
-                  std::shared_ptr<webrtc::Clock> clock,
-                  std::shared_ptr<TaskQueue> task_queue);
-  ~PacketSenderImp();
+  PacedSender(std::shared_ptr<IceAgent> ice_agent,
+              std::shared_ptr<webrtc::Clock> clock,
+              std::shared_ptr<TaskQueue> task_queue);
+  ~PacedSender();
 
  public:
-  int Send() override { return 0; }
+  int Send() { return 0; }
 
   int EnqueueRtpPackets(std::vector<std::unique_ptr<RtpPacket>>& rtp_packets,
-                        int64_t captured_timestamp_us) override;
+                        int64_t captured_timestamp_us);
 
-  int EnqueueRtpPackets(std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>&
-                            rtp_packets) override;
+  int EnqueueRtpPackets(
+      std::vector<std::unique_ptr<webrtc::RtpPacketToSend>>& rtp_packets);
 
-  int EnqueueRtpPacket(
-      std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet) override;
+  int EnqueueRtpPacket(std::unique_ptr<webrtc::RtpPacketToSend> rtp_packet);
 
  public:
   void SetOnSentPacketFunc(
@@ -106,7 +103,7 @@ class PacketSenderImp : public PacketSender,
   // Methods implementing RtpPacketSender.
 
   // Adds the packet to the queue and calls
-  // PacingController::PacketSenderImp::SendPacket() when it's time to send.
+  // PacingController::PacedSender::SendPacket() when it's time to send.
   void EnqueuePackets(
       std::vector<std::unique_ptr<webrtc::RtpPacketToSend>> packets);
   void EnqueuePacket(std::unique_ptr<webrtc::RtpPacketToSend> packet);

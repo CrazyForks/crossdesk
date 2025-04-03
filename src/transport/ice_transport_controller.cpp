@@ -70,19 +70,18 @@ void IceTransportController::Create(
   task_queue_decode_ = std::make_shared<TaskQueue>("decode");
 
   controller_ = std::make_unique<CongestionControl>();
-  packet_sender_ = std::make_shared<PacketSenderImp>(ice_agent, webrtc_clock_,
-                                                     task_queue_cc_);
-  packet_sender_->SetPacingRates(DataRate::BitsPerSec(300000),
-                                 DataRate::Zero());
-  packet_sender_->SetSendBurstInterval(TimeDelta::Millis(40));
-  packet_sender_->SetQueueTimeLimit(TimeDelta::Millis(2000));
-  packet_sender_->SetOnSentPacketFunc(
+  paced_sender_ =
+      std::make_shared<PacedSender>(ice_agent, webrtc_clock_, task_queue_cc_);
+  paced_sender_->SetPacingRates(DataRate::BitsPerSec(300000), DataRate::Zero());
+  paced_sender_->SetSendBurstInterval(TimeDelta::Millis(40));
+  paced_sender_->SetQueueTimeLimit(TimeDelta::Millis(2000));
+  paced_sender_->SetOnSentPacketFunc(
       [this](std::unique_ptr<webrtc::RtpPacketToSend> packet) {
         if (ice_agent_) {
           webrtc::Timestamp now = webrtc_clock_->CurrentTime();
           ice_agent_->Send((const char*)packet->Buffer().data(),
                            packet->Size());
-          OnSentRtpPacket(*packet);
+          OnSentPacket(*packet);
 
           if (packet->packet_type().has_value()) {
             switch (packet->packet_type().value()) {
@@ -102,13 +101,10 @@ void IceTransportController::Create(
   resolution_adapter_ = std::make_unique<ResolutionAdapter>();
 
   video_channel_send_ = std::make_unique<VideoChannelSend>(
-      clock_, ice_agent, packet_sender_, ice_io_statistics,
-      [this](const webrtc::RtpPacketToSend& packet) {
-        OnSentRtpPacket(packet);
-      });
+      clock_, ice_agent, paced_sender_, ice_io_statistics);
 
-  if (packet_sender_) {
-    packet_sender_->SetGeneratePaddingFunc(
+  if (paced_sender_) {
+    paced_sender_->SetGeneratePaddingFunc(
         [this](uint32_t size, int64_t captured_timestamp_us)
             -> std::vector<std::unique_ptr<RtpPacket>> {
           return video_channel_send_->GeneratePadding(size,
@@ -117,9 +113,9 @@ void IceTransportController::Create(
   }
 
   audio_channel_send_ = std::make_unique<AudioChannelSend>(
-      ice_agent, packet_sender_, ice_io_statistics);
+      ice_agent, paced_sender_, ice_io_statistics);
   data_channel_send_ = std::make_unique<DataChannelSend>(
-      ice_agent, packet_sender_, ice_io_statistics);
+      ice_agent, paced_sender_, ice_io_statistics);
 
   if (video_channel_send_) {
     video_channel_send_->Initialize(video_codec_payload_type);
@@ -285,8 +281,8 @@ void IceTransportController::UpdateNetworkAvaliablity(bool network_available) {
     controller_->OnNetworkAvailability(msg);
   }
 
-  if (packet_sender_) {
-    packet_sender_->EnsureStarted();
+  if (paced_sender_) {
+    paced_sender_->EnsureStarted();
   }
 }
 
@@ -556,7 +552,7 @@ void IceTransportController::OnReceiveNack(
   }
 }
 
-void IceTransportController::OnSentRtpPacket(
+void IceTransportController::OnSentPacket(
     const webrtc::RtpPacketToSend& packet) {
   webrtc::PacedPacketInfo pacing_info;
   size_t transport_overhead_bytes_per_packet_ = 0;
@@ -582,14 +578,13 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
     UpdateCongestedState();
   }
 
-  if (update.pacer_config && packet_sender_) {
-    packet_sender_->SetPacingRates(update.pacer_config->data_rate(),
-                                   update.pacer_config->pad_rate());
+  if (update.pacer_config && paced_sender_) {
+    paced_sender_->SetPacingRates(update.pacer_config->data_rate(),
+                                  update.pacer_config->pad_rate());
   }
 
-  if (!update.probe_cluster_configs.empty() && packet_sender_) {
-    packet_sender_->CreateProbeClusters(
-        std::move(update.probe_cluster_configs));
+  if (!update.probe_cluster_configs.empty() && paced_sender_) {
+    paced_sender_->CreateProbeClusters(std::move(update.probe_cluster_configs));
   }
 
   if (update.target_rate) {
@@ -630,8 +625,8 @@ void IceTransportController::UpdateControlState() {
 void IceTransportController::UpdateCongestedState() {
   if (auto update = GetCongestedStateUpdate()) {
     is_congested_ = update.value();
-    if (packet_sender_) {
-      packet_sender_->SetCongested(update.value());
+    if (paced_sender_) {
+      paced_sender_->SetCongested(update.value());
     }
   }
 }

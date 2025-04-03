@@ -8,9 +8,9 @@ AudioChannelSend::~AudioChannelSend() {}
 
 AudioChannelSend::AudioChannelSend(
     std::shared_ptr<IceAgent> ice_agent,
-    std::shared_ptr<PacketSender> packet_sender,
+    std::shared_ptr<PacedSender> packet_sender,
     std::shared_ptr<IOStatistics> ice_io_statistics)
-    : packet_sender_(packet_sender),
+    : paced_sender_(packet_sender),
       ice_agent_(ice_agent),
       ice_io_statistics_(ice_io_statistics) {}
 
@@ -49,7 +49,7 @@ int AudioChannelSend::SendAudio(char *data, size_t size) {
   if (rtp_audio_sender_ && rtp_packetizer_) {
     std::vector<std::unique_ptr<RtpPacket>> rtp_packets =
         rtp_packetizer_->Build((uint8_t *)data, (uint32_t)size, 0, true);
-    // packet_sender_->EnqueueRtpPackets(rtp_packets, 0);
+    // paced_sender_->EnqueueRtpPackets(rtp_packets, 0);
     rtp_audio_sender_->Enqueue(rtp_packets);
   }
 

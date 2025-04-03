@@ -8,7 +8,7 @@
 #define _DATA_CHANNEL_SEND_H_
 
 #include "ice_agent.h"
-#include "packet_sender.h"
+#include "paced_sender.h"
 #include "rtp_data_sender.h"
 #include "rtp_packetizer.h"
 
@@ -16,7 +16,7 @@ class DataChannelSend {
  public:
   DataChannelSend();
   DataChannelSend(std::shared_ptr<IceAgent> ice_agent,
-                  std::shared_ptr<PacketSender> packet_sender,
+                  std::shared_ptr<PacedSender> packet_sender,
                   std::shared_ptr<IOStatistics> ice_io_statistics);
   ~DataChannelSend();
 
@@ -36,7 +36,7 @@ class DataChannelSend {
   void OnReceiverReport(const ReceiverReport& receiver_report) {}
 
  private:
-  std::shared_ptr<PacketSender> packet_sender_ = nullptr;
+  std::shared_ptr<PacedSender> paced_sender_ = nullptr;
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpPacketizer> rtp_packetizer_ = nullptr;

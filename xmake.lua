@@ -142,10 +142,10 @@ target("transport")
     add_deps("log", "ws", "ice", "rtp", "rtcp", "statistics", "media", "qos")
     add_files("src/transport/*.cpp",
     "src/transport/channel/*.cpp",
-    "src/transport/packet_sender/*.cpp")
+    "src/transport/paced_sender/*.cpp")
     add_includedirs("src/transport",
     "src/transport/channel",
-    "src/transport/packet_sender", {public = true})
+    "src/transport/paced_sender", {public = true})
 
 target("media")
     set_kind("object")

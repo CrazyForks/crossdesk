@@ -14,20 +14,19 @@
 #include "congestion_control_feedback.h"
 #include "encoded_frame.h"
 #include "ice_agent.h"
-#include "packet_sender.h"
+#include "paced_sender.h"
 #include "rtp_packet_history.h"
 #include "rtp_packetizer.h"
 #include "rtp_video_sender.h"
+#include "task_queue.h"
 #include "transport_feedback_adapter.h"
 
 class VideoChannelSend {
  public:
   VideoChannelSend(std::shared_ptr<SystemClock> clock,
                    std::shared_ptr<IceAgent> ice_agent,
-                   std::shared_ptr<PacketSender> packet_sender,
-                   std::shared_ptr<IOStatistics> ice_io_statistics,
-                   std::function<void(const webrtc::RtpPacketToSend& packet)>
-                       on_sent_packet_func_);
+                   std::shared_ptr<PacedSender> packet_sender,
+                   std::shared_ptr<IOStatistics> ice_io_statistics);
   ~VideoChannelSend();
 
   void OnSentRtpPacket(std::unique_ptr<webrtc::RtpPacketToSend> packet);
@@ -62,18 +61,16 @@ class VideoChannelSend {
   int32_t ReSendPacket(uint16_t packet_id);
 
  private:
-  std::shared_ptr<PacketSender> packet_sender_ = nullptr;
+  std::shared_ptr<PacedSender> paced_sender_ = nullptr;
   std::shared_ptr<IceAgent> ice_agent_ = nullptr;
   std::shared_ptr<IOStatistics> ice_io_statistics_ = nullptr;
   std::unique_ptr<RtpPacketizer> rtp_packetizer_ = nullptr;
-
-  std::function<void(const webrtc::RtpPacketToSend& packet)>
-      on_sent_packet_func_ = nullptr;
 
  private:
   uint32_t ssrc_ = 0;
   uint32_t rtx_ssrc_ = 0;
   std::shared_ptr<SystemClock> clock_;
+  std::shared_ptr<TaskQueue> task_queue_history_;
   RtpPacketHistory rtp_packet_history_;
   int64_t delta_ntp_internal_ms_;
 

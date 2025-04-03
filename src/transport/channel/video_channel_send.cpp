@@ -8,16 +8,13 @@
 
 VideoChannelSend::VideoChannelSend(
     std::shared_ptr<SystemClock> clock, std::shared_ptr<IceAgent> ice_agent,
-    std::shared_ptr<PacketSender> packet_sender,
-    std::shared_ptr<IOStatistics> ice_io_statistics,
-    std::function<void(const webrtc::RtpPacketToSend& packet)>
-        on_sent_packet_func)
+    std::shared_ptr<PacedSender> packet_sender,
+    std::shared_ptr<IOStatistics> ice_io_statistics)
     : ice_agent_(ice_agent),
-      packet_sender_(packet_sender),
+      paced_sender_(packet_sender),
       ssrc_(GenerateUniqueSsrc()),
       rtx_ssrc_(GenerateUniqueSsrc()),
       ice_io_statistics_(ice_io_statistics),
-      on_sent_packet_func_(on_sent_packet_func),
       delta_ntp_internal_ms_(clock->CurrentNtpInMilliseconds() -
                              clock->CurrentTimeMs()),
       rtp_packet_history_(clock),
@@ -42,16 +39,20 @@ VideoChannelSend::~VideoChannelSend() {
 
 void VideoChannelSend::Initialize(rtp::PAYLOAD_TYPE payload_type) {
   rtp_packetizer_ = RtpPacketizer::Create(payload_type, ssrc_);
+  task_queue_history_ = std::make_shared<TaskQueue>("rtp pakcet history");
 }
 
 void VideoChannelSend::OnSentRtpPacket(
     std::unique_ptr<webrtc::RtpPacketToSend> packet) {
-  if (packet->retransmitted_sequence_number()) {
-    rtp_packet_history_.MarkPacketAsSent(
-        *packet->retransmitted_sequence_number());
-  } else if (packet->PayloadType() != rtp::PAYLOAD_TYPE::H264 - 1) {
-    rtp_packet_history_.PutRtpPacket(std::move(packet), clock_->CurrentTime());
-  }
+  task_queue_history_->PostTask([this, packet = std::move(packet)]() mutable {
+    if (packet->retransmitted_sequence_number()) {
+      rtp_packet_history_.MarkPacketAsSent(
+          packet->retransmitted_sequence_number().value());
+    } else if (packet->PayloadType() != rtp::PAYLOAD_TYPE::H264 - 1) {
+      rtp_packet_history_.PutRtpPacket(std::move(packet),
+                                       clock_->CurrentTime());
+    }
+  });
 }
 
 void VideoChannelSend::OnReceiveNack(
@@ -65,7 +66,11 @@ void VideoChannelSend::OnReceiveNack(
   // }
 
   int64_t avg_rtt = 10;
-  rtp_packet_history_.SetRtt(TimeDelta::Millis(5 + avg_rtt));
+
+  task_queue_history_->PostTask([this, avg_rtt]() {
+    rtp_packet_history_.SetRtt(TimeDelta::Millis(5 + avg_rtt));
+  });
+
   for (uint16_t seq_no : nack_sequence_numbers) {
     const int32_t bytes_sent = ReSendPacket(seq_no);
     if (bytes_sent < 0) {
@@ -89,7 +94,7 @@ std::vector<std::unique_ptr<RtpPacket>> VideoChannelSend::GeneratePadding(
 void VideoChannelSend::Destroy() {}
 
 int VideoChannelSend::SendVideo(const EncodedFrame& encoded_frame) {
-  if (rtp_packetizer_ && packet_sender_) {
+  if (rtp_packetizer_ && paced_sender_) {
     uint32_t rtp_timestamp =
         delta_ntp_internal_ms_ +
         static_cast<uint32_t>(encoded_frame.CapturedTimestamp() / 1000);
@@ -102,54 +107,55 @@ int VideoChannelSend::SendVideo(const EncodedFrame& encoded_frame) {
     fwrite((unsigned char*)encoded_frame.Buffer(), 1, encoded_frame.Size(),
            file_rtp_sent_);
 #endif
-    packet_sender_->EnqueueRtpPackets(std::move(rtp_packets), rtp_timestamp);
+    paced_sender_->EnqueueRtpPackets(std::move(rtp_packets), rtp_timestamp);
   }
 
   return 0;
 }
 
 int32_t VideoChannelSend::ReSendPacket(uint16_t packet_id) {
-  int32_t packet_size = 0;
+  task_queue_history_->PostTask([this, packet_id]() {
+    int32_t packet_size = 0;
+    std::unique_ptr<webrtc::RtpPacketToSend> packet =
+        rtp_packet_history_.GetPacketAndMarkAsPending(
+            packet_id, [&](const webrtc::RtpPacketToSend& stored_packet) {
+              // Check if we're overusing retransmission bitrate.
+              // TODO(sprang): Add histograms for nack success or failure
+              // reasons.
+              packet_size = stored_packet.size();
+              std::unique_ptr<webrtc::RtpPacketToSend> retransmit_packet;
 
-  std::unique_ptr<webrtc::RtpPacketToSend> packet =
-      rtp_packet_history_.GetPacketAndMarkAsPending(
-          packet_id, [&](const webrtc::RtpPacketToSend& stored_packet) {
-            // Check if we're overusing retransmission bitrate.
-            // TODO(sprang): Add histograms for nack success or failure
-            // reasons.
-            packet_size = stored_packet.size();
-            std::unique_ptr<webrtc::RtpPacketToSend> retransmit_packet;
+              retransmit_packet =
+                  std::make_unique<webrtc::RtpPacketToSend>(stored_packet);
 
-            retransmit_packet =
-                std::make_unique<webrtc::RtpPacketToSend>(stored_packet);
+              retransmit_packet->SetSsrc(rtx_ssrc_);
+              retransmit_packet->SetPayloadType(rtp::PAYLOAD_TYPE::RTX);
 
-            retransmit_packet->SetSsrc(rtx_ssrc_);
-            retransmit_packet->SetPayloadType(rtp::PAYLOAD_TYPE::RTX);
+              retransmit_packet->set_retransmitted_sequence_number(
+                  stored_packet.SequenceNumber());
+              retransmit_packet->set_original_ssrc(stored_packet.Ssrc());
+              retransmit_packet->BuildRtxPacket();
 
-            retransmit_packet->set_retransmitted_sequence_number(
-                stored_packet.SequenceNumber());
-            retransmit_packet->set_original_ssrc(stored_packet.Ssrc());
-            retransmit_packet->BuildRtxPacket();
+              return retransmit_packet;
+            });
+    if (packet_size == 0) {
+      // Packet not found or already queued for retransmission, ignore.
+      return;
+    }
+    if (!packet) {
+      // Packet was found, but lambda helper above chose not to create
+      // `retransmit_packet` out of it.
+      LOG_WARN("packet not found");
+      return;
+    }
 
-            return retransmit_packet;
-          });
-  if (packet_size == 0) {
-    // Packet not found or already queued for retransmission, ignore.
-    return 0;
-  }
-  if (!packet) {
-    // Packet was found, but lambda helper above chose not to create
-    // `retransmit_packet` out of it.
-    LOG_WARN("packet not found");
-    return -1;
-  }
+    packet->set_packet_type(webrtc::RtpPacketMediaType::kRetransmission);
+    packet->set_fec_protect_packet(false);
 
-  packet->set_packet_type(webrtc::RtpPacketMediaType::kRetransmission);
-  packet->set_fec_protect_packet(false);
+    if (paced_sender_) {
+      paced_sender_->EnqueueRtpPacket(std::move(packet));
+    }
+  });
 
-  if (packet_sender_) {
-    packet_sender_->EnqueueRtpPacket(std::move(packet));
-  }
-
-  return packet_size;
+  return 0;
 }
