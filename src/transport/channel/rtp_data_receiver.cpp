@@ -50,10 +50,10 @@ void RtpDataReceiver::InsertRtpPacket(RtpPacket& rtp_packet) {
   //     // SendRtcpRR(rtcp_rr);
   //   }
 
-  //   if (on_receive_data_) {
-  //     on_receive_data_((const char*)rtp_packet.Payload(),
-  //                      rtp_packet.PayloadSize());
-  //   }
+  if (on_receive_data_) {
+    on_receive_data_((const char*)rtp_packet.Payload(),
+                     rtp_packet.PayloadSize());
+  }
 }
 
 void RtpDataReceiver::SetSendDataFunc(

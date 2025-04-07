@@ -12,6 +12,6 @@ std::unique_ptr<RtpPacketizer> RtpPacketizer::Create(uint32_t payload_type,
     case rtp::PAYLOAD_TYPE::AV1:
       return std::make_unique<RtpPacketizerAv1>(ssrc);
     default:
-      return std::make_unique<RtpPacketizerGeneric>(ssrc);
+      return std::make_unique<RtpPacketizerGeneric>(ssrc, payload_type);
   }
 }
