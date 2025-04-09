@@ -6,6 +6,8 @@
 
 #define NV12_BUFFER_SIZE 1280 * 720 * 3 / 2
 
+#define STREAM_FRASH (SDL_USEREVENT + 1)
+
 #ifdef REMOTE_DESK_DEBUG
 #else
 #define MOUSE_CONTROL 1

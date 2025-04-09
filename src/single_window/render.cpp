@@ -19,7 +19,7 @@
 
 #define MOUSE_GRAB_PADDING 5
 
-const Uint32 STREAM_FRASH = SDL_RegisterEvents(29);
+#define STREAM_FRASH (SDL_USEREVENT + 1)
 
 SDL_HitTestResult Render::HitTestCallback(SDL_Window* window,
                                           const SDL_Point* area, void* data) {
@@ -406,15 +406,7 @@ int Render::AudioDeviceDestroy() {
   return 0;
 }
 
-int Render::CreateRtcConnection() {
-  // create connection
-  if (SignalStatus::SignalConnected == signal_status_ &&
-      !is_create_connection_ && password_inited_) {
-    LOG_INFO("Connected with signal server, create p2p connection");
-    is_create_connection_ =
-        CreateConnection(peer_, client_id_, password_saved_) ? false : true;
-  }
-
+void Render::UpdateInteractions() {
   if (start_screen_capturer_ && !screen_capturer_is_started_) {
     StartScreenCapturer();
     screen_capturer_is_started_ = true;
@@ -440,8 +432,6 @@ int Render::CreateRtcConnection() {
     StopKeyboardCapturer();
     keyboard_capturer_is_started_ = false;
   }
-
-  return 0;
 }
 
 int Render::CreateMainWindow() {
@@ -747,9 +737,24 @@ int Render::DrawStreamWindow() {
   return 0;
 }
 
-int Render::LoadRecentConnections() { return 0; }
-
 int Render::Run() {
+  InitializeSettings();
+  InitializeSDL();
+  InitializeModules();
+  InitializeMainWindow();
+
+  const int scaled_video_width_ = 160;
+  const int scaled_video_height_ = 90;
+  argb_buffer_ = new char[scaled_video_width_ * scaled_video_height_ * 40];
+
+  MainLoop();
+
+  Cleanup();
+
+  return 0;
+}
+
+void Render::InitializeSettings() {
   LoadSettingsFromCacheFile();
 
   localization_language_ = (ConfigCenter::LANGUAGE)language_button_value_;
@@ -759,341 +764,115 @@ int Render::Run() {
     LOG_ERROR("Invalid language index: [{}], use [0] by default",
               localization_language_index_);
   }
+}
 
-  // Setup SDL
+void Render::InitializeSDL() {
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER |
                SDL_INIT_GAMECONTROLLER) != 0) {
     printf("Error: %s\n", SDL_GetError());
-    return -1;
+    exit(-1);
   }
 
-  // get screen resolution
   SDL_DisplayMode DM;
   SDL_GetCurrentDisplayMode(0, &DM);
   screen_width_ = DM.w;
   screen_height_ = DM.h;
 
-  // use linear filtering to render textures otherwise the graphics will be
-  // blurry
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+}
 
-  // Setup Dear ImGui context
-  IMGUI_CHECKVERSION();
-
-  // init modules
+void Render::InitializeModules() {
   if (!modules_inited_) {
-    // audio
     AudioDeviceInit();
-
-    // screen capture init
     screen_capturer_factory_ = new ScreenCapturerFactory();
-
-    // speaker capture init
     speaker_capturer_factory_ = new SpeakerCapturerFactory();
-
-    // mouse control/keyboard capturer
     device_controller_factory_ = new DeviceControllerFactory();
     keyboard_capturer_ = (KeyboardCapturer*)device_controller_factory_->Create(
         DeviceControllerFactory::Device::Keyboard);
-
-    // RTC
     CreateConnectionPeer();
-
     modules_inited_ = true;
   }
+}
 
-  // create window
+void Render::InitializeMainWindow() {
   CreateMainWindow();
   SetupMainWindow();
+  if (SDL_WINDOW_HIDDEN & SDL_GetWindowFlags(main_window_)) {
+    SDL_ShowWindow(main_window_);
+  }
+}
 
-  const int scaled_video_width_ = 160;
-  const int scaled_video_height_ = 90;
-  char* argb_buffer_ =
-      new char[scaled_video_width_ * scaled_video_height_ * 40];
-
-  // Main loop
+void Render::MainLoop() {
   while (!exit_) {
-    if (!label_inited_ ||
-        localization_language_index_last_ != localization_language_index_) {
-      connect_button_label_ =
-          connect_button_pressed_
-              ? localization::disconnect[localization_language_index_]
-              : localization::connect[localization_language_index_];
-      label_inited_ = true;
-      localization_language_index_last_ = localization_language_index_;
-    }
-
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-      {
-        if (!main_ctx_) {
-          LOG_ERROR("Main context is null");
-          return -1;
-        }
-
-        ImGui::SetCurrentContext(main_ctx_);
-        ImGui_ImplSDL2_ProcessEvent(&event);
-      }
-      if (stream_window_inited_) {
-        if (!stream_ctx_) {
-          LOG_ERROR("Stream context is null");
-          return -1;
-        }
-
-        ImGui::SetCurrentContext(stream_ctx_);
-        ImGui_ImplSDL2_ProcessEvent(&event);
-      }
-      if (event.type == SDL_QUIT) {
-        if (stream_window_inited_) {
-          LOG_INFO("Destroy stream window");
-          SDL_SetWindowGrab(stream_window_, SDL_FALSE);
-          DestroyStreamWindow();
-          DestroyStreamWindowContext();
-
-          for (auto& it : client_properties_) {
-            auto props = it.second;
-            if (props->dst_buffer_) {
-              thumbnail_->SaveToThumbnail(
-                  (char*)props->dst_buffer_, props->video_width_,
-                  props->video_height_, it.first, props->remote_host_name_,
-                  props->remember_password_ ? props->remote_password_ : "");
-            }
-
-            std::string host_name = it.first;
-            if (props->peer_) {
-              std::string client_id;
-              if (host_name == client_id_) {
-                client_id = "C-" + std::string(client_id_);
-              } else {
-                client_id = client_id_;
-              }
-              LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
-              LeaveConnection(props->peer_, host_name.c_str());
-              LOG_INFO("Destroy peer [{}]", client_id);
-              DestroyPeer(&props->peer_);
-            }
-
-            props->streaming_ = false;
-            props->remember_password_ = false;
-            props->connection_established_ = false;
-            props->audio_capture_button_pressed_ = false;
-
-            memset(&props->net_traffic_stats_, 0,
-                   sizeof(props->net_traffic_stats_));
-            SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
-            SDL_DestroyTexture(props->stream_texture_);
-            memset(audio_buffer_, 0, 720);
-          }
-          client_properties_.clear();
-
-          rejoin_ = false;
-          is_client_mode_ = false;
-          reload_recent_connections_ = true;
-          fullscreen_button_pressed_ = false;
-          recent_connection_image_save_time_ = SDL_GetTicks();
-          continue;
-        } else {
-          LOG_INFO("Quit program");
-          exit_ = true;
-        }
-      } else if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED) {
-      } else if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
-      } else if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
-        window_maximized_ = false;
-      } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED &&
-                 stream_window_created_ &&
-                 event.window.windowID == SDL_GetWindowID(stream_window_)) {
-        for (auto& it : client_properties_) {
-          auto props = it.second;
-
-          // to prevent cursor relocation
-          if (!props->reset_control_bar_pos_) {
-            props->mouse_diff_control_bar_pos_x_ = 0;
-            props->mouse_diff_control_bar_pos_y_ = 0;
-          }
-
-          props->reset_control_bar_pos_ = true;
-          int stream_window_width, stream_window_height;
-          SDL_GetWindowSize(stream_window_, &stream_window_width,
-                            &stream_window_height);
-          stream_window_width_ = (float)stream_window_width;
-          stream_window_height_ = (float)stream_window_height;
-
-          float video_ratio =
-              (float)props->video_width_ / (float)props->video_height_;
-          float video_ratio_reverse =
-              (float)props->video_height_ / (float)props->video_width_;
-
-          float render_area_width = stream_window_width_;
-          float render_area_height =
-              stream_window_height_ -
-              (fullscreen_button_pressed_ ? 0 : title_bar_height_);
-
-          props->stream_render_rect_last_ = props->stream_render_rect_;
-          if (render_area_width < render_area_height * video_ratio) {
-            props->stream_render_rect_.x = 0;
-            props->stream_render_rect_.y =
-                (int)(abs(render_area_height -
-                          render_area_width * video_ratio_reverse) /
-                          2 +
-                      (fullscreen_button_pressed_ ? 0 : title_bar_height_));
-            props->stream_render_rect_.w = (int)render_area_width;
-            props->stream_render_rect_.h =
-                (int)(render_area_width * video_ratio_reverse);
-          } else if (render_area_width > render_area_height * video_ratio) {
-            props->stream_render_rect_.x =
-                (int)abs(render_area_width - render_area_height * video_ratio) /
-                2;
-            props->stream_render_rect_.y =
-                fullscreen_button_pressed_ ? 0 : (int)title_bar_height_;
-            props->stream_render_rect_.w =
-                (int)(render_area_height * video_ratio);
-            props->stream_render_rect_.h = (int)render_area_height;
-          } else {
-            props->stream_render_rect_.x = 0;
-            props->stream_render_rect_.y =
-                fullscreen_button_pressed_ ? 0 : (int)title_bar_height_;
-            props->stream_render_rect_.w = (int)render_area_width;
-            props->stream_render_rect_.h = (int)render_area_height;
-          }
-        }
-      } else if (event.type == SDL_WINDOWEVENT &&
-                 event.window.event == SDL_WINDOWEVENT_CLOSE) {
-        if (event.window.windowID == SDL_GetWindowID(stream_window_)) {
-          continue;
-        } else {
-          exit_ = true;
-        }
-      } else if (event.type == STREAM_FRASH) {
-        SubStreamWindowProperties* props =
-            static_cast<SubStreamWindowProperties*>(event.user.data1);
-        if (!props) {
-          LOG_ERROR("Invalid stream window properties");
-          continue;
-        }
-
-        if (props->stream_texture_) {
-          if (props->video_width_ != props->texture_width_ ||
-              props->video_height_ != props->texture_height_) {
-            LOG_WARN("Resolution changed, old: [{}x{}], new: [{}x{}]",
-                     props->texture_width_, props->texture_height_,
-                     props->video_width_, props->video_height_);
-            props->texture_width_ = props->video_width_;
-            props->texture_height_ = props->video_height_;
-
-            SDL_DestroyTexture(props->stream_texture_);
-            props->stream_texture_ = SDL_CreateTexture(
-                stream_renderer_, stream_pixformat_,
-                SDL_TEXTUREACCESS_STREAMING, props->texture_width_,
-                props->texture_height_);
-          }
-        } else {
-          if (props->video_width_ != props->texture_width_ ||
-              props->video_height_ != props->texture_height_) {
-            props->texture_width_ = props->video_width_;
-            props->texture_height_ = props->video_height_;
-          }
-
-          props->stream_texture_ = SDL_CreateTexture(
-              stream_renderer_, stream_pixformat_, SDL_TEXTUREACCESS_STREAMING,
-              props->texture_width_, props->texture_height_);
-        }
-
-        SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,
-                          props->texture_width_);
-      } else if (event.type == SDL_MOUSEMOTION ||
-                 event.type == SDL_MOUSEBUTTONDOWN ||
-                 event.type == SDL_MOUSEBUTTONUP ||
-                 event.type == SDL_MOUSEWHEEL) {
-        if (!foucs_on_stream_window_) {
-          continue;
-        }
-
-        for (auto& it : client_properties_) {
-          auto props = it.second;
-          if (props->control_mouse_) {
-            ProcessMouseEvent(event);
-          }
-        }
-      } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-        if (stream_window_) {
-          if (SDL_GetWindowID(stream_window_) == event.window.windowID) {
-            foucs_on_stream_window_ = true;
-            LOG_INFO("Focus on stream window");
-          }
-        }
-
-        if (main_window_) {
-          if (SDL_GetWindowID(main_window_) == event.window.windowID) {
-            foucs_on_main_window_ = true;
-            LOG_INFO("Focus on main window");
-          }
-        }
-      } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
-        if (stream_window_) {
-          if (SDL_GetWindowID(stream_window_) == event.window.windowID) {
-            foucs_on_stream_window_ = false;
-            LOG_INFO("Lost focus on stream window");
-          }
-        }
-
-        if (main_window_) {
-          if (SDL_GetWindowID(main_window_) == event.window.windowID) {
-            foucs_on_main_window_ = false;
-            LOG_INFO("Lost focus on main window");
-          }
-        }
-      } else {
-      }
-    }
-
-    if (reload_recent_connections_ && main_renderer_) {
-      // loal recent connection thumbnails after saving for 0.05 second
-      uint32_t now_time = SDL_GetTicks();
-      if (now_time - recent_connection_image_save_time_ >= 50) {
-        int ret = thumbnail_->LoadThumbnail(
-            main_renderer_, recent_connection_textures_,
-            &recent_connection_image_width_, &recent_connection_image_height_);
-        if (!ret) {
-          LOG_INFO("Load recent connection thumbnails");
-        }
-        reload_recent_connections_ = false;
-      }
-    }
-
-    if (need_to_create_stream_window_) {
-      CreateStreamWindow();
-      SetupStreamWindow();
-      need_to_create_stream_window_ = false;
-    }
-
-    if (stream_window_inited_) {
-      if (!stream_window_grabbed_ && control_mouse_) {
-        SDL_SetWindowGrab(stream_window_, SDL_TRUE);
-        stream_window_grabbed_ = true;
-      } else if (stream_window_grabbed_ && !control_mouse_) {
-        SDL_SetWindowGrab(stream_window_, SDL_FALSE);
-        stream_window_grabbed_ = false;
-      }
-    }
+    UpdateLabels();
+    ProcessSdlEvent();
+    HandleRecentConnections();
+    HandleStreamWindow();
 
     DrawMainWindow();
-
-    if (SDL_WINDOW_HIDDEN & SDL_GetWindowFlags(main_window_)) {
-      SDL_ShowWindow(main_window_);
-    }
-
     if (stream_window_inited_) {
       DrawStreamWindow();
     }
 
-    // create connection
-    CreateRtcConnection();
+    UpdateInteractions();
+
+    if (SignalStatus::SignalConnected == signal_status_ &&
+        !is_create_connection_ && password_inited_) {
+      LOG_INFO("Connected with signal server, create p2p connection");
+      is_create_connection_ =
+          CreateConnection(peer_, client_id_, password_saved_) ? false : true;
+    }
+  }
+}
+
+void Render::UpdateLabels() {
+  if (!label_inited_ ||
+      localization_language_index_last_ != localization_language_index_) {
+    connect_button_label_ =
+        connect_button_pressed_
+            ? localization::disconnect[localization_language_index_]
+            : localization::connect[localization_language_index_];
+    label_inited_ = true;
+    localization_language_index_last_ = localization_language_index_;
+  }
+}
+
+void Render::HandleRecentConnections() {
+  if (reload_recent_connections_ && main_renderer_) {
+    uint32_t now_time = SDL_GetTicks();
+    if (now_time - recent_connection_image_save_time_ >= 50) {
+      int ret = thumbnail_->LoadThumbnail(
+          main_renderer_, recent_connection_textures_,
+          &recent_connection_image_width_, &recent_connection_image_height_);
+      if (!ret) {
+        LOG_INFO("Load recent connection thumbnails");
+      }
+      reload_recent_connections_ = false;
+    }
+  }
+}
+
+void Render::HandleStreamWindow() {
+  if (need_to_create_stream_window_) {
+    CreateStreamWindow();
+    SetupStreamWindow();
+    need_to_create_stream_window_ = false;
   }
 
+  if (stream_window_inited_) {
+    if (!stream_window_grabbed_ && control_mouse_) {
+      SDL_SetWindowGrab(stream_window_, SDL_TRUE);
+      stream_window_grabbed_ = true;
+    } else if (stream_window_grabbed_ && !control_mouse_) {
+      SDL_SetWindowGrab(stream_window_, SDL_FALSE);
+      stream_window_grabbed_ = false;
+    }
+  }
+}
+
+void Render::Cleanup() {
   delete[] argb_buffer_;
 
-  // Cleanup
   if (screen_capturer_) {
     screen_capturer_->Destroy();
     delete screen_capturer_;
@@ -1112,6 +891,15 @@ int Render::Run() {
     mouse_controller_ = nullptr;
   }
 
+  CleanupFactories();
+  CleanupPeers();
+  AudioDeviceDestroy();
+  DestroyMainWindow();
+  DestroyMainWindowContext();
+  SDL_Quit();
+}
+
+void Render::CleanupFactories() {
   if (screen_capturer_factory_) {
     delete screen_capturer_factory_;
     screen_capturer_factory_ = nullptr;
@@ -1126,7 +914,9 @@ int Render::Run() {
     delete device_controller_factory_;
     device_controller_factory_ = nullptr;
   }
+}
 
+void Render::CleanupPeers() {
   if (peer_) {
     LOG_INFO("[{}] Leave connection [{}]", client_id_, client_id_);
     LeaveConnection(peer_, client_id_);
@@ -1159,13 +949,201 @@ int Render::Run() {
       DestroyPeer(&peer_client);
     }
   }
+}
 
-  AudioDeviceDestroy();
+void Render::ProcessSdlEvent() {
+  SDL_Event event;
+  while (SDL_PollEvent(&event)) {
+    if (main_ctx_) {
+      ImGui::SetCurrentContext(main_ctx_);
+      ImGui_ImplSDL2_ProcessEvent(&event);
+    } else {
+      LOG_ERROR("Main context is null");
+      return;
+    }
 
-  DestroyMainWindow();
-  DestroyMainWindowContext();
+    if (stream_window_inited_) {
+      if (stream_ctx_) {
+        ImGui::SetCurrentContext(stream_ctx_);
+        ImGui_ImplSDL2_ProcessEvent(&event);
+      } else {
+        LOG_ERROR("Stream context is null");
+        return;
+      }
+    }
 
-  SDL_Quit();
+    switch (event.type) {
+      case SDL_QUIT:
+        if (stream_window_inited_) {
+          LOG_INFO("Destroy stream window");
+          SDL_SetWindowGrab(stream_window_, SDL_FALSE);
+          DestroyStreamWindow();
+          DestroyStreamWindowContext();
 
-  return 0;
+          for (auto& [host_name, props] : client_properties_) {
+            if (props->dst_buffer_) {
+              thumbnail_->SaveToThumbnail(
+                  (char*)props->dst_buffer_, props->video_width_,
+                  props->video_height_, host_name, props->remote_host_name_,
+                  props->remember_password_ ? props->remote_password_ : "");
+            }
+
+            if (props->peer_) {
+              std::string client_id = (host_name == client_id_)
+                                          ? "C-" + std::string(client_id_)
+                                          : client_id_;
+              LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
+              LeaveConnection(props->peer_, host_name.c_str());
+              LOG_INFO("Destroy peer [{}]", client_id);
+              DestroyPeer(&props->peer_);
+            }
+
+            props->streaming_ = false;
+            props->remember_password_ = false;
+            props->connection_established_ = false;
+            props->audio_capture_button_pressed_ = false;
+
+            memset(&props->net_traffic_stats_, 0,
+                   sizeof(props->net_traffic_stats_));
+            SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
+            SDL_DestroyTexture(props->stream_texture_);
+            memset(audio_buffer_, 0, 720);
+          }
+          client_properties_.clear();
+
+          rejoin_ = false;
+          is_client_mode_ = false;
+          reload_recent_connections_ = true;
+          fullscreen_button_pressed_ = false;
+          recent_connection_image_save_time_ = SDL_GetTicks();
+        } else {
+          LOG_INFO("Quit program");
+          exit_ = true;
+        }
+        break;
+
+      case SDL_WINDOWEVENT:
+        if (event.window.event == SDL_WINDOWEVENT_CLOSE &&
+            event.window.windowID != SDL_GetWindowID(stream_window_)) {
+          exit_ = true;
+        } else if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED &&
+                   stream_window_created_ &&
+                   event.window.windowID == SDL_GetWindowID(stream_window_)) {
+          for (auto& [_, props] : client_properties_) {
+            if (!props->reset_control_bar_pos_) {
+              props->mouse_diff_control_bar_pos_x_ = 0;
+              props->mouse_diff_control_bar_pos_y_ = 0;
+            }
+
+            props->reset_control_bar_pos_ = true;
+            int stream_window_width, stream_window_height;
+            SDL_GetWindowSize(stream_window_, &stream_window_width,
+                              &stream_window_height);
+            stream_window_width_ = (float)stream_window_width;
+            stream_window_height_ = (float)stream_window_height;
+
+            float video_ratio =
+                (float)props->video_width_ / (float)props->video_height_;
+            float video_ratio_reverse =
+                (float)props->video_height_ / (float)props->video_width_;
+
+            float render_area_width = stream_window_width_;
+            float render_area_height =
+                stream_window_height_ -
+                (fullscreen_button_pressed_ ? 0 : title_bar_height_);
+
+            props->stream_render_rect_last_ = props->stream_render_rect_;
+            if (render_area_width < render_area_height * video_ratio) {
+              props->stream_render_rect_ = {
+                  0,
+                  (int)(abs(render_area_height -
+                            render_area_width * video_ratio_reverse) /
+                            2 +
+                        (fullscreen_button_pressed_ ? 0 : title_bar_height_)),
+                  (int)render_area_width,
+                  (int)(render_area_width * video_ratio_reverse)};
+            } else if (render_area_width > render_area_height * video_ratio) {
+              props->stream_render_rect_ = {
+                  (int)abs(render_area_width -
+                           render_area_height * video_ratio) /
+                      2,
+                  fullscreen_button_pressed_ ? 0 : (int)title_bar_height_,
+                  (int)(render_area_height * video_ratio),
+                  (int)render_area_height};
+            } else {
+              props->stream_render_rect_ = {
+                  0, fullscreen_button_pressed_ ? 0 : (int)title_bar_height_,
+                  (int)render_area_width, (int)render_area_height};
+            }
+          }
+        } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED ||
+                   event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+          bool focus_gained =
+              event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED;
+          if (stream_window_ &&
+              SDL_GetWindowID(stream_window_) == event.window.windowID) {
+            foucs_on_stream_window_ = focus_gained;
+            LOG_INFO("{} focus on stream window",
+                     focus_gained ? "Gained" : "Lost");
+          } else if (main_window_ &&
+                     SDL_GetWindowID(main_window_) == event.window.windowID) {
+            foucs_on_main_window_ = focus_gained;
+            LOG_INFO("{} focus on main window",
+                     focus_gained ? "Gained" : "Lost");
+          }
+        }
+        break;
+
+      case STREAM_FRASH: {
+        auto* props = static_cast<SubStreamWindowProperties*>(event.user.data1);
+        if (!props) {
+          LOG_ERROR("Invalid stream window properties");
+          continue;
+        }
+
+        if (props->stream_texture_) {
+          if (props->video_width_ != props->texture_width_ ||
+              props->video_height_ != props->texture_height_) {
+            LOG_WARN("Resolution changed, old: [{}x{}], new: [{}x{}]",
+                     props->texture_width_, props->texture_height_,
+                     props->video_width_, props->video_height_);
+            props->texture_width_ = props->video_width_;
+            props->texture_height_ = props->video_height_;
+
+            SDL_DestroyTexture(props->stream_texture_);
+            props->stream_texture_ = SDL_CreateTexture(
+                stream_renderer_, stream_pixformat_,
+                SDL_TEXTUREACCESS_STREAMING, props->texture_width_,
+                props->texture_height_);
+          }
+        } else {
+          props->texture_width_ = props->video_width_;
+          props->texture_height_ = props->video_height_;
+          props->stream_texture_ = SDL_CreateTexture(
+              stream_renderer_, stream_pixformat_, SDL_TEXTUREACCESS_STREAMING,
+              props->texture_width_, props->texture_height_);
+        }
+
+        SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,
+                          props->texture_width_);
+        break;
+      }
+
+      case SDL_MOUSEMOTION:
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+      case SDL_MOUSEWHEEL:
+        if (foucs_on_stream_window_) {
+          for (auto& [_, props] : client_properties_) {
+            if (props->control_mouse_) {
+              ProcessMouseEvent(event);
+            }
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
 }

@@ -25,8 +25,6 @@
 #include "speaker_capturer_factory.h"
 #include "thumbnail.h"
 
-extern const Uint32 STREAM_FRASH;
-
 class Render {
  public:
   struct SubStreamWindowProperties {
@@ -102,6 +100,21 @@ class Render {
   int Run();
 
  private:
+  void InitializeSettings();
+  void InitializeSDL();
+  void InitializeModules();
+  void InitializeMainWindow();
+  void MainLoop();
+  void UpdateLabels();
+  void UpdateInteractions();
+  void HandleRecentConnections();
+  void HandleStreamWindow();
+  void Cleanup();
+  void CleanupFactories();
+  void CleanupPeers();
+  void ProcessSdlEvent();
+
+ private:
   int CreateStreamRenderWindow();
   int TitleBar(bool main_window);
   int MainWindow();
@@ -116,11 +129,9 @@ class Render {
   int StatusBar();
   int ConnectionStatusWindow(
       std::shared_ptr<SubStreamWindowProperties> &properties);
-  int LoadRecentConnections();
   int ShowRecentConnections();
 
  private:
-  int CreateRtcConnection();
   int ConnectTo(const std::string &remote_id, const char *password,
                 bool remember_password);
   int CreateMainWindow();
@@ -239,6 +250,7 @@ class Render {
   SDL_Renderer *main_renderer_ = nullptr;
   ImGuiContext *main_ctx_ = nullptr;
   bool exit_ = false;
+  char *argb_buffer_ = nullptr;
 
   // main window properties
   bool start_mouse_controller_ = false;
