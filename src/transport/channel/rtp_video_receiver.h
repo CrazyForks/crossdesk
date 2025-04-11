@@ -85,11 +85,12 @@ class RtpVideoReceiver : public ThreadBase,
 
   void SendRR();
 
-  void RequestKeyFrame();
+  void RequestKeyFrame() override;
 
   void SendLossNotification(uint16_t last_decoded_seq_num,
                             uint16_t last_received_seq_num,
-                            bool decodability_flag, bool buffering_allowed);
+                            bool decodability_flag,
+                            bool buffering_allowed) override;
 
   void ReviseFrequencyAndJitter(int payload_type_frequency);
 

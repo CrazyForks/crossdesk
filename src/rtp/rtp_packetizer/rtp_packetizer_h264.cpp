@@ -171,7 +171,7 @@ std::vector<std::unique_ptr<RtpPacket>> RtpPacketizerH264::BuildFua(
     // ssrc_ = ssrc_;
 
     if (!csrc_count_) {
-      csrcs_ = csrcs_;
+      // csrcs_ = csrcs_;
     }
 
     rtp::FU_INDICATOR fu_indicator;

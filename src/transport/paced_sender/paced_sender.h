@@ -85,7 +85,7 @@ class PacedSender : public webrtc::RtpPacketPacer,
   // have been updated.
   void OnAbortedRetransmissions(
       uint32_t /* ssrc */,
-      rtc::ArrayView<const uint16_t> /* sequence_numbers */) {}
+      rtc::ArrayView<const uint16_t> /* sequence_numbers */) override {}
   std::optional<uint32_t> GetRtxSsrcForMedia(
       uint32_t /* ssrc */) const override {
     return std::nullopt;
