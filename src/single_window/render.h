@@ -50,7 +50,6 @@ class Render {
     bool control_window_width_is_changing_ = false;
     bool control_window_height_is_changing_ = false;
     bool p2p_mode_ = true;
-    bool hostname_sent_ = false;
     bool remember_password_ = false;
     char remote_password_[7] = "";
     float sub_stream_window_width_ = 1280;

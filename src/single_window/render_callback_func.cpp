@@ -357,9 +357,11 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
     render->start_mouse_controller_ = false;
     render->start_keyboard_capturer_ = false;
     render->control_mouse_ = false;
+    render->hostname_sent_ = false;
+    render->original_display_width_ = 0;
+    render->original_display_height_ = 0;
     props->connection_established_ = false;
     props->mouse_control_button_pressed_ = false;
-    props->hostname_sent_ = false;
     if (render->audio_capture_) {
       render->StopSpeakerCapturer();
       render->audio_capture_ = false;
