@@ -101,7 +101,7 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& properties) {
         RemoteAction remote_action;
         remote_action.type = ControlType::audio_capture;
         remote_action.a = properties->audio_capture_button_pressed_;
-        SendDataFrame(peer_, (const char*)&remote_action,
+        SendDataFrame(properties->peer_, (const char*)&remote_action,
                       sizeof(remote_action));
       }
     }
