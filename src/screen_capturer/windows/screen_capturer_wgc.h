@@ -19,14 +19,13 @@ class ScreenCapturerWgc : public ScreenCapturer,
  public:
   bool IsWgcSupported();
 
-  virtual int Init(const int fps, cb_desktop_data cb);
-  virtual int Destroy();
-
-  virtual int Start();
+  virtual int Init(const int fps, cb_desktop_data cb) override;
+  virtual int Destroy() override;
+  virtual int Start() override;
+  virtual int Stop() override;
 
   int Pause();
   int Resume();
-  virtual int Stop();
 
   void OnFrame(const WgcSession::wgc_session_frame &frame);
 

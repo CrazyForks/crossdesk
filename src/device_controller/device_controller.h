@@ -31,6 +31,8 @@ typedef struct {
 typedef struct {
   char host_name[64];
   size_t host_name_size;
+  size_t origin_display_width;
+  size_t origin_display_height;
 } HostInfo;
 
 typedef struct {

@@ -83,6 +83,8 @@ class Render {
     std::string mouse_control_button_label_ = "Mouse Control";
     std::string audio_capture_button_label_ = "Audio Capture";
     std::string remote_host_name_ = "";
+    int original_display_width_ = 0;
+    int original_display_height_ = 0;
     SDL_Texture *stream_texture_ = nullptr;
     SDL_Rect stream_render_rect_;
     SDL_Rect stream_render_rect_last_;
@@ -303,6 +305,10 @@ class Render {
   bool audio_buffer_fresh_ = false;
   bool need_to_rejoin_ = false;
   bool just_created_ = false;
+  std::string controlled_remote_id_ = "";
+  int original_display_width_ = 0;
+  int original_display_height_ = 0;
+  bool hostname_sent_ = false;
 
   // stream window render
   SDL_Window *stream_window_ = nullptr;

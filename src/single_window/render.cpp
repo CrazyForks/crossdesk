@@ -194,6 +194,24 @@ int Render::StartScreenCapturer() {
 
   int screen_capturer_init_ret = screen_capturer_->Init(
       60, [this](unsigned char* data, int size, int width, int height) -> void {
+        if (!hostname_sent_ && width > 0 && height > 0) {
+          original_display_width_ = width;
+          original_display_height_ = height;
+          std::string host_name = GetHostName();
+          RemoteAction remote_action;
+          remote_action.type = ControlType::host_infomation;
+          memcpy(&remote_action.i.host_name, host_name.data(),
+                 host_name.size());
+          remote_action.i.host_name_size = host_name.size();
+          remote_action.i.origin_display_height = original_display_height_;
+          remote_action.i.origin_display_width = original_display_width_;
+          int ret = SendDataFrame(peer_, (const char*)&remote_action,
+                                  sizeof(remote_action));
+          if (0 == ret) {
+            hostname_sent_ = true;
+          }
+        }
+
         auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
@@ -1046,10 +1064,11 @@ void Render::ProcessSdlEvent() {
               stream_window_width_ = (float)stream_window_width;
               stream_window_height_ = (float)stream_window_height;
 
-              float video_ratio =
-                  (float)props->video_width_ / (float)props->video_height_;
+              float video_ratio = (float)props->original_display_width_ /
+                                  (float)props->original_display_height_;
               float video_ratio_reverse =
-                  (float)props->video_height_ / (float)props->video_width_;
+                  (float)props->original_display_height_ /
+                  (float)props->original_display_width_;
 
               float render_area_width = stream_window_width_;
               float render_area_height =
@@ -1139,11 +1158,7 @@ void Render::ProcessSdlEvent() {
       case SDL_MOUSEBUTTONUP:
       case SDL_MOUSEWHEEL:
         if (foucs_on_stream_window_) {
-          for (auto& [_, props] : client_properties_) {
-            if (props->control_mouse_) {
-              ProcessMouseEvent(event);
-            }
-          }
+          ProcessMouseEvent(event);
         }
         break;
 

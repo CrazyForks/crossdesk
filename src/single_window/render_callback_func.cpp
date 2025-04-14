@@ -23,31 +23,46 @@ int Render::SendKeyCommand(int key_code, bool is_down) {
   }
   remote_action.k.key_value = key_code;
 
-  SendDataFrame(peer_, (const char *)&remote_action, sizeof(remote_action));
+  if (!controlled_remote_id_.empty()) {
+    if (client_properties_.find(controlled_remote_id_) !=
+        client_properties_.end()) {
+      auto props = client_properties_[controlled_remote_id_];
+      if (props->connection_status_ == ConnectionStatus::Connected) {
+        SendDataFrame(props->peer_, (const char *)&remote_action,
+                      sizeof(remote_action));
+      }
+    }
+  }
 
   return 0;
 }
 
 int Render::ProcessMouseEvent(SDL_Event &event) {
-  std::string remote_id = "";
+  controlled_remote_id_ = "";
   int video_width, video_height = 0;
   int render_width, render_height = 0;
   for (auto &it : client_properties_) {
     auto props = it.second;
+    if (!props->control_mouse_) {
+      continue;
+    }
+
     if (event.button.x >= props->stream_render_rect_.x &&
         event.button.x <=
             props->stream_render_rect_.x + props->stream_render_rect_.w &&
         event.button.y >= props->stream_render_rect_.y &&
         event.button.y <=
             props->stream_render_rect_.y + props->stream_render_rect_.h) {
-      remote_id = it.first;
+      controlled_remote_id_ = it.first;
       video_width = props->video_width_;
       video_height = props->video_height_;
       render_width = props->stream_render_rect_.w;
       render_height = props->stream_render_rect_.h;
 
-      float ratio_x = (float)video_width / (float)render_width;
-      float ratio_y = (float)video_height / (float)render_height;
+      float ratio_x =
+          (float)props->original_display_width_ / (float)render_width;
+      float ratio_y =
+          (float)props->original_display_height_ / (float)render_height;
 
       RemoteAction remote_action;
       remote_action.m.x = (size_t)(event.button.x * ratio_x);
@@ -60,8 +75,7 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
         } else if (SDL_BUTTON_RIGHT == event.button.button) {
           remote_action.m.flag = MouseFlag::right_down;
         }
-        remote_action.m.flag = MouseFlag::move;
-        SendDataFrame(peer_, (const char *)&remote_action,
+        SendDataFrame(props->peer_, (const char *)&remote_action,
                       sizeof(remote_action));
       } else if (SDL_MOUSEBUTTONUP == event.type) {
         remote_action.type = ControlType::mouse;
@@ -70,13 +84,12 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
         } else if (SDL_BUTTON_RIGHT == event.button.button) {
           remote_action.m.flag = MouseFlag::right_up;
         }
-        remote_action.m.flag = MouseFlag::move;
-        SendDataFrame(peer_, (const char *)&remote_action,
+        SendDataFrame(props->peer_, (const char *)&remote_action,
                       sizeof(remote_action));
       } else if (SDL_MOUSEMOTION == event.type) {
         remote_action.type = ControlType::mouse;
         remote_action.m.flag = MouseFlag::move;
-        SendDataFrame(peer_, (const char *)&remote_action,
+        SendDataFrame(props->peer_, (const char *)&remote_action,
                       sizeof(remote_action));
       }
     }
@@ -197,35 +210,39 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
     return;
   }
 
-  std::string remote_id(user_id, user_id_size);
-  if (render->client_properties_.find(remote_id) ==
-      render->client_properties_.end()) {
-    return;
-  }
-  auto props = render->client_properties_.find(remote_id)->second;
-
   RemoteAction remote_action;
   memcpy(&remote_action, data, size);
 
-  if (ControlType::mouse == remote_action.type && render->mouse_controller_) {
-    render->mouse_controller_->SendMouseCommand(remote_action);
-  } else if (ControlType::audio_capture == remote_action.type) {
-    if (remote_action.a) {
-      render->StartSpeakerCapturer();
-      render->audio_capture_ = true;
-    } else {
-      render->StopSpeakerCapturer();
-      render->audio_capture_ = false;
+  std::string remote_id(user_id, user_id_size);
+  if (render->client_properties_.find(remote_id) !=
+      render->client_properties_.end()) {
+    auto props = render->client_properties_.find(remote_id)->second;
+    if (ControlType::host_infomation == remote_action.type) {
+      props->remote_host_name_ = std::string(remote_action.i.host_name,
+                                             remote_action.i.host_name_size);
+      props->original_display_width_ = remote_action.i.origin_display_width;
+      props->original_display_height_ = remote_action.i.origin_display_height;
+      LOG_INFO("Remote hostname: [{}], resolution: [{}x{}]",
+               props->remote_host_name_, remote_action.i.origin_display_width,
+               remote_action.i.origin_display_height);
     }
-  } else if (ControlType::keyboard == remote_action.type &&
-             render->keyboard_capturer_) {
-    render->keyboard_capturer_->SendKeyboardCommand(
-        (int)remote_action.k.key_value,
-        remote_action.k.flag == KeyFlag::key_down);
-  } else if (ControlType::host_infomation == remote_action.type) {
-    props->remote_host_name_ =
-        std::string(remote_action.i.host_name, remote_action.i.host_name_size);
-    LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
+  } else {
+    if (ControlType::mouse == remote_action.type && render->mouse_controller_) {
+      render->mouse_controller_->SendMouseCommand(remote_action);
+    } else if (ControlType::audio_capture == remote_action.type) {
+      if (remote_action.a) {
+        render->StartSpeakerCapturer();
+        render->audio_capture_ = true;
+      } else {
+        render->StopSpeakerCapturer();
+        render->audio_capture_ = false;
+      }
+    } else if (ControlType::keyboard == remote_action.type &&
+               render->keyboard_capturer_) {
+      render->keyboard_capturer_->SendKeyboardCommand(
+          (int)remote_action.k.key_value,
+          remote_action.k.flag == KeyFlag::key_down);
+    }
   }
 }
 
@@ -317,19 +334,6 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
     }
 
     props->connection_established_ = true;
-    if (!props->hostname_sent_) {
-      // TODO: self and remote hostname
-      std::string host_name = GetHostName();
-      RemoteAction remote_action;
-      remote_action.type = ControlType::host_infomation;
-      memcpy(&remote_action.i.host_name, host_name.data(), host_name.size());
-      remote_action.i.host_name_size = host_name.size();
-      int ret = SendDataFrame(render->peer_, (const char *)&remote_action,
-                              sizeof(remote_action));
-      if (0 == ret) {
-        props->hostname_sent_ = true;
-      }
-    }
 
     if (!is_server) {
       props->stream_render_rect_.x = 0;

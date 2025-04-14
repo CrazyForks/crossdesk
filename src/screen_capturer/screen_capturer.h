@@ -19,9 +19,7 @@ class ScreenCapturer {
  public:
   virtual int Init(const int fps, cb_desktop_data cb) = 0;
   virtual int Destroy() = 0;
-
   virtual int Start() = 0;
-
   virtual int Stop() = 0;
 };
 
