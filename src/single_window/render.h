@@ -308,6 +308,7 @@ class Render {
   int original_display_width_ = 0;
   int original_display_height_ = 0;
   bool hostname_sent_ = false;
+  SDL_Event last_mouse_event;
 
   // stream window render
   SDL_Window *stream_window_ = nullptr;
@@ -391,9 +392,6 @@ class Render {
   std::unordered_map<std::string, std::shared_ptr<SubStreamWindowProperties>>
       client_properties_;
   /* ------ stream window property end ------ */
-
-  std::unordered_map<std::string, std::shared_ptr<SubStreamWindowProperties>>
-      server_properties_;
 };
 
 #endif

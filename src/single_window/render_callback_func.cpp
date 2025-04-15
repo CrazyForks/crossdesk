@@ -41,6 +41,8 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
   controlled_remote_id_ = "";
   int video_width, video_height = 0;
   int render_width, render_height = 0;
+  RemoteAction remote_action;
+
   for (auto &it : client_properties_) {
     auto props = it.second;
     if (!props->control_mouse_) {
@@ -56,13 +58,14 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
       controlled_remote_id_ = it.first;
       render_width = props->stream_render_rect_.w;
       render_height = props->stream_render_rect_.h;
+      last_mouse_event.button.x = event.button.x;
+      last_mouse_event.button.y = event.button.y;
 
       float ratio_x =
           (float)props->original_display_width_ / (float)render_width;
       float ratio_y =
           (float)props->original_display_height_ / (float)render_height;
 
-      RemoteAction remote_action;
       remote_action.m.x =
           (size_t)((event.button.x - props->stream_render_rect_.x) * ratio_x);
       remote_action.m.y =
@@ -95,26 +98,32 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
         remote_action.m.flag = MouseFlag::move;
         SendDataFrame(props->peer_, (const char *)&remote_action,
                       sizeof(remote_action));
-      } else if (SDL_MOUSEWHEEL == event.type) {
-        int scroll_x = event.wheel.x;
-        int scroll_y = event.wheel.y;
-        if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
-          scroll_x = -scroll_x;
-          scroll_y = -scroll_y;
-        }
-
-        remote_action.type = ControlType::mouse;
-        if (scroll_x == 0) {
-          remote_action.m.flag = MouseFlag::wheel_vertical;
-          remote_action.m.s = scroll_y;
-        } else if (scroll_y == 0) {
-          remote_action.m.flag = MouseFlag::wheel_horizontal;
-          remote_action.m.s = scroll_x;
-        }
-
-        SendDataFrame(props->peer_, (const char *)&remote_action,
-                      sizeof(remote_action));
       }
+    } else if (SDL_MOUSEWHEEL == event.type &&
+               last_mouse_event.button.x >= props->stream_render_rect_.x &&
+               last_mouse_event.button.x <= props->stream_render_rect_.x +
+                                                props->stream_render_rect_.w &&
+               last_mouse_event.button.y >= props->stream_render_rect_.y &&
+               last_mouse_event.button.y <= props->stream_render_rect_.y +
+                                                props->stream_render_rect_.h) {
+      int scroll_x = event.wheel.x;
+      int scroll_y = event.wheel.y;
+      if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
+        scroll_x = -scroll_x;
+        scroll_y = -scroll_y;
+      }
+
+      remote_action.type = ControlType::mouse;
+      if (scroll_x == 0) {
+        remote_action.m.flag = MouseFlag::wheel_vertical;
+        remote_action.m.s = scroll_y;
+      } else if (scroll_y == 0) {
+        remote_action.m.flag = MouseFlag::wheel_horizontal;
+        remote_action.m.s = scroll_x;
+      }
+
+      SendDataFrame(props->peer_, (const char *)&remote_action,
+                    sizeof(remote_action));
     }
   }
 
@@ -325,94 +334,90 @@ void Render::OnSignalStatusCb(SignalStatus status, const char *user_id,
 void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
                                   const size_t user_id_size, void *user_data) {
   Render *render = (Render *)user_data;
-  if (!render) {
-    return;
-  }
-
-  bool is_server = false;
-  std::shared_ptr<SubStreamWindowProperties> props;
+  if (!render) return;
 
   std::string remote_id(user_id, user_id_size);
-  if (render->client_properties_.find(remote_id) !=
-      render->client_properties_.end()) {
-    props = render->client_properties_.find(remote_id)->second;
+  auto it = render->client_properties_.find(remote_id);
+  auto props = (it != render->client_properties_.end()) ? it->second : nullptr;
+
+  if (props) {
+    render->is_client_mode_ = true;
+    render->show_connection_status_window_ = true;
+    props->connection_status_ = status;
+
+    switch (status) {
+      case ConnectionStatus::Connected:
+        if (!render->need_to_create_stream_window_ &&
+            !render->client_properties_.empty()) {
+          render->need_to_create_stream_window_ = true;
+        }
+        props->connection_established_ = true;
+        props->stream_render_rect_ = {
+            0, (int)render->title_bar_height_,
+            (int)render->stream_window_width_,
+            (int)(render->stream_window_height_ - render->title_bar_height_)};
+        break;
+      case ConnectionStatus::Disconnected:
+      case ConnectionStatus::Failed:
+      case ConnectionStatus::Closed:
+        render->password_validating_time_ = 0;
+        render->start_screen_capturer_ = false;
+        render->start_mouse_controller_ = false;
+        render->start_keyboard_capturer_ = false;
+        render->control_mouse_ = false;
+        render->hostname_sent_ = false;
+        props->connection_established_ = false;
+        props->mouse_control_button_pressed_ = false;
+        if (props->dst_buffer_) {
+          memset(props->dst_buffer_, 0, props->dst_buffer_capacity_);
+          SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,
+                            props->texture_width_);
+        }
+        break;
+      case ConnectionStatus::IncorrectPassword:
+        render->password_validating_ = false;
+        render->password_validating_time_++;
+        if (render->connect_button_pressed_) {
+          render->connect_button_pressed_ = false;
+          props->connection_established_ = false;
+          render->connect_button_label_ =
+              localization::connect[render->localization_language_index_];
+        }
+        break;
+      case ConnectionStatus::NoSuchTransmissionId:
+        if (render->connect_button_pressed_) {
+          props->connection_established_ = false;
+          render->connect_button_label_ =
+              localization::connect[render->localization_language_index_];
+        }
+        break;
+      default:
+        break;
+    }
   } else {
-    if (render->server_properties_.find(remote_id) ==
-        render->server_properties_.end()) {
-      render->server_properties_[remote_id] =
-          std::make_shared<SubStreamWindowProperties>();
-    }
-    props = render->server_properties_.find(remote_id)->second;
-    is_server = true;
-  }
+    render->is_client_mode_ = false;
+    render->show_connection_status_window_ = true;
 
-  props->connection_status_ = status;
-  render->show_connection_status_window_ = true;
-  if (ConnectionStatus::Connecting == status) {
-  } else if (ConnectionStatus::Gathering == status) {
-  } else if (ConnectionStatus::Connected == status) {
-    if (!render->need_to_create_stream_window_ &&
-        !render->client_properties_.empty()) {
-      render->need_to_create_stream_window_ = true;
-    }
-
-    props->connection_established_ = true;
-
-    if (!is_server) {
-      props->stream_render_rect_.x = 0;
-      props->stream_render_rect_.y = (int)render->title_bar_height_;
-      props->stream_render_rect_.w = (int)render->stream_window_width_;
-      props->stream_render_rect_.h =
-          (int)(render->stream_window_height_ - render->title_bar_height_);
-    }
-
-    if (!render->is_client_mode_) {
-      render->start_screen_capturer_ = true;
-      render->start_mouse_controller_ = true;
-    }
-  } else if (ConnectionStatus::Disconnected == status) {
-    render->password_validating_time_ = 0;
-  } else if (ConnectionStatus::Failed == status) {
-    render->password_validating_time_ = 0;
-  } else if (ConnectionStatus::Closed == status) {
-    render->password_validating_time_ = 0;
-    render->start_screen_capturer_ = false;
-    render->start_mouse_controller_ = false;
-    render->start_keyboard_capturer_ = false;
-    render->control_mouse_ = false;
-    render->hostname_sent_ = false;
-    render->original_display_width_ = 0;
-    render->original_display_height_ = 0;
-    props->connection_established_ = false;
-    props->mouse_control_button_pressed_ = false;
-    if (render->audio_capture_) {
-      render->StopSpeakerCapturer();
-      render->audio_capture_ = false;
-    }
-
-    if (props->dst_buffer_) {
-      memset(props->dst_buffer_, 0, props->dst_buffer_capacity_);
-      SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,
-                        props->texture_width_);
-    }
-  } else if (ConnectionStatus::IncorrectPassword == status) {
-    render->password_validating_ = false;
-    render->password_validating_time_++;
-    if (render->connect_button_pressed_) {
-      render->connect_button_pressed_ = false;
-      props->connection_established_ = false;
-      render->connect_button_label_ =
-          render->connect_button_pressed_
-              ? localization::disconnect[render->localization_language_index_]
-              : localization::connect[render->localization_language_index_];
-    }
-  } else if (ConnectionStatus::NoSuchTransmissionId == status) {
-    if (render->connect_button_pressed_) {
-      props->connection_established_ = false;
-      render->connect_button_label_ =
-          render->connect_button_pressed_
-              ? localization::disconnect[render->localization_language_index_]
-              : localization::connect[render->localization_language_index_];
+    switch (status) {
+      case ConnectionStatus::Connected:
+        render->start_screen_capturer_ = true;
+        render->start_mouse_controller_ = true;
+        break;
+      case ConnectionStatus::Closed:
+        render->start_screen_capturer_ = false;
+        render->start_mouse_controller_ = false;
+        render->start_keyboard_capturer_ = false;
+        render->hostname_sent_ = false;
+        render->original_display_width_ = 0;
+        render->original_display_height_ = 0;
+        if (props) props->connection_established_ = false;
+        if (render->audio_capture_) {
+          render->StopSpeakerCapturer();
+          render->audio_capture_ = false;
+        }
+        break;
+      default:
+        break;
     }
   }
 }
