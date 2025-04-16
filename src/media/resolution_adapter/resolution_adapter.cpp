@@ -15,8 +15,22 @@ int ResolutionAdapter::GetResolution(int target_bitrate, int current_width,
   for (auto& resolution : GetBitrateLimits()) {
     if (target_bitrate >= resolution.min_start_bitrate_bps &&
         target_bitrate < resolution.max_bitrate_bps) {
-      *target_width = resolution.width;
-      *target_height = resolution.height;
+      // Adjust the resolution to maintain the same aspect ratio as the current
+      // resolution
+      float aspect_ratio = static_cast<float>(current_width) / current_height;
+      if (static_cast<float>(resolution.width) / resolution.height !=
+          aspect_ratio) {
+        if (aspect_ratio > 1.0f) {
+          *target_width = resolution.width;
+          *target_height = static_cast<int>(resolution.width / aspect_ratio);
+        } else {
+          *target_height = resolution.height;
+          *target_width = static_cast<int>(resolution.height * aspect_ratio);
+        }
+      } else {
+        *target_width = resolution.width;
+        *target_height = resolution.height;
+      }
       return 0;
     }
   }

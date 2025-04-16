@@ -600,7 +600,11 @@ void IceTransportController::PostUpdates(webrtc::NetworkControlUpdate update) {
     if (target_bitrate != target_bitrate_ && video_encoder_) {
       target_bitrate_ = target_bitrate;
       int width, height, target_width, target_height;
-      video_encoder_->GetResolution(&width, &height);
+      int valid = video_encoder_->GetResolution(&width, &height);
+      if (valid != 0) {
+        width = source_width_;
+        height = source_height_;
+      }
       if (0 == resolution_adapter_->GetResolution(target_bitrate_, width,
                                                   height, &target_width,
                                                   &target_height)) {
