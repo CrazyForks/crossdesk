@@ -225,24 +225,17 @@ std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
     return thumbnails_path;
   }
 
-  thumbnails_sorted_by_write_time_.clear();
-
   for (const auto& entry : std::filesystem::directory_iterator(directory)) {
     if (entry.is_regular_file()) {
-      std::time_t last_write_time = std::chrono::system_clock::to_time_t(
-          time_point_cast<std::chrono::system_clock::duration>(
-              entry.last_write_time() -
-              std::filesystem::file_time_type::clock::now() +
-              std::chrono::system_clock::now()));
-
-      thumbnails_sorted_by_write_time_[last_write_time] = entry.path();
+      thumbnails_path.push_back(entry.path());
     }
   }
 
-  for (auto it = thumbnails_sorted_by_write_time_.rbegin();
-       it != thumbnails_sorted_by_write_time_.rend(); ++it) {
-    thumbnails_path.push_back(it->second);
-  }
+  std::sort(thumbnails_path.begin(), thumbnails_path.end(),
+            [](const std::filesystem::path& a, const std::filesystem::path& b) {
+              return std::filesystem::last_write_time(a) >
+                     std::filesystem::last_write_time(b);
+            });
 
   return thumbnails_path;
 }

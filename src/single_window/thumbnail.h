@@ -72,7 +72,6 @@ class Thumbnail {
   int thumbnail_height_ = 90;
   char* rgba_buffer_ = nullptr;
   std::string image_path_ = "thumbnails/";
-  std::map<std::time_t, std::filesystem::path> thumbnails_sorted_by_write_time_;
 
   unsigned char aes128_key_[16];
   unsigned char aes128_iv_[16];
