@@ -155,9 +155,10 @@ int Render::ShowRecentConnections() {
       if (ImGui::Button(recent_connection_delete_button_name.c_str(),
                         ImVec2(button_width, button_height))) {
         show_confirm_delete_connection_ = true;
+        delete_connection_name_ = it->first;
       }
 
-      if (delete_connection_) {
+      if (delete_connection_ && delete_connection_name_ == it->first) {
         if (!thumbnail_->DeleteThumbnail(it->first)) {
           reload_recent_connections_ = true;
           delete_connection_ = false;
