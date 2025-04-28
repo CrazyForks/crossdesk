@@ -559,7 +559,8 @@ int Render::SetupFontAndStyle() {
   io.ConfigFlags |=
       ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   io.ConfigFlags |=
-      ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+      ImGuiConfigFlags_NavEnableGamepad;             // Enable Gamepad Controls
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
 
   // Load Fonts
   ImFontConfig config;
@@ -712,7 +713,7 @@ int Render::DrawStreamWindow() {
         ImVec2(stream_window_width_,
                fullscreen_button_pressed_ ? 0 : title_bar_height_),
         ImGuiCond_Always);
-    ImGui::Begin("StreamRender", nullptr,
+    ImGui::Begin("StreamWindowTitleBar", nullptr,
                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration |
                      ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PopStyleColor();
@@ -932,6 +933,38 @@ void Render::CleanupFactories() {
   }
 }
 
+void Render::CleanupPeer(std::string host_name,
+                         std::shared_ptr<SubStreamWindowProperties> props) {
+  if (props->dst_buffer_) {
+    thumbnail_->SaveToThumbnail(
+        (char*)props->dst_buffer_, props->video_width_, props->video_height_,
+        host_name, props->remote_host_name_,
+        props->remember_password_ ? props->remote_password_ : "");
+  }
+
+  PeerPtr* peer_client = props->peer_;
+  if (peer_client) {
+    std::string client_id;
+    if (host_name == client_id_) {
+      client_id = "C-" + std::string(client_id_);
+    } else {
+      client_id = client_id_;
+    }
+    LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
+    LeaveConnection(peer_client, host_name.c_str());
+    LOG_INFO("Destroy peer [{}]", client_id);
+    DestroyPeer(&peer_client);
+  }
+
+  client_properties_.erase(host_name);
+
+  if (client_properties_.empty()) {
+    SDL_Event event;
+    event.type = SDL_QUIT;
+    SDL_PushEvent(&event);
+  }
+}
+
 void Render::CleanupPeers() {
   if (peer_) {
     LOG_INFO("[{}] Leave connection [{}]", client_id_, client_id_);
@@ -943,28 +976,10 @@ void Render::CleanupPeers() {
 
   for (auto& it : client_properties_) {
     auto props = it.second;
-    if (props->dst_buffer_) {
-      thumbnail_->SaveToThumbnail(
-          (char*)props->dst_buffer_, props->video_width_, props->video_height_,
-          it.first, props->remote_host_name_,
-          props->remember_password_ ? props->remote_password_ : "");
-    }
-
-    std::string host_name = it.first;
-    PeerPtr* peer_client = props->peer_;
-    if (peer_client) {
-      std::string client_id;
-      if (host_name == client_id_) {
-        client_id = "C-" + std::string(client_id_);
-      } else {
-        client_id = client_id_;
-      }
-      LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
-      LeaveConnection(peer_client, host_name.c_str());
-      LOG_INFO("Destroy peer [{}]", client_id);
-      DestroyPeer(&peer_client);
-    }
+    CleanupPeer(it.first, props);
   }
+
+  client_properties_.clear();
 }
 
 void Render::UpdateRenderRect() {
@@ -989,29 +1004,27 @@ void Render::UpdateRenderRect() {
     float video_ratio_reverse =
         (float)props->video_height_ / (float)props->video_width_;
 
-    float render_area_width = stream_window_width_;
-    float render_area_height =
-        stream_window_height_ -
-        (fullscreen_button_pressed_ ? 0 : title_bar_height_);
+    float render_area_width = props->render_window_width_;
+    float render_area_height = props->render_window_height_;
 
     props->stream_render_rect_last_ = props->stream_render_rect_;
     if (render_area_width < render_area_height * video_ratio) {
       props->stream_render_rect_ = {
-          0,
+          (int)props->render_window_x_,
           (int)(abs(render_area_height -
                     render_area_width * video_ratio_reverse) /
                     2 +
-                (fullscreen_button_pressed_ ? 0 : title_bar_height_)),
+                (int)props->render_window_y_),
           (int)render_area_width,
           (int)(render_area_width * video_ratio_reverse)};
     } else if (render_area_width > render_area_height * video_ratio) {
       props->stream_render_rect_ = {
           (int)abs(render_area_width - render_area_height * video_ratio) / 2,
-          fullscreen_button_pressed_ ? 0 : (int)title_bar_height_,
-          (int)(render_area_height * video_ratio), (int)render_area_height};
+          (int)props->render_window_y_, (int)(render_area_height * video_ratio),
+          (int)render_area_height};
     } else {
       props->stream_render_rect_ = {
-          0, fullscreen_button_pressed_ ? 0 : (int)title_bar_height_,
+          (int)props->render_window_x_, (int)props->render_window_y_,
           (int)render_area_width, (int)render_area_height};
     }
   }

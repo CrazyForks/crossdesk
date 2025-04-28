@@ -77,6 +77,12 @@ class Render {
     int video_width_ = 0;
     int video_height_ = 0;
     size_t video_size_ = 0;
+    bool tab_selected_ = false;
+    bool tab_opened_ = true;
+    float render_window_x_ = 0;
+    float render_window_y_ = 0;
+    float render_window_width_ = 0;
+    float render_window_height_ = 0;
     std::string fullscreen_button_label_ = "Fullscreen";
     std::string net_traffic_stats_button_label_ = "Show Net Traffic Stats";
     std::string mouse_control_button_label_ = "Mouse Control";
@@ -110,6 +116,8 @@ class Render {
   void HandleStreamWindow();
   void Cleanup();
   void CleanupFactories();
+  void CleanupPeer(std::string host_name,
+                   std::shared_ptr<SubStreamWindowProperties> props);
   void CleanupPeers();
   void UpdateRenderRect();
   void ProcessSdlEvent();
@@ -123,12 +131,11 @@ class Render {
   int RemoteWindow();
   int RecentConnectionsWindow();
   int SettingWindow();
-  int ControlWindow(std::shared_ptr<SubStreamWindowProperties> &properties);
-  int ControlBar(std::shared_ptr<SubStreamWindowProperties> &properties);
+  int ControlWindow(std::shared_ptr<SubStreamWindowProperties> &props);
+  int ControlBar(std::shared_ptr<SubStreamWindowProperties> &props);
   int AboutWindow();
   int StatusBar();
-  int ConnectionStatusWindow(
-      std::shared_ptr<SubStreamWindowProperties> &properties);
+  int ConnectionStatusWindow(std::shared_ptr<SubStreamWindowProperties> &props);
   int ShowRecentConnections();
 
  private:
@@ -146,7 +153,7 @@ class Render {
   int DrawMainWindow();
   int DrawStreamWindow();
   int ConfirmDeleteConnection();
-  int NetTrafficStats(std::shared_ptr<SubStreamWindowProperties> &properties);
+  int NetTrafficStats(std::shared_ptr<SubStreamWindowProperties> &props);
 
  public:
   static void OnReceiveVideoBufferCb(const XVideoFrame *video_frame,

@@ -29,8 +29,8 @@ int Render::MainWindow() {
   RecentConnectionsWindow();
   StatusBar();
 
-  for (auto& properties : client_properties_) {
-    ConnectionStatusWindow(properties.second);
+  for (auto& it : client_properties_) {
+    ConnectionStatusWindow(it.second);
   }
 
   return 0;
