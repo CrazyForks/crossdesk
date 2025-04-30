@@ -43,19 +43,19 @@ int Render::StreamWindow() {
       is_tab_bar_hovered_ = false;
     }
 
-    for (auto it = client_properties_.begin(); it != client_properties_.end();
-         ++it) {
+    for (auto it = client_properties_.begin();
+         it != client_properties_.end();) {
       auto& props = it->second;
 
-      ImGui::SetWindowFontScale(0.6f);
       if (props->tab_opened_) {
+        ImGui::SetWindowFontScale(0.6f);
         if (ImGui::BeginTabItem(props->remote_id_.c_str(), &props->tab_opened_,
                                 ImGuiTabItemFlags_None)) {
           props->tab_selected_ = true;
           ImGui::SetWindowFontScale(1.0f);
           ImGui::SetNextWindowSize(
               ImVec2(stream_window_width_, stream_window_height_),
-              ImGuiCond_Once);
+              ImGuiCond_Always);
           ImGui::SetNextWindowPos(
               ImVec2(0, fullscreen_button_pressed_ ? 0 : title_bar_height_),
               ImGuiCond_Appearing);
@@ -80,7 +80,9 @@ int Render::StreamWindow() {
           ImGui::EndTabItem();
         } else {
           props->tab_selected_ = false;
+          ImGui::SetWindowFontScale(1.0f);
         }
+        ++it;
       } else {
         CleanupPeer(it->first, props);
         it = client_properties_.erase(it);
