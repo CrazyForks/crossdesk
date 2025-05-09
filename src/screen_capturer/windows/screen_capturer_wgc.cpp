@@ -28,18 +28,24 @@ BOOL WINAPI EnumMonitorProc(HMONITOR hmonitor, [[maybe_unused]] HDC hdc,
   monitor_info_.cbSize = sizeof(MONITORINFOEX);
 
   if (GetMonitorInfo(hmonitor, &monitor_info_)) {
-    gs_display_list.push_back(
-        {(void *)hmonitor, WideToUtf8(monitor_info_.szDevice),
-         (monitor_info_.dwFlags & MONITORINFOF_PRIMARY) ? true : false,
-         monitor_info_.rcMonitor.left, monitor_info_.rcMonitor.top,
-         monitor_info_.rcMonitor.right, monitor_info_.rcMonitor.bottom});
+    if (monitor_info_.dwFlags & MONITORINFOF_PRIMARY) {
+      gs_display_list.insert(
+          gs_display_list.begin(),
+          {(void *)hmonitor, WideToUtf8(monitor_info_.szDevice),
+           (monitor_info_.dwFlags & MONITORINFOF_PRIMARY) ? true : false,
+           monitor_info_.rcMonitor.left, monitor_info_.rcMonitor.top,
+           monitor_info_.rcMonitor.right, monitor_info_.rcMonitor.bottom});
+      *(HMONITOR *)data = hmonitor;
+    } else {
+      gs_display_list.push_back(
+          {(void *)hmonitor, WideToUtf8(monitor_info_.szDevice),
+           (monitor_info_.dwFlags & MONITORINFOF_PRIMARY) ? true : false,
+           monitor_info_.rcMonitor.left, monitor_info_.rcMonitor.top,
+           monitor_info_.rcMonitor.right, monitor_info_.rcMonitor.bottom});
+    }
   }
 
   if (monitor_info_.dwFlags == DISPLAY_DEVICE_MIRRORING_DRIVER) return true;
-
-  if (monitor_info_.dwFlags & MONITORINFOF_PRIMARY) {
-    *(HMONITOR *)data = hmonitor;
-  }
 
   return true;
 }
@@ -84,164 +90,160 @@ bool ScreenCapturerWgc::IsWgcSupported() {
 
 int ScreenCapturerWgc::Init(const int fps, cb_desktop_data cb) {
   int error = 0;
-  if (_inited == true) return error;
+  if (inited_ == true) return error;
 
   // nv12_frame_ = new unsigned char[rect.right * rect.bottom * 3 / 2];
   // nv12_frame_scaled_ = new unsigned char[1280 * 720 * 3 / 2];
 
-  _fps = fps;
+  fps_ = fps;
 
-  _on_data = cb;
+  on_data_ = cb;
 
-  do {
-    if (!IsWgcSupported()) {
-      std::cout << "AE_UNSUPPORT" << std::endl;
-      error = 2;
-      break;
-    }
-
-    session_ = new WgcSessionImpl();
-    if (!session_) {
-      error = -1;
-      std::cout << "AE_WGC_CREATE_CAPTURER_FAILED" << std::endl;
-      break;
-    }
-
-    session_->RegisterObserver(this);
-
-    monitor_ = GetPrimaryMonitor();
-
-    display_list_ = gs_display_list;
-
-    for (const auto &display : display_list_) {
-      LOG_INFO("Display Name: {}, Is Primary: {}, Bounds: ({}, {}) - ({}, {})",
-               display.name, (display.is_primary ? "Yes" : "No"), display.left,
-               display.top, display.right, display.bottom);
-    }
-
-    error = session_->Initialize(monitor_);
-
-    _inited = true;
-  } while (0);
-
-  if (error != 0) {
+  if (!IsWgcSupported()) {
+    LOG_ERROR("WGC not supported");
+    error = 2;
+    return error;
   }
 
-  return error;
+  monitor_ = GetPrimaryMonitor();
+
+  display_list_ = gs_display_list;
+
+  if (display_list_.empty()) {
+    LOG_ERROR("No display found");
+    return -1;
+  }
+
+  for (int i = 0; i < display_list_.size(); i++) {
+    const auto &display = display_list_[i];
+    LOG_INFO(
+        "index: {}, display name: {}, is primary: {}, bounds: ({}, {}) - "
+        "({}, {})",
+        i, display.name, (display.is_primary ? "yes" : "no"), display.left,
+        display.top, display.right, display.bottom);
+
+    sessions_.push_back(
+        {std::make_unique<WgcSessionImpl>(), false, false, false});
+    sessions_.back().session_->RegisterObserver(this);
+    error = sessions_.back().session_->Initialize((HMONITOR)display.handle);
+    if (error != 0) {
+      return error;
+    }
+    sessions_[i].inited_ = true;
+    inited_ = true;
+  }
+
+  LOG_INFO("Default on monitor {}:{}", monitor_index_,
+           display_list_[monitor_index_].name);
+
+  return 0;
 }
 
 int ScreenCapturerWgc::Destroy() { return 0; }
 
 int ScreenCapturerWgc::Start() {
-  if (_running == true) {
-    std::cout << "record desktop duplication is already running" << std::endl;
+  if (running_ == true) {
+    LOG_ERROR("Screen capturer already running");
     return 0;
   }
 
-  if (_inited == false) {
-    std::cout << "AE_NEED_INIT" << std::endl;
+  if (inited_ == false) {
+    LOG_ERROR("Screen capturer not inited");
     return 4;
   }
 
-  _running = true;
-  session_->Start();
+  for (int i = 0; i < sessions_.size(); i++) {
+    if (sessions_[i].inited_ == false) {
+      LOG_ERROR("Session {} not inited", i);
+      continue;
+    }
+
+    if (sessions_[i].running_) {
+      LOG_ERROR("Session {} is already running", i);
+    } else {
+      sessions_[i].session_->Start();
+
+      if (i != 0) {
+        sessions_[i].session_->Pause();
+        sessions_[i].paused_ = true;
+      }
+      sessions_[i].running_ = true;
+    }
+    running_ = true;
+  }
 
   return 0;
 }
 
-int ScreenCapturerWgc::Pause() {
-  _paused = true;
-  if (session_) session_->Pause();
+int ScreenCapturerWgc::Pause(int monitor_index) {
+  if (monitor_index >= sessions_.size() || monitor_index < 0) {
+    LOG_ERROR("Invalid session index: {}", monitor_index);
+    return -1;
+  }
+
+  if (!sessions_[monitor_index].paused_) {
+    sessions_[monitor_index].session_->Pause();
+    sessions_[monitor_index].paused_ = true;
+    LOG_INFO("Pausing session {}", monitor_index);
+  }
   return 0;
 }
 
-int ScreenCapturerWgc::Resume() {
-  _paused = false;
-  if (session_) session_->Resume();
+int ScreenCapturerWgc::Resume(int monitor_index) {
+  if (monitor_index >= sessions_.size() || monitor_index < 0) {
+    LOG_ERROR("Invalid session index: {}", monitor_index);
+    return -1;
+  }
+
+  if (sessions_[monitor_index].paused_) {
+    sessions_[monitor_index].session_->Resume();
+    sessions_[monitor_index].paused_ = false;
+    LOG_INFO("Resuming session {}", monitor_index);
+  }
   return 0;
 }
 
 int ScreenCapturerWgc::Stop() {
-  _running = false;
-
-  if (session_) session_->Stop();
+  for (int i = 0; i < sessions_.size(); i++) {
+    if (sessions_[i].running_) {
+      sessions_[i].session_->Stop();
+      sessions_[i].running_ = false;
+    }
+  }
 
   return 0;
 }
 
 int ScreenCapturerWgc::SwitchTo(int monitor_index) {
-  if (!_inited) return -1;
+  if (monitor_index_ == monitor_index) {
+    LOG_INFO("Already on monitor {}:{}", monitor_index_,
+             display_list_[monitor_index_].name);
+    return 0;
+  }
+
   if (monitor_index >= display_list_.size()) {
     LOG_ERROR("Invalid monitor index: {}", monitor_index);
-    return -3;
+    return -1;
   }
 
-  LOG_INFO("Switching to monitor {}:{}", monitor_index,
-           display_list_[monitor_index].name);
-
-  Stop();
-
-  if (session_) {
-    session_->Release();
-    delete session_;
-    session_ = nullptr;
+  if (!sessions_[monitor_index].inited_) {
+    LOG_ERROR("Monitor {} not inited", monitor_index);
+    return -1;
   }
 
-  session_ = new WgcSessionImpl();
-  if (!session_) {
-    LOG_ERROR("Failed to create new WgcSessionImpl.");
-    return -4;
-  }
+  Pause(monitor_index_);
 
-  session_->RegisterObserver(this);
+  monitor_index_ = monitor_index;
+  LOG_INFO("Switching to monitor {}:{}", monitor_index_,
+           display_list_[monitor_index_].name);
 
-  int err = session_->Initialize((HMONITOR)display_list_[monitor_index].handle);
-  if (err != 0) {
-    LOG_ERROR("Failed to re-initialize session on new monitor.");
-    return -5;
-  }
+  Resume(monitor_index);
 
-  monitor_ = (HMONITOR)display_list_[monitor_index].handle;
-  _inited = true;
-
-  return Start();
-}
-
-void ConvertABGRtoBGRA(const uint8_t *abgr_data, uint8_t *bgra_data, int width,
-                       int height, int abgr_stride, int bgra_stride) {
-  for (int i = 0; i < height; ++i) {
-    for (int j = 0; j < width; ++j) {
-      int abgr_index = (i * abgr_stride + j) * 4;
-      int bgra_index = (i * bgra_stride + j) * 4;
-
-      bgra_data[bgra_index + 0] = abgr_data[abgr_index + 2];  // 蓝色
-      bgra_data[bgra_index + 1] = abgr_data[abgr_index + 1];  // 绿色
-      bgra_data[bgra_index + 2] = abgr_data[abgr_index + 0];  // 红色
-      bgra_data[bgra_index + 3] = abgr_data[abgr_index + 3];  // Alpha
-    }
-  }
-}
-
-void ConvertBGRAtoABGR(const uint8_t *bgra_data, uint8_t *abgr_data, int width,
-                       int height, int bgra_stride, int abgr_stride) {
-  for (int i = 0; i < height; ++i) {
-    for (int j = 0; j < width; ++j) {
-      int bgra_index = (i * bgra_stride + j) * 4;
-      int abgr_index = (i * abgr_stride + j) * 4;
-
-      abgr_data[abgr_index + 0] = bgra_data[bgra_index + 3];  // Alpha
-      abgr_data[abgr_index + 1] = bgra_data[bgra_index + 0];  // Blue
-      abgr_data[abgr_index + 2] = bgra_data[bgra_index + 1];  // Green
-      abgr_data[abgr_index + 3] = bgra_data[bgra_index + 2];  // Red
-    }
-  }
+  return 0;
 }
 
 void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame) {
-  if (_on_data) {
-    // int width = 1280;
-    // int height = 720;
-
+  if (on_data_) {
     if (!nv12_frame_) {
       nv12_frame_ = new unsigned char[frame.width * frame.height * 3 / 2];
     }
@@ -251,15 +253,20 @@ void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame) {
                        (uint8_t *)(nv12_frame_ + frame.width * frame.height),
                        frame.width, frame.width, frame.height);
 
-    _on_data(nv12_frame_, frame.width * frame.height * 3 / 2, frame.width,
+    on_data_(nv12_frame_, frame.width * frame.height * 3 / 2, frame.width,
              frame.height);
   }
 }
 
 void ScreenCapturerWgc::CleanUp() {
-  _inited = false;
-
-  if (session_) session_->Release();
-
-  session_ = nullptr;
+  if (inited_) {
+    for (auto &session : sessions_) {
+      if (session.session_) {
+        session.session_->Stop();
+        session.session_->Release();
+        session.session_ = nullptr;
+      }
+    }
+    sessions_.clear();
+  }
 }

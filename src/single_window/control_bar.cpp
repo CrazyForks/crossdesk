@@ -65,6 +65,14 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
       for (int i = 0; i < display_list.size(); i++) {
         if (ImGui::Selectable(display_list[i].name.c_str())) {
           selected_display_ = i + 1;
+
+          RemoteAction remote_action;
+          remote_action.type = ControlType::display_id;
+          remote_action.d = i;
+          if (props->connection_status_ == ConnectionStatus::Connected) {
+            SendDataFrame(props->peer_, (const char*)&remote_action,
+                          sizeof(remote_action));
+          }
         }
       }
       ImGui::SetWindowFontScale(1.0f);
@@ -118,7 +126,8 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
     float disable_audio_x = ImGui::GetCursorScreenPos().x + 4;
     float disable_audio_y = ImGui::GetCursorScreenPos().y + 4.0f;
     // std::string audio = audio_capture_button_pressed_ ? ICON_FA_VOLUME_HIGH
-    //                                                   : ICON_FA_VOLUME_XMARK;
+    //                                                   :
+    //                                                   ICON_FA_VOLUME_XMARK;
     std::string audio = props->audio_capture_button_pressed_
                             ? ICON_FA_VOLUME_HIGH
                             : ICON_FA_VOLUME_HIGH;

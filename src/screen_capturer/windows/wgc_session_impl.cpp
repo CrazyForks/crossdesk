@@ -124,12 +124,16 @@ int WgcSessionImpl::Stop() {
 int WgcSessionImpl::Pause() {
   std::lock_guard locker(lock_);
 
+  is_paused_ = true;
+
   CHECK_INIT;
   return 0;
 }
 
 int WgcSessionImpl::Resume() {
   std::lock_guard locker(lock_);
+
+  is_paused_ = false;
 
   CHECK_INIT;
   return 0;
@@ -233,6 +237,10 @@ void WgcSessionImpl::OnFrame(
 
     // copy to mapped texture
     {
+      if (is_paused_) {
+        return;
+      }
+
       auto frame_captured =
           GetDXGIInterfaceFromObject<ID3D11Texture2D>(frame.Surface());
 

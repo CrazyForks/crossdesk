@@ -25,8 +25,8 @@ class ScreenCapturerWgc : public ScreenCapturer,
   virtual int Start() override;
   virtual int Stop() override;
 
-  int Pause();
-  int Resume();
+  virtual int Pause(int monitor_index) override;
+  virtual int Resume(int monitor_index) override;
 
   std::vector<DisplayInfo> GetDisplayList() { return display_list_; }
 
@@ -41,21 +41,25 @@ class ScreenCapturerWgc : public ScreenCapturer,
   HMONITOR monitor_;
   MONITORINFOEX monitor_info_;
   std::vector<DisplayInfo> display_list_;
+  int monitor_index_ = 0;
 
  private:
-  WgcSession *session_ = nullptr;
+  class WgcSessionInfo {
+   public:
+    std::unique_ptr<WgcSession> session_;
+    bool inited_ = false;
+    bool running_ = false;
+    bool paused_ = false;
+  };
 
-  std::atomic_bool _running;
-  std::atomic_bool _paused;
-  std::atomic_bool _inited;
+  std::vector<WgcSessionInfo> sessions_;
 
-  std::thread _thread;
+  std::atomic_bool running_;
+  std::atomic_bool inited_;
 
-  std::string _device_name;
+  int fps_;
 
-  int _fps;
-
-  cb_desktop_data _on_data = nullptr;
+  cb_desktop_data on_data_ = nullptr;
 
   unsigned char *nv12_frame_ = nullptr;
   unsigned char *nv12_frame_scaled_ = nullptr;

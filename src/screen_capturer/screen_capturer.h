@@ -32,8 +32,11 @@ class ScreenCapturer {
   virtual int Destroy() = 0;
   virtual int Start() = 0;
   virtual int Stop() = 0;
+  virtual int Pause(int monitor_index) = 0;
+  virtual int Resume(int monitor_index) = 0;
 
   virtual std::vector<DisplayInfo> GetDisplayList() = 0;
+  virtual int SwitchTo(int monitor_index) = 0;
 };
 
 #endif

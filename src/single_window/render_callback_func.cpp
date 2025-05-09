@@ -215,8 +215,11 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
 
     memcpy(props->dst_buffer_, video_frame->data, video_frame->size);
     bool need_to_update_render_rect = false;
-    if (props->video_width_ == 0 && props->video_height_ == 0) {
+    if (props->video_width_ != props->video_width_last_ ||
+        props->video_height_ != props->video_height_last_) {
       need_to_update_render_rect = true;
+      props->video_width_last_ = props->video_width_;
+      props->video_height_last_ = props->video_height_;
     }
     props->video_width_ = video_frame->width;
     props->video_height_ = video_frame->height;
@@ -261,6 +264,7 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
   std::string remote_id(user_id, user_id_size);
   if (render->client_properties_.find(remote_id) !=
       render->client_properties_.end()) {
+    // local
     auto props = render->client_properties_.find(remote_id)->second;
     if (ControlType::host_infomation == remote_action.type) {
       props->remote_host_name_ = std::string(remote_action.i.host_name,
@@ -268,6 +272,7 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
       LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
     }
   } else {
+    // remote
     if (ControlType::mouse == remote_action.type && render->mouse_controller_) {
       render->mouse_controller_->SendMouseCommand(remote_action);
     } else if (ControlType::audio_capture == remote_action.type) {
@@ -283,6 +288,10 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
       render->keyboard_capturer_->SendKeyboardCommand(
           (int)remote_action.k.key_value,
           remote_action.k.flag == KeyFlag::key_down);
+    } else if (ControlType::display_id == remote_action.type) {
+      if (render->screen_capturer_) {
+        render->screen_capturer_->SwitchTo(remote_action.d);
+      }
     }
   }
 }

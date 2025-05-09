@@ -79,6 +79,8 @@ class Render {
     int texture_height_ = 720;
     int video_width_ = 0;
     int video_height_ = 0;
+    int video_width_last_ = 0;
+    int video_height_last_ = 0;
     size_t video_size_ = 0;
     bool tab_selected_ = false;
     bool tab_opened_ = true;

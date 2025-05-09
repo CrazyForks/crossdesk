@@ -13,7 +13,8 @@ typedef enum {
   mouse = 0,
   keyboard,
   audio_capture,
-  host_infomation
+  host_infomation,
+  display_id,
 } ControlType;
 typedef enum {
   move = 0,
@@ -51,6 +52,7 @@ typedef struct {
     Key k;
     HostInfo i;
     bool a;
+    int d;
   };
 } RemoteAction;
 

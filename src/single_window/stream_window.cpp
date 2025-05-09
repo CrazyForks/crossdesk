@@ -79,6 +79,7 @@ int Render::StreamWindow() {
           props->render_window_y_ = pos.y;
           props->render_window_width_ = size.x;
           props->render_window_height_ = size.y;
+          UpdateRenderRect();
 
           ControlWindow(props);
 
@@ -139,6 +140,7 @@ int Render::StreamWindow() {
         props->render_window_y_ = pos.y;
         props->render_window_width_ = size.x;
         props->render_window_height_ = size.y;
+        UpdateRenderRect();
 
         ControlWindow(props);
         ImGui::End();
@@ -161,7 +163,7 @@ int Render::StreamWindow() {
     }
   }
 
-  UpdateRenderRect();
+  // UpdateRenderRect();
   ImGui::End();  // End VideoBg
 
   return 0;
