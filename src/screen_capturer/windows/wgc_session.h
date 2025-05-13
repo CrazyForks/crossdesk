@@ -16,7 +16,7 @@ class WgcSession {
   class wgc_session_observer {
    public:
     virtual ~wgc_session_observer() {}
-    virtual void OnFrame(const wgc_session_frame &frame) = 0;
+    virtual void OnFrame(const wgc_session_frame &frame, int id) = 0;
   };
 
  public:

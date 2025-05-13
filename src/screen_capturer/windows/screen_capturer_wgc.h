@@ -32,7 +32,7 @@ class ScreenCapturerWgc : public ScreenCapturer,
 
   int SwitchTo(int monitor_index);
 
-  void OnFrame(const WgcSession::wgc_session_frame &frame);
+  void OnFrame(const WgcSession::wgc_session_frame &frame, int id);
 
  protected:
   void CleanUp();

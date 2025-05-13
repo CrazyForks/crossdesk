@@ -23,7 +23,7 @@ HRESULT __stdcall CreateDirect3D11DeviceFromDXGIDevice(
     ::IDXGIDevice *dxgiDevice, ::IInspectable **graphicsDevice);
 }
 
-WgcSessionImpl::WgcSessionImpl() {}
+WgcSessionImpl::WgcSessionImpl(int id) : id_(id) {}
 
 WgcSessionImpl::~WgcSessionImpl() {
   Stop();
@@ -264,11 +264,13 @@ void WgcSessionImpl::OnFrame(
 
       // copy data from map_result.pData
       if (map_result.pData && observer_) {
-        observer_->OnFrame(wgc_session_frame{
-            static_cast<unsigned int>(frame_size.Width),
-            static_cast<unsigned int>(frame_size.Height), map_result.RowPitch,
-            const_cast<const unsigned char *>(
-                (unsigned char *)map_result.pData)});
+        observer_->OnFrame(
+            wgc_session_frame{static_cast<unsigned int>(frame_size.Width),
+                              static_cast<unsigned int>(frame_size.Height),
+                              map_result.RowPitch,
+                              const_cast<const unsigned char *>(
+                                  (unsigned char *)map_result.pData)},
+            id_);
       }
 
       d3d11_device_context_->Unmap(d3d11_texture_mapped_.get(), 0);

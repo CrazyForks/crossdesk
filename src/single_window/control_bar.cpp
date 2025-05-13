@@ -71,7 +71,7 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
           remote_action.d = i;
           if (props->connection_status_ == ConnectionStatus::Connected) {
             SendDataFrame(props->peer_, (const char*)&remote_action,
-                          sizeof(remote_action));
+                          sizeof(remote_action), props->data_label_.c_str());
           }
         }
       }
@@ -144,7 +144,7 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
         remote_action.type = ControlType::audio_capture;
         remote_action.a = props->audio_capture_button_pressed_;
         SendDataFrame(props->peer_, (const char*)&remote_action,
-                      sizeof(remote_action));
+                      sizeof(remote_action), props->data_label_.c_str());
       }
     }
     if (!props->audio_capture_button_pressed_) {

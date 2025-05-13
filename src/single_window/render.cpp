@@ -194,7 +194,9 @@ int Render::StartScreenCapturer() {
                          .count();
 
   int screen_capturer_init_ret = screen_capturer_->Init(
-      60, [this](unsigned char* data, int size, int width, int height) -> void {
+      60,
+      [this](unsigned char* data, int size, int width, int height,
+             int display_id) -> void {
         auto now_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
@@ -206,7 +208,9 @@ int Render::StartScreenCapturer() {
           frame.width = width;
           frame.height = height;
           frame.captured_timestamp = GetSystemTimeMicros(peer_);
-          SendVideoFrame(peer_, &frame);
+          SendVideoFrame(peer_, &frame,
+                         display_id == 0 ? video_primary_label_.c_str()
+                                         : video_secondary_label_.c_str());
           last_frame_time_ = now_time;
         }
       });
@@ -239,7 +243,7 @@ int Render::StartSpeakerCapturer() {
     speaker_capturer_ = (SpeakerCapturer*)speaker_capturer_factory_->Create();
     int speaker_capturer_init_ret = speaker_capturer_->Init(
         [this](unsigned char* data, size_t size) -> void {
-          SendAudioFrame(peer_, (const char*)data, size);
+          SendAudioFrame(peer_, (const char*)data, size, audio_label_.c_str());
         });
 
     if (0 != speaker_capturer_init_ret) {
@@ -359,10 +363,10 @@ int Render::CreateConnectionPeer() {
     LOG_INFO("Create peer [{}] instance failed", client_id_);
   }
 
-  AddVideoStream(peer_, "primrey");
-  AddVideoStream(peer_, "second");
-  AddAudioStream(peer_, "audio");
-  AddDataStream(peer_, "data");
+  AddVideoStream(peer_, video_primary_label_.c_str());
+  AddVideoStream(peer_, video_secondary_label_.c_str());
+  AddAudioStream(peer_, audio_label_.c_str());
+  AddDataStream(peer_, data_label_.c_str());
 
   return 0;
 }
@@ -844,7 +848,7 @@ void Render::MainLoop() {
       memcpy(&remote_action.i.host_name, host_name.data(), host_name.size());
       remote_action.i.host_name_size = host_name.size();
       int ret = SendDataFrame(peer_, (const char*)&remote_action,
-                              sizeof(remote_action));
+                              sizeof(remote_action), data_label_.c_str());
       if (0 == ret) {
         host_info_sent_ = true;
       }

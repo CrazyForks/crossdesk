@@ -35,7 +35,7 @@ class WgcSessionImpl : public WgcSession {
   } target_{0};
 
  public:
-  WgcSessionImpl();
+  WgcSessionImpl(int id);
   ~WgcSessionImpl() override;
 
  public:
@@ -72,6 +72,7 @@ class WgcSessionImpl : public WgcSession {
   // void message_func();
 
  private:
+  int id_ = -1;
   std::mutex lock_;
   bool is_initialized_ = false;
   bool is_running_ = false;

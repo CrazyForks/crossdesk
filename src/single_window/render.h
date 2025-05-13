@@ -33,6 +33,8 @@ class Render {
   struct SubStreamWindowProperties {
     Params params_;
     PeerPtr *peer_ = nullptr;
+    std::string audio_label_ = "control_audio";
+    std::string data_label_ = "control_data";
     std::string local_id_ = "";
     std::string remote_id_ = "";
     bool exit_ = false;
@@ -373,6 +375,10 @@ class Render {
   bool signal_connected_ = false;
   PeerPtr *peer_ = nullptr;
   PeerPtr *peer_reserved_ = nullptr;
+  std::string video_primary_label_ = "primary_display";
+  std::string video_secondary_label_ = "secondary_display";
+  std::string audio_label_ = "audio";
+  std::string data_label_ = "data";
   Params params_;
   SDL_AudioDeviceID input_dev_;
   SDL_AudioDeviceID output_dev_;

@@ -123,7 +123,7 @@ int ScreenCapturerWgc::Init(const int fps, cb_desktop_data cb) {
         display.top, display.right, display.bottom);
 
     sessions_.push_back(
-        {std::make_unique<WgcSessionImpl>(), false, false, false});
+        {std::make_unique<WgcSessionImpl>(i), false, false, false});
     sessions_.back().session_->RegisterObserver(this);
     error = sessions_.back().session_->Initialize((HMONITOR)display.handle);
     if (error != 0) {
@@ -242,7 +242,8 @@ int ScreenCapturerWgc::SwitchTo(int monitor_index) {
   return 0;
 }
 
-void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame) {
+void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame,
+                                int id) {
   if (on_data_) {
     if (!nv12_frame_) {
       nv12_frame_ = new unsigned char[frame.width * frame.height * 3 / 2];
@@ -254,7 +255,7 @@ void ScreenCapturerWgc::OnFrame(const WgcSession::wgc_session_frame &frame) {
                        frame.width, frame.width, frame.height);
 
     on_data_(nv12_frame_, frame.width * frame.height * 3 / 2, frame.width,
-             frame.height);
+             frame.height, id);
   }
 }
 

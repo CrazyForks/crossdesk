@@ -142,6 +142,8 @@ int Render::ConnectTo(const std::string &remote_id, const char *password,
     memcpy(&props->params_, &params_, sizeof(Params));
     props->params_.user_id = props->local_id_.c_str();
     props->peer_ = CreatePeer(&props->params_);
+    AddAudioStream(props->peer_, props->audio_label_.c_str());
+    AddDataStream(props->peer_, props->data_label_.c_str());
 
     if (props->peer_) {
       LOG_INFO("[{}] Create peer instance successful", props->local_id_);

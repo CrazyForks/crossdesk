@@ -29,7 +29,7 @@ int Render::SendKeyCommand(int key_code, bool is_down) {
       auto props = client_properties_[controlled_remote_id_];
       if (props->connection_status_ == ConnectionStatus::Connected) {
         SendDataFrame(props->peer_, (const char *)&remote_action,
-                      sizeof(remote_action));
+                      sizeof(remote_action), props->data_label_.c_str());
       }
     }
   }
@@ -95,7 +95,7 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
         remote_action.m.flag = MouseFlag::move;
       }
       SendDataFrame(props->peer_, (const char *)&remote_action,
-                    sizeof(remote_action));
+                    sizeof(remote_action), props->data_label_.c_str());
     } else if (SDL_MOUSEWHEEL == event.type &&
                last_mouse_event.button.x >= props->stream_render_rect_.x &&
                last_mouse_event.button.x <= props->stream_render_rect_.x +
@@ -128,7 +128,7 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
           render_height;
 
       SendDataFrame(props->peer_, (const char *)&remote_action,
-                    sizeof(remote_action));
+                    sizeof(remote_action), props->data_label_.c_str());
     }
   }
 
@@ -145,7 +145,8 @@ void Render::SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
     for (auto it : render->client_properties_) {
       auto props = it.second;
       if (props->connection_status_ == ConnectionStatus::Connected) {
-        SendAudioFrame(props->peer_, (const char *)stream, len);
+        SendAudioFrame(props->peer_, (const char *)stream, len,
+                       render->audio_label_.c_str());
       }
     }
 
