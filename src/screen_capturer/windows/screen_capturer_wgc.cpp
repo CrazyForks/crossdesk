@@ -10,7 +10,7 @@
 #include "libyuv.h"
 #include "rd_log.h"
 
-static std::vector<ScreenCapturer::DisplayInfo> gs_display_list;
+static std::vector<DisplayInfo> gs_display_list;
 
 std::string WideToUtf8(const wchar_t *wideStr) {
   int size_needed = WideCharToMultiByte(CP_UTF8, 0, wideStr, -1, nullptr, 0,
@@ -37,11 +37,11 @@ BOOL WINAPI EnumMonitorProc(HMONITOR hmonitor, [[maybe_unused]] HDC hdc,
            monitor_info_.rcMonitor.right, monitor_info_.rcMonitor.bottom});
       *(HMONITOR *)data = hmonitor;
     } else {
-      gs_display_list.push_back(
-          {(void *)hmonitor, WideToUtf8(monitor_info_.szDevice),
-           (monitor_info_.dwFlags & MONITORINFOF_PRIMARY) ? true : false,
-           monitor_info_.rcMonitor.left, monitor_info_.rcMonitor.top,
-           monitor_info_.rcMonitor.right, monitor_info_.rcMonitor.bottom});
+      gs_display_list.push_back(DisplayInfo(
+          (void *)hmonitor, WideToUtf8(monitor_info_.szDevice),
+          (monitor_info_.dwFlags & MONITORINFOF_PRIMARY) ? true : false,
+          monitor_info_.rcMonitor.left, monitor_info_.rcMonitor.top,
+          monitor_info_.rcMonitor.right, monitor_info_.rcMonitor.bottom));
     }
   }
 

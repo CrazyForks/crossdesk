@@ -9,34 +9,12 @@
 
 #include <functional>
 
+#include "display_info.h"
+
 class ScreenCapturer {
  public:
   typedef std::function<void(unsigned char*, int, int, int, int)>
       cb_desktop_data;
-
-  class DisplayInfo {
-   public:
-    DisplayInfo(std::string name, int left, int top, int right, int bottom)
-        : name(name), left(left), top(top), right(right), bottom(bottom) {}
-    DisplayInfo(void* handle, std::string name, bool is_primary, int left,
-                int top, int right, int bottom)
-        : handle(handle),
-          name(name),
-          is_primary(is_primary),
-          left(left),
-          top(top),
-          right(right),
-          bottom(bottom) {}
-    ~DisplayInfo() {}
-
-    void* handle = nullptr;
-    std::string name = "";
-    bool is_primary = false;
-    int left = 0;
-    int top = 0;
-    int right = 0;
-    int bottom = 0;
-  };
 
  public:
   virtual ~ScreenCapturer() {}

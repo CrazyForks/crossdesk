@@ -9,6 +9,8 @@
 
 #include <stdio.h>
 
+#include "display_info.h"
+
 typedef enum {
   mouse = 0,
   keyboard,

@@ -83,7 +83,7 @@ class Render {
     int video_height_ = 0;
     int video_width_last_ = 0;
     int video_height_last_ = 0;
-    int selected_display_ = 1;
+    int selected_display_ = 0;
     size_t video_size_ = 0;
     bool tab_selected_ = false;
     bool tab_opened_ = true;
@@ -98,7 +98,7 @@ class Render {
     std::string mouse_control_button_label_ = "Mouse Control";
     std::string audio_capture_button_label_ = "Audio Capture";
     std::string remote_host_name_ = "";
-    std::vector<ScreenCapturer::DisplayInfo> display_info_list_;
+    std::vector<DisplayInfo> display_info_list_;
     SDL_Texture *stream_texture_ = nullptr;
     SDL_Rect stream_render_rect_;
     SDL_Rect stream_render_rect_last_;
@@ -316,6 +316,7 @@ class Render {
   float about_window_height_ = 150;
   int screen_width_ = 1280;
   int screen_height_ = 720;
+  int selected_display_ = 0;
   std::string connect_button_label_ = "Connect";
   char input_password_tmp_[7] = "";
   char input_password_[7] = "";
@@ -398,7 +399,7 @@ class Render {
   DeviceControllerFactory *device_controller_factory_ = nullptr;
   MouseController *mouse_controller_ = nullptr;
   KeyboardCapturer *keyboard_capturer_ = nullptr;
-  std::vector<ScreenCapturer::DisplayInfo> display_info_list_;
+  std::vector<DisplayInfo> display_info_list_;
   uint64_t last_frame_time_;
   char client_id_[10] = "";
   char client_id_display_[12] = "";

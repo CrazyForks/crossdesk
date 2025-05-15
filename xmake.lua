@@ -58,7 +58,7 @@ target("common")
 
 target("screen_capturer")
     set_kind("object")
-    add_deps("rd_log")
+    add_deps("rd_log", "common")
     add_includedirs("src/screen_capturer", {public = true})
     if is_os("windows") then
         add_packages("libyuv")
@@ -92,7 +92,7 @@ target("speaker_capturer")
 
 target("device_controller")
     set_kind("object")
-    add_deps("rd_log")
+    add_deps("rd_log", "common")
     add_includedirs("src/device_controller", {public = true})
     if is_os("windows") then
         add_files("src/device_controller/mouse/windows/*.cpp",

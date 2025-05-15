@@ -369,8 +369,11 @@ int Render::StartMouseController() {
   }
   mouse_controller_ = (MouseController*)device_controller_factory_->Create(
       DeviceControllerFactory::Device::Mouse);
-  int mouse_controller_init_ret =
-      mouse_controller_->Init(screen_width_, screen_height_);
+
+  if (screen_capturer_ && display_info_list_.empty()) {
+    display_info_list_ = screen_capturer_->GetDisplayInfoList();
+  }
+  int mouse_controller_init_ret = mouse_controller_->Init(display_info_list_);
   if (0 != mouse_controller_init_ret) {
     LOG_INFO("Destroy mouse controller")
     mouse_controller_->Destroy();
@@ -937,11 +940,11 @@ void Render::MainLoop() {
     }
 
     if (need_to_send_host_info_) {
-      RemoteAction remote_action;
-      if (screen_capturer_) {
+      if (screen_capturer_ && display_info_list_.empty()) {
         display_info_list_ = screen_capturer_->GetDisplayInfoList();
       }
 
+      RemoteAction remote_action;
       remote_action.i.display_num = display_info_list_.size();
       remote_action.i.display_list =
           (char**)malloc(remote_action.i.display_num * sizeof(char*));
