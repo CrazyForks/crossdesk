@@ -91,7 +91,7 @@ int Render::ProcessMouseEvent(SDL_Event &event) {
         remote_action.m.flag = MouseFlag::move;
       }
 
-      if (props->control_bar_hovered_) {
+      if (props->control_bar_hovered_ || props->display_selectable_hovered_) {
         remote_action.m.flag = MouseFlag::move;
       }
       SendDataFrame(props->peer_, (const char *)&remote_action,

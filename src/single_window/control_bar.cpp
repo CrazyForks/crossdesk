@@ -70,6 +70,7 @@ int Render::ControlBar(std::shared_ptr<SubStreamWindowProperties>& props) {
                           sizeof(remote_action), props->data_label_.c_str());
           }
         }
+        props->display_selectable_hovered_ = ImGui::IsWindowHovered();
       }
       ImGui::SetWindowFontScale(1.0f);
       ImGui::EndPopup();

@@ -50,6 +50,7 @@ class Render {
     bool streaming_ = false;
     bool is_control_bar_in_left_ = true;
     bool control_bar_hovered_ = false;
+    bool display_selectable_hovered_ = false;
     bool control_bar_expand_ = true;
     bool reset_control_bar_pos_ = false;
     bool control_window_width_is_changing_ = false;
