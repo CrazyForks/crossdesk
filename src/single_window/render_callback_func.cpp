@@ -277,8 +277,13 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
     return;
   }
 
+  if (size < sizeof(RemoteAction)) {
+    LOG_ERROR("Received data too small for RemoteAction");
+    return;
+  }
+
   RemoteAction remote_action;
-  memcpy(&remote_action, data, size);
+  memcpy(&remote_action, data, sizeof(remote_action));
 
   std::string remote_id(user_id, user_id_size);
   if (render->client_properties_.find(remote_id) !=
