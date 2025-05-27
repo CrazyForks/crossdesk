@@ -210,6 +210,7 @@ int ScreenCapturerWgc::Stop() {
       sessions_[i].running_ = false;
     }
   }
+  running_ = false;
 
   return 0;
 }

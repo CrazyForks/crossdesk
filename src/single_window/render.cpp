@@ -336,9 +336,6 @@ int Render::StopScreenCapturer() {
   if (screen_capturer_) {
     LOG_INFO("Stop screen capturer")
     screen_capturer_->Stop();
-    screen_capturer_->Destroy();
-    delete screen_capturer_;
-    screen_capturer_ = nullptr;
   }
 
   return 0;
