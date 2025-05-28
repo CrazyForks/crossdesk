@@ -232,6 +232,7 @@ int Render::LoadSettingsFromCacheFile() {
     config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
     config_center_.SetTurn(enable_turn_);
 
+    thumbnail_.reset();
     thumbnail_ = std::make_unique<Thumbnail>();
     thumbnail_->GetKeyAndIv(aes128_key_, aes128_iv_);
     thumbnail_->DeleteAllFilesInDirectory();
@@ -255,6 +256,7 @@ int Render::LoadSettingsFromCacheFile() {
   memcpy(aes128_key_, cd_cache_.key, sizeof(cd_cache_.key));
   memcpy(aes128_iv_, cd_cache_.iv, sizeof(cd_cache_.iv));
 
+  thumbnail_.reset();
   thumbnail_ = std::make_unique<Thumbnail>(aes128_key_, aes128_iv_);
 
   language_button_value_ = cd_cache_.language;
@@ -283,6 +285,11 @@ int Render::LoadSettingsFromCacheFile() {
 }
 
 int Render::ScreenCapturerInit() {
+  if (screen_capturer_) {
+    LOG_INFO("Screen capturer already initialized");
+    return 0;
+  }
+
   screen_capturer_ = (ScreenCapturer*)screen_capturer_factory_->Create();
   last_frame_time_ = std::chrono::duration_cast<std::chrono::milliseconds>(
                          std::chrono::steady_clock::now().time_since_epoch())
@@ -870,7 +877,6 @@ int Render::Run() {
 
   const int scaled_video_width_ = 160;
   const int scaled_video_height_ = 90;
-  argb_buffer_ = new char[scaled_video_width_ * scaled_video_height_ * 40];
 
   MainLoop();
 
@@ -1041,8 +1047,6 @@ void Render::HandleStreamWindow() {
 }
 
 void Render::Cleanup() {
-  delete[] argb_buffer_;
-
   if (screen_capturer_) {
     screen_capturer_->Destroy();
     delete screen_capturer_;
@@ -1117,6 +1121,19 @@ void Render::CleanupPeers() {
   }
 
   client_properties_.clear();
+}
+
+void Render::CleanSubStreamWindowProperties(
+    std::shared_ptr<SubStreamWindowProperties> props) {
+  if (props->stream_texture_) {
+    SDL_DestroyTexture(props->stream_texture_);
+    props->stream_texture_ = nullptr;
+  }
+
+  if (props->dst_buffer_) {
+    delete[] props->dst_buffer_;
+    props->dst_buffer_ = nullptr;
+  }
 }
 
 void Render::UpdateRenderRect() {
@@ -1220,8 +1237,6 @@ void Render::ProcessSdlEvent() {
             memset(&props->net_traffic_stats_, 0,
                    sizeof(props->net_traffic_stats_));
             SDL_SetWindowFullscreen(main_window_, SDL_FALSE);
-            SDL_DestroyTexture(props->stream_texture_);
-            props->stream_texture_ = nullptr;
             SDL_FlushEvents(STREAM_FRASH, STREAM_FRASH);
             memset(audio_buffer_, 0, 720);
           }

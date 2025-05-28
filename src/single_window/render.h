@@ -130,6 +130,8 @@ class Render {
   void CleanupFactories();
   void CleanupPeer(std::shared_ptr<SubStreamWindowProperties> props);
   void CleanupPeers();
+  void CleanSubStreamWindowProperties(
+      std::shared_ptr<SubStreamWindowProperties> props);
   void UpdateRenderRect();
   void ProcessSdlEvent();
 
@@ -276,7 +278,6 @@ class Render {
   SDL_Renderer *main_renderer_ = nullptr;
   ImGuiContext *main_ctx_ = nullptr;
   bool exit_ = false;
-  char *argb_buffer_ = nullptr;
 
   // main window properties
   bool start_mouse_controller_ = false;
@@ -337,7 +338,6 @@ class Render {
   // stream window render
   SDL_Window *stream_window_ = nullptr;
   SDL_Renderer *stream_renderer_ = nullptr;
-  SDL_Texture *stream_texture_ = nullptr;
   ImGuiContext *stream_ctx_ = nullptr;
 
   // stream window properties

@@ -432,6 +432,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
           SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,
                             props->texture_width_);
         }
+        render->CleanSubStreamWindowProperties(props);
         break;
       case ConnectionStatus::IncorrectPassword:
         render->password_validating_ = false;
