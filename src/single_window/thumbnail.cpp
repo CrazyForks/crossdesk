@@ -82,35 +82,40 @@ bool LoadTextureFromFile(const char* file_name, SDL_Renderer* renderer,
   return ret;
 }
 
-void ScaleYUV420pToABGR(char* dst_buffer_, int video_width_, int video_height_,
-                        int scaled_video_width_, int scaled_video_height_,
-                        char* rgba_buffer_) {
-  int src_y_size = video_width_ * video_height_;
-  int src_uv_size = (video_width_ + 1) / 2 * (video_height_ + 1) / 2;
-  int dst_y_size = scaled_video_width_ * scaled_video_height_;
-  int dst_uv_size =
-      (scaled_video_width_ + 1) / 2 * (scaled_video_height_ + 1) / 2;
-
+void ScaleNv12ToABGR(char* dst_buffer_, int video_width_, int video_height_,
+                     int scaled_video_width_, int scaled_video_height_,
+                     char* rgba_buffer_) {
   uint8_t* src_y = reinterpret_cast<uint8_t*>(dst_buffer_);
-  uint8_t* src_u = src_y + src_y_size;
-  uint8_t* src_v = src_u + src_uv_size;
+  uint8_t* src_uv = src_y + video_width_ * video_height_;
+  int src_uv_stride = video_width_ / 2;
+  int src_uv_size = src_uv_stride * (video_height_ / 2);
 
-  std::unique_ptr<uint8_t[]> dst_y(new uint8_t[dst_y_size]);
+  std::unique_ptr<uint8_t[]> tmp_u(new uint8_t[src_uv_size]);
+  std::unique_ptr<uint8_t[]> tmp_v(new uint8_t[src_uv_size]);
+
+  libyuv::NV12ToI420(src_y, video_width_, src_uv, video_width_, src_y,
+                     video_width_, tmp_u.get(), src_uv_stride, tmp_v.get(),
+                     src_uv_stride, video_width_, video_height_);
+
+  int dst_y_stride = scaled_video_width_;
+  int dst_uv_stride = (scaled_video_width_ + 1) / 2;
+  int dst_uv_size = dst_uv_stride * ((scaled_video_height_ + 1) / 2);
+
+  std::unique_ptr<uint8_t[]> dst_y(
+      new uint8_t[dst_y_stride * scaled_video_height_]);
   std::unique_ptr<uint8_t[]> dst_u(new uint8_t[dst_uv_size]);
   std::unique_ptr<uint8_t[]> dst_v(new uint8_t[dst_uv_size]);
 
-  libyuv::I420Scale(src_y, video_width_, src_u, (video_width_ + 1) / 2, src_v,
-                    (video_width_ + 1) / 2, video_width_, video_height_,
-                    dst_y.get(), scaled_video_width_, dst_u.get(),
-                    (scaled_video_width_ + 1) / 2, dst_v.get(),
-                    (scaled_video_width_ + 1) / 2, scaled_video_width_,
+  libyuv::I420Scale(src_y, video_width_, tmp_u.get(), src_uv_stride,
+                    tmp_v.get(), src_uv_stride, video_width_, video_height_,
+                    dst_y.get(), dst_y_stride, dst_u.get(), dst_uv_stride,
+                    dst_v.get(), dst_uv_stride, scaled_video_width_,
                     scaled_video_height_, libyuv::kFilterBilinear);
 
   libyuv::I420ToABGR(
-      dst_y.get(), scaled_video_width_, dst_u.get(),
-      (scaled_video_width_ + 1) / 2, dst_v.get(), (scaled_video_width_ + 1) / 2,
-      reinterpret_cast<uint8_t*>(rgba_buffer_), scaled_video_width_ * 4,
-      scaled_video_width_, scaled_video_height_);
+      dst_y.get(), dst_y_stride, dst_u.get(), dst_uv_stride, dst_v.get(),
+      dst_uv_stride, reinterpret_cast<uint8_t*>(rgba_buffer_),
+      scaled_video_width_ * 4, scaled_video_width_, scaled_video_height_);
 }
 
 Thumbnail::Thumbnail() {
@@ -141,8 +146,8 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
   }
 
   if (yuv420p) {
-    ScaleYUV420pToABGR((char*)yuv420p, width, height, thumbnail_width_,
-                       thumbnail_height_, rgba_buffer_);
+    ScaleNv12ToABGR((char*)yuv420p, width, height, thumbnail_width_,
+                    thumbnail_height_, rgba_buffer_);
   } else {
     // If yuv420p is null, fill the buffer with black pixels
     memset(rgba_buffer_, 0x00, thumbnail_width_ * thumbnail_height_ * 4);
