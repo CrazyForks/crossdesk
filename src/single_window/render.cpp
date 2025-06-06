@@ -303,7 +303,7 @@ int Render::ScreenCapturerInit() {
                             std::chrono::steady_clock::now().time_since_epoch())
                             .count();
         auto duration = now_time - last_frame_time_;
-        if (duration >= 0) {
+        if (duration >= 33) {
           XVideoFrame frame;
           frame.data = (const char*)data;
           frame.size = size;
@@ -569,9 +569,8 @@ int Render::CreateMainWindow() {
 
   ImGui::SetCurrentContext(main_ctx_);
 
-  SDL_WindowFlags window_flags =
-      (SDL_WindowFlags)(SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS |
-                        SDL_WINDOW_HIDDEN);
+  SDL_WindowFlags window_flags = (SDL_WindowFlags)(
+      SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIDDEN);
   main_window_ =
       SDL_CreateWindow("Remote Desk", SDL_WINDOWPOS_UNDEFINED,
                        SDL_WINDOWPOS_UNDEFINED, (int)main_window_width_default_,
