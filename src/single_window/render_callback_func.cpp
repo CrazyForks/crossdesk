@@ -8,7 +8,7 @@
 
 #define STREAM_FRASH (SDL_USEREVENT + 1)
 
-#ifdef REMOTE_DESK_DEBUG
+#ifdef DESK_PORT_DEBUG
 #else
 #define MOUSE_CONTROL 1
 #endif

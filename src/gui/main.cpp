@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#ifdef REMOTE_DESK_DEBUG
+#ifdef DESK_PORT_DEBUG
 #pragma comment(linker, "/subsystem:\"console\"")
 #else
 #pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")

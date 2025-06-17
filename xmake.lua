@@ -1,4 +1,4 @@
-set_project("remote_desk")
+set_project("desk_port")
 set_license("LGPL-3.0")
 
 set_version("0.0.1")
@@ -13,7 +13,7 @@ set_encodings("utf-8")
 
 add_defines("UNICODE")
 if is_mode("debug") then
-    add_defines("REMOTE_DESK_DEBUG")
+    add_defines("DESK_PORT_DEBUG")
 end
 
 add_requires("spdlog 1.14.1", {system = false})
@@ -130,7 +130,7 @@ target("single_window")
     add_includedirs("src/single_window", {public = true})
     add_includedirs("fonts", {public = true})
 
-target("remote_desk")
+target("desk_port")
     set_kind("binary")
     add_deps("rd_log", "common", "single_window")
     if is_os("windows") then
