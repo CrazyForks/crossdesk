@@ -80,16 +80,34 @@ int Render::ShowRecentConnections() {
 
     // remote id length is 9
     // password length is 6
-    // connection_info -> remote_id + 'Y' + password + host_name
+    // connection_info -> remote_id + 'Y' + host_name + '@' + password
     //                 -> remote_id + 'N' + host_name
     if ('Y' == connection_info[9] && connection_info.size() >= 16) {
-      it->second.remote_id = connection_info.substr(0, 9);
-      it->second.password = connection_info.substr(10, 6);
-      it->second.remote_host_name = connection_info.substr(16);
+      size_t pos_y = connection_info.find('Y');
+      size_t pos_at = connection_info.find('@');
+
+      if (pos_y == std::string::npos || pos_at == std::string::npos ||
+          pos_y >= pos_at) {
+        LOG_ERROR("Invalid filename");
+        continue;
+      }
+
+      it->second.remote_id = connection_info.substr(0, pos_y);
+      it->second.remote_host_name =
+          connection_info.substr(pos_y + 1, pos_at - pos_y - 1);
+      it->second.password = connection_info.substr(pos_at + 1);
       it->second.remember_password = true;
     } else if ('N' == connection_info[9] && connection_info.size() >= 10) {
-      it->second.remote_id = connection_info.substr(0, 9);
-      it->second.remote_host_name = connection_info.substr(10);
+      size_t pos_n = connection_info.find('N');
+      size_t pos_at = connection_info.find('@');
+
+      if (pos_n == std::string::npos) {
+        LOG_ERROR("Invalid filename");
+        continue;
+      }
+
+      it->second.remote_id = connection_info.substr(0, pos_n);
+      it->second.remote_host_name = connection_info.substr(pos_n + 1);
       it->second.password = "";
       it->second.remember_password = false;
     } else {

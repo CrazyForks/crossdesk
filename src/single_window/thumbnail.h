@@ -38,7 +38,7 @@ class Thumbnail {
                     std::map<std::string, RecentConnection>& recent_connections,
                     int* width, int* height);
 
-  int DeleteThumbnail(const std::string& file_name);
+  int DeleteThumbnail(const std::string& filename_keyword);
 
   int DeleteAllFilesInDirectory();
 

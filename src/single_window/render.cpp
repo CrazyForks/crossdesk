@@ -190,6 +190,8 @@ int Render::SaveSettingsIntoCacheFile() {
   memcpy(&cd_cache_.enable_hardware_video_codec, &enable_hardware_video_codec_,
          sizeof(enable_hardware_video_codec_));
   memcpy(&cd_cache_.enable_turn, &enable_turn_, sizeof(enable_turn_));
+  memcpy(&cd_cache_.key, &aes128_key_, sizeof(aes128_key_));
+  memcpy(&cd_cache_.iv, &aes128_iv_, sizeof(aes128_iv_));
 
   cd_cache_file.write(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
   cd_cache_file.close();
@@ -483,9 +485,9 @@ int Render::CreateConnectionPeer() {
 
   peer_ = CreatePeer(&params_);
   if (peer_) {
-    LOG_INFO("[{}] Create peer instance successful", client_id_);
+    LOG_INFO("Create peer instance [{}] successful", client_id_);
     Init(peer_);
-    LOG_INFO("[{}] Peer init finish", client_id_);
+    LOG_INFO("Peer [{}] init finish", client_id_);
   } else {
     LOG_INFO("Create peer [{}] instance failed", client_id_);
   }

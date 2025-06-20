@@ -166,19 +166,18 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
     }
   }
 
-  std::string image_name;
+  std::string image_file_name;
   if (password.empty()) {
     return 0;
   } else {
-    // delete the file which has no password in its name
-    std::string filename_without_password = remote_id + "N" + host_name;
-    DeleteThumbnail(filename_without_password);
-
-    image_name = remote_id + 'Y' + password + host_name;
+    // delete the old thumbnail
+    std::string filename_with_remote_id = remote_id;
+    DeleteThumbnail(filename_with_remote_id);
   }
 
-  std::string ciphertext = AES_encrypt(image_name, aes128_key_, aes128_iv_);
-  std::string file_path = image_path_ + ciphertext;
+  std::string cipher_password = AES_encrypt(password, aes128_key_, aes128_iv_);
+  image_file_name = remote_id + 'Y' + host_name + '@' + cipher_password;
+  std::string file_path = image_path_ + image_file_name;
   stbi_write_png(file_path.data(), thumbnail_width_, thumbnail_height_, 4,
                  rgba_buffer_, thumbnail_width_ * 4);
 
@@ -206,8 +205,46 @@ int Thumbnail::LoadThumbnail(
     for (int i = 0; i < image_paths.size(); i++) {
       size_t pos1 = image_paths[i].string().find('/') + 1;
       std::string cipher_image_name = image_paths[i].string().substr(pos1);
-      std::string original_image_name =
-          AES_decrypt(cipher_image_name, aes128_key_, aes128_iv_);
+      std::string remote_id;
+      std::string cipher_password;
+      std::string remote_host_name;
+      std::string original_image_name;
+
+      if ('Y' == cipher_image_name[9] && cipher_image_name.size() >= 16) {
+        size_t pos_y = cipher_image_name.find('Y');
+        size_t pos_at = cipher_image_name.find('@');
+
+        if (pos_y == std::string::npos || pos_at == std::string::npos ||
+            pos_y >= pos_at) {
+          LOG_ERROR("Invalid filename");
+          continue;
+        }
+
+        remote_id = cipher_image_name.substr(0, pos_y);
+        remote_host_name =
+            cipher_image_name.substr(pos_y + 1, pos_at - pos_y - 1);
+        cipher_password = cipher_image_name.substr(pos_at + 1);
+
+        original_image_name =
+            remote_id + 'Y' + remote_host_name + "@" +
+            AES_decrypt(cipher_password, aes128_key_, aes128_iv_);
+      } else {
+        size_t pos_n = cipher_image_name.find('N');
+        size_t pos_at = cipher_image_name.find('@');
+
+        if (pos_n == std::string::npos) {
+          LOG_ERROR("Invalid filename");
+          continue;
+        }
+
+        remote_id = cipher_image_name.substr(0, pos_n);
+        remote_host_name = cipher_image_name.substr(pos_n + 1);
+
+        original_image_name =
+            remote_id + 'N' + remote_host_name + "@" +
+            AES_decrypt(cipher_password, aes128_key_, aes128_iv_);
+      }
+
       std::string image_path = image_path_ + cipher_image_name;
       recent_connections[original_image_name].texture = nullptr;
       LoadTextureFromFile(image_path.c_str(), renderer,
@@ -219,15 +256,17 @@ int Thumbnail::LoadThumbnail(
   return 0;
 }
 
-int Thumbnail::DeleteThumbnail(const std::string& file_name) {
-  std::string ciphertext = AES_encrypt(file_name, aes128_key_, aes128_iv_);
-  std::string file_path = image_path_ + ciphertext;
-  if (std::filesystem::exists(file_path)) {
-    std::filesystem::remove(file_path);
-    return 0;
-  } else {
-    return -1;
+int Thumbnail::DeleteThumbnail(const std::string& filename_keyword) {
+  for (const auto& entry : std::filesystem::directory_iterator(image_path_)) {
+    if (entry.is_regular_file()) {
+      const std::string filename = entry.path().filename().string();
+      if (filename.find(filename_keyword) != std::string::npos) {
+        std::filesystem::remove(entry.path());
+      }
+    }
   }
+
+  return 0;
 }
 
 std::vector<std::filesystem::path> Thumbnail::FindThumbnailPath(
