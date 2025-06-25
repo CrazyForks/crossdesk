@@ -1,4 +1,4 @@
-set_project("desk_port")
+set_project("crossdesk")
 set_license("LGPL-3.0")
 
 set_version("0.0.1")
@@ -130,7 +130,7 @@ target("single_window")
     add_includedirs("src/single_window", {public = true})
     add_includedirs("fonts", {public = true})
 
-target("desk_port")
+target("crossdesk")
     set_kind("binary")
     add_deps("rd_log", "common", "single_window")
     if is_os("windows") then

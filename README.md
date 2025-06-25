@@ -1,4 +1,4 @@
-# Continuous Desk
+# CrossDesk
 
 #### More than remote desktop
 
@@ -9,9 +9,9 @@
 
 # Intro
 
-Continuous Desk is a lightweight cross-platform remote desktop. It allows multiple users to remotely control the same computer at the same time. In addition to desktop image transmission, it also supports end-to-end voice transmission, providing collaboration capabilities on the basis of remote desktop.
+CrossDesk is a lightweight cross-platform remote desktop. It allows multiple users to remotely control the same computer at the same time. In addition to desktop image transmission, it also supports end-to-end voice transmission, providing collaboration capabilities on the basis of remote desktop.
 
-Continuous Desk is an experimental application of [Projectx](https://github.com/dijunkun/projectx) real-time communications library. Projectx is a lightweight cross-platform real-time communications library. It has basic capabilities such as network traversal ([RFC5245](https://datatracker.ietf.org/doc/html/rfc5245)), video software/hardware encoding/decoding (H264), audio encoding/decoding ([Opus](https://github.com/xiph/opus)), signaling interaction, and network congestion control ([TCP over UDP](https://libnice.freedesktop.org/)).
+CrossDesk is an experimental application of [Projectx](https://github.com/dijunkun/projectx) real-time communications library. Projectx is a lightweight cross-platform real-time communications library. It has basic capabilities such as network traversal ([RFC5245](https://datatracker.ietf.org/doc/html/rfc5245)), video software/hardware encoding/decoding (H264), audio encoding/decoding ([Opus](https://github.com/xiph/opus)), signaling interaction, and network congestion control ([TCP over UDP](https://libnice.freedesktop.org/)).
 
 ## Usage
 
