@@ -456,7 +456,7 @@ int Render::StopKeyboardCapturer() {
 
 int Render::CreateConnectionPeer() {
   params_.use_cfg_file = false;
-  params_.signal_server_ip = "150.158.81.30";
+  params_.signal_server_ip = "crossdesk.cn";
   params_.signal_server_port = 9099;
   params_.stun_server_ip = "150.158.81.30";
   params_.stun_server_port = 3478;
@@ -464,7 +464,7 @@ int Render::CreateConnectionPeer() {
   params_.turn_server_port = 3478;
   params_.turn_server_username = "dijunkun";
   params_.turn_server_password = "dijunkunpw";
-  params_.tls_cert_path = "certs/crossdesk.cn_bundle.crt";
+  params_.tls_cert_path = "certs/crossdesk.cn_root.crt";
   params_.hardware_acceleration = config_center_.IsHardwareVideoCodec();
   params_.av1_encoding = config_center_.GetVideoEncodeFormat() ==
                                  ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
