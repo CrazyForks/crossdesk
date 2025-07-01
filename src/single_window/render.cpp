@@ -464,6 +464,7 @@ int Render::CreateConnectionPeer() {
   params_.turn_server_port = 3478;
   params_.turn_server_username = "dijunkun";
   params_.turn_server_password = "dijunkunpw";
+  params_.tls_cert_path = "certs/crossdesk.cn_bundle.crt";
   params_.hardware_acceleration = config_center_.IsHardwareVideoCodec();
   params_.av1_encoding = config_center_.GetVideoEncodeFormat() ==
                                  ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
