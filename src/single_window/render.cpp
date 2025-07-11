@@ -509,7 +509,8 @@ int Render::CreateConnectionPeer() {
 
 int Render::AudioDeviceInit() {
   // Audio
-  SDL_AudioSpec want_in, want_out;
+  SDL_AudioSpec want_in = {};
+  SDL_AudioSpec want_out = {};
   SDL_zero(want_in);
   want_in.freq = 48000;
   want_in.format = AUDIO_S16LSB;
