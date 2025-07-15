@@ -137,7 +137,7 @@ int Render::ConnectTo(const std::string &remote_id, const char *password,
     client_properties_[remote_id] =
         std::make_shared<SubStreamWindowProperties>();
     auto props = client_properties_[remote_id];
-    props->local_id_ = "C-" + remote_id;
+    props->local_id_ = "C-" + std::string(client_id_);
     props->remote_id_ = remote_id;
     memcpy(&props->params_, &params_, sizeof(Params));
     props->params_.user_id = props->local_id_.c_str();
