@@ -38,7 +38,8 @@ class Thumbnail {
 
   int LoadThumbnail(
       SDL_Renderer* renderer,
-      std::unordered_map<std::string, RecentConnection>& recent_connections,
+      std::vector<std::pair<std::string, Thumbnail::RecentConnection>>&
+          recent_connections,
       int* width, int* height);
 
   int DeleteThumbnail(const std::string& filename_keyword);

@@ -1140,6 +1140,8 @@ void Render::CleanupFactories() {
 }
 
 void Render::CleanupPeer(std::shared_ptr<SubStreamWindowProperties> props) {
+  SDL_FlushEvent(STREAM_FRASH);
+
   if (props->dst_buffer_) {
     thumbnail_->SaveToThumbnail(
         (char*)props->dst_buffer_, props->video_width_, props->video_height_,

@@ -277,7 +277,7 @@ class Render {
   std::unique_ptr<Thumbnail> thumbnail_;
 
   // recent connections
-  std::unordered_map<std::string, Thumbnail::RecentConnection>
+  std::vector<std::pair<std::string, Thumbnail::RecentConnection>>
       recent_connections_;
   int recent_connection_image_width_ = 160;
   int recent_connection_image_height_ = 90;

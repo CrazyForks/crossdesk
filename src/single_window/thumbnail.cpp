@@ -195,7 +195,8 @@ int Thumbnail::SaveToThumbnail(const char* yuv420p, int width, int height,
 
 int Thumbnail::LoadThumbnail(
     SDL_Renderer* renderer,
-    std::unordered_map<std::string, RecentConnection>& recent_connections,
+    std::vector<std::pair<std::string, Thumbnail::RecentConnection>>&
+        recent_connections,
     int* width, int* height) {
   for (auto& it : recent_connections) {
     if (it.second.texture != nullptr) {
@@ -255,10 +256,11 @@ int Thumbnail::LoadThumbnail(
       }
 
       std::string image_path = save_path_ + cipher_image_name;
-      recent_connections[original_image_name].texture = nullptr;
+      recent_connections.emplace_back(
+          std::make_pair(original_image_name, Thumbnail::RecentConnection()));
       LoadTextureFromFile(image_path.c_str(), renderer,
-                          &(recent_connections[original_image_name].texture),
-                          width, height);
+                          &(recent_connections[i].second.texture), width,
+                          height);
     }
     return 0;
   }
