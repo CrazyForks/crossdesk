@@ -458,7 +458,7 @@ int Render::StopKeyboardCapturer() {
 
 int Render::CreateConnectionPeer() {
   params_.use_cfg_file = false;
-  params_.signal_server_ip = "crossdesk.cn";
+  params_.signal_server_ip = "api.crossdesk.cn";
   params_.signal_server_port = 9099;
   params_.stun_server_ip = "150.158.81.30";
   params_.stun_server_port = 3478;
