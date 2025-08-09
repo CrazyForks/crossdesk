@@ -466,9 +466,10 @@ int Render::CreateConnectionPeer() {
   params_.turn_server_port = 3478;
   params_.turn_server_username = "dijunkun";
   params_.turn_server_password = "dijunkunpw";
-  params_.tls_cert_path =
-      cert_path_.empty() ? "certs/crossdesk.cn_root.crt" : cert_path_.c_str();
-  params_.log_path = dll_log_path_.empty() ? "logs" : dll_log_path_.c_str();
+  params_.tls_cert_path = std::filesystem::exists(cert_path_)
+                              ? cert_path_.c_str()
+                              : "certs/crossdesk.cn_root.crt";
+  params_.log_path = dll_log_path_.c_str();
   params_.hardware_acceleration = config_center_.IsHardwareVideoCodec();
   params_.av1_encoding = config_center_.GetVideoEncodeFormat() ==
                                  ConfigCenter::VIDEO_ENCODE_FORMAT::AV1
@@ -925,7 +926,7 @@ int Render::Run() {
 }
 
 void Render::InitializeLogger() {
-  if (!exec_log_path_.empty()) {
+  if (std::filesystem::exists(exec_log_path_)) {
     InitLogger(exec_log_path_);
   } else {
     InitLogger("logs");

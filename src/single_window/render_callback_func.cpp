@@ -496,7 +496,7 @@ void Render::NetStatusReport(const char *client_id, size_t client_id_size,
 
     memset(&render->client_id_with_password_, 0,
            sizeof(render->client_id_with_password_));
-    strncpy(render->client_id_with_password_, id.c_str(),
+    strncpy(render->client_id_with_password_, client_id,
             sizeof(render->client_id_with_password_) - 1);
     render->client_id_with_password_[sizeof(render->client_id_with_password_) -
                                      1] = '\0';
