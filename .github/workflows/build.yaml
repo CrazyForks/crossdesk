@@ -2,9 +2,10 @@ name: Build and Release CrossDesk
 
 on:
   push:
-    branches: [release]
+    branches:
+      - "**"
     tags:
-      - "v*"
+      - "*"
   workflow_dispatch:
 
 permissions:
@@ -71,6 +72,7 @@ jobs:
             out-dir: ./build/macosx/arm64/release/crossdesk
             artifact-name: crossdesk-macos-arm64
             package_script: ./scripts/macosx/pkg_arm64.sh
+
     steps:
       - name: Cache xmake dependencies
         uses: actions/cache@v4
@@ -176,7 +178,7 @@ jobs:
 
       - name: Package
         run: |
-          cd ./scripts/windows
+          cd ${{ github.workspace }}/scripts/windows
           makensis nsis_script.nsi
 
       - name: Upload artifact
@@ -184,3 +186,62 @@ jobs:
         with:
           name: crossdesk-win-x86_64
           path: ${{ github.workspace }}/scripts/windows/CrossDesk-0.0.1.exe
+
+  release:
+    name: Publish Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Extract version number
+        id: version
+        run: |
+          VERSION="${GITHUB_REF##*/}"
+          VERSION_NUM="${VERSION#v}"
+          echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
+
+      - name: Rename artifacts
+        run: |
+          mkdir -p release
+          cp artifacts/crossdesk-macos-x86_64/* release/crossdesk-macos-x86_64-v${{ steps.version.outputs.VERSION_NUM }}.pkg
+          cp artifacts/crossdesk-macos-arm64/* release/crossdesk-macos-aarch64-v${{ steps.version.outputs.VERSION_NUM }}.pkg
+          cp artifacts/crossdesk-linux-x86_64/* release/crossdesk-linux-x86_64-v${{ steps.version.outputs.VERSION_NUM }}.deb
+          cp artifacts/crossdesk-win-x86_64/* release/crossdesk-win-x86_64-v${{ steps.version.outputs.VERSION_NUM }}.exe
+
+      - name: Upload to Versioned GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION_NUM }}
+          name: Release v${{ steps.version.outputs.VERSION_NUM }}
+          draft: false
+          prerelease: false
+          files: release/*
+          generate_release_notes: false
+          body: |
+            Binary release only. Source code is not included.
+
+      - name: Create or update 'latest' tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f latest
+          git push origin latest --force
+
+      - name: Upload to GitHub Release (latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Release
+          draft: false
+          prerelease: false
+          files: release/*
+          generate_release_notes: false
