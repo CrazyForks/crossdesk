@@ -3,14 +3,14 @@ set -e
 
 APP_NAME="CrossDesk"
 APP_VERSION="$1"
-ARCHITECTURE="amd64"
+ARCHITECTURE="arm64"  # 改为 arm64
 MAINTAINER="Junkun Di <junkun.di@hotmail.com>"
 DESCRIPTION="A simple cross-platform remote desktop client."
 
 DEB_DIR="$APP_NAME-$APP_VERSION"
 DEBIAN_DIR="$DEB_DIR/DEBIAN"
 BIN_DIR="$DEB_DIR/usr/local/bin"
-CERT_SRC_DIR="$DEB_DIR/opt/$APP_NAME/certs"  # 用于中转安装时分发
+CERT_SRC_DIR="$DEB_DIR/opt/$APP_NAME/certs"
 ICON_DIR="$DEB_DIR/usr/share/icons/hicolor/256x256/apps"
 DESKTOP_DIR="$DEB_DIR/usr/share/applications"
 
@@ -18,7 +18,7 @@ rm -rf "$DEB_DIR"
 
 mkdir -p "$DEBIAN_DIR" "$BIN_DIR" "$CERT_SRC_DIR" "$ICON_DIR" "$DESKTOP_DIR"
 
-cp build/linux/x86_64/release/crossdesk "$BIN_DIR"
+cp build/linux/arm64/release/crossdesk "$BIN_DIR"
 cp certs/crossdesk.cn_root.crt "$CERT_SRC_DIR/crossdesk.cn_root.crt"
 cp icons/crossdesk.png "$ICON_DIR/crossdesk.png"
 
@@ -33,7 +33,7 @@ Description: $DESCRIPTION
 Depends: libc6 (>= 2.29), libstdc++6 (>= 9), libx11-6, libxcb1,
  libxcb-randr0, libxcb-xtest0, libxcb-xinerama0, libxcb-shape0,
  libxcb-xkb1, libxcb-xfixes0, libxv1, libxtst6, libasound2,
- libsndio7.0, libxcb-shm0, libpulse0, nvidia-cuda-toolkit
+ libsndio7.0, libxcb-shm0, libpulse0
 Priority: optional
 Section: utils
 EOF
@@ -103,9 +103,9 @@ chmod +x "$DEBIAN_DIR/postinst"
 
 dpkg-deb --build "$DEB_DIR"
 
-OUTPUT_FILE="crossdesk-linux-x86_64-$APP_VERSION.deb"
+OUTPUT_FILE="crossdesk-linux-arm64-$APP_VERSION.deb"
 mv "$DEB_DIR.deb" "$OUTPUT_FILE"
 
 rm -rf "$DEB_DIR"
 
-echo "✅ Deb package for $APP_NAME created successfully."
+echo "✅ Deb package for $APP_NAME (ARM64) created successfully."
