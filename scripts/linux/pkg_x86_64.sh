@@ -106,6 +106,9 @@ dpkg-deb --build "$DEB_DIR"
 OUTPUT_FILE="crossdesk-linux-x86_64-$APP_VERSION.deb"
 mv "$DEB_DIR.deb" "$OUTPUT_FILE"
 
+INSTALL_PATH="/tmp/$OUTPUT_FILE"
+mv "$OUTPUT_FILE" "$INSTALL_PATH"
+
 rm -rf "$DEB_DIR"
 
 echo "✅ Deb package for $APP_NAME created successfully."
