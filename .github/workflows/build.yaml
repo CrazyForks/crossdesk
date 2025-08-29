@@ -348,7 +348,7 @@ jobs:
       - name: Upload artifacts to server
         uses: burnett01/rsync-deployments@5.2
         with:
-          switches: -avzr --progress
+          switches: -avzr --progress --delete
           path: release/*
           remote_path: /var/www/html/downloads/
           remote_host: ${{ secrets.SERVER_HOST }}
