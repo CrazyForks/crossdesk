@@ -21,7 +21,7 @@ mkdir -p "$DEBIAN_DIR" "$BIN_DIR" "$CERT_SRC_DIR" "$DESKTOP_DIR"
 cp build/linux/x86_64/release/crossdesk "$BIN_DIR"
 cp certs/crossdesk.cn_root.crt "$CERT_SRC_DIR/crossdesk.cn_root.crt"
 
-for size in 16 24 32 48 128 256 1024; do
+for size in 16 24 32 48 64 96 128 256; do
     mkdir -p "$ICON_BASE_DIR/${size}x${size}/apps"
     cp "icons/linux/crossdesk_${size}x${size}.png" \
        "$ICON_BASE_DIR/${size}x${size}/apps/crossdesk.png"
@@ -65,7 +65,7 @@ if [ "\$1" = "remove" ] || [ "\$1" = "purge" ]; then
     rm -f /usr/local/bin/crossdesk
     rm -f /usr/share/applications/$APP_NAME.desktop
     rm -rf /opt/$APP_NAME
-    for size in 16 24 32 48 128 256 1024; do
+    for size in 16 24 32 48 64 96 128 256; do
         rm -f /usr/share/icons/hicolor/\${size}x\${size}/apps/crossdesk.png
     done
 fi
