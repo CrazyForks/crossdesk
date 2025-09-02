@@ -138,7 +138,7 @@ class Render {
   void CleanSubStreamWindowProperties(
       std::shared_ptr<SubStreamWindowProperties> props);
   void UpdateRenderRect();
-  void ProcessSdlEvent();
+  void ProcessSdlEvent(const SDL_Event &event);
 
  private:
   int CreateStreamRenderWindow();
@@ -213,7 +213,7 @@ class Render {
 
  private:
   int SendKeyCommand(int key_code, bool is_down);
-  int ProcessMouseEvent(SDL_Event &event);
+  int ProcessMouseEvent(const SDL_Event &event);
 
   static void SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len);
   static void SdlCaptureAudioOut(void *userdata, Uint8 *stream, int len);
@@ -290,6 +290,7 @@ class Render {
   SDL_Renderer *main_renderer_ = nullptr;
   ImGuiContext *main_ctx_ = nullptr;
   bool exit_ = false;
+  const int sdl_refresh_ms_ = 16;  // ~60 FPS
 
   // main window properties
   bool start_mouse_controller_ = false;

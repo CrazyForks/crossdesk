@@ -35,7 +35,7 @@ int Render::SendKeyCommand(int key_code, bool is_down) {
   return 0;
 }
 
-int Render::ProcessMouseEvent(SDL_Event &event) {
+int Render::ProcessMouseEvent(const SDL_Event &event) {
   controlled_remote_id_ = "";
   int video_width, video_height = 0;
   int render_width, render_height = 0;

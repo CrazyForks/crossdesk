@@ -982,8 +982,12 @@ void Render::MainLoop() {
       CreateConnectionPeer();
     }
 
+    SDL_Event event;
+    if (SDL_WaitEventTimeout(&event, sdl_refresh_ms_)) {
+      ProcessSdlEvent(event);
+    }
+
     UpdateLabels();
-    ProcessSdlEvent();
     HandleRecentConnections();
     HandleStreamWindow();
 
@@ -1229,176 +1233,174 @@ void Render::UpdateRenderRect() {
   }
 }
 
-void Render::ProcessSdlEvent() {
-  SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-    if (main_ctx_) {
-      ImGui::SetCurrentContext(main_ctx_);
+void Render::ProcessSdlEvent(const SDL_Event& event) {
+  if (main_ctx_) {
+    ImGui::SetCurrentContext(main_ctx_);
+    ImGui_ImplSDL3_ProcessEvent(&event);
+  } else {
+    LOG_ERROR("Main context is null");
+    return;
+  }
+
+  if (stream_window_inited_) {
+    if (stream_ctx_) {
+      ImGui::SetCurrentContext(stream_ctx_);
       ImGui_ImplSDL3_ProcessEvent(&event);
     } else {
-      LOG_ERROR("Main context is null");
+      LOG_ERROR("Stream context is null");
       return;
     }
+  }
 
-    if (stream_window_inited_) {
-      if (stream_ctx_) {
-        ImGui::SetCurrentContext(stream_ctx_);
-        ImGui_ImplSDL3_ProcessEvent(&event);
-      } else {
-        LOG_ERROR("Stream context is null");
-        return;
-      }
-    }
+  switch (event.type) {
+    case SDL_EVENT_QUIT:
+      if (stream_window_inited_) {
+        LOG_INFO("Destroy stream window");
+        SDL_SetWindowMouseGrab(stream_window_, false);
+        DestroyStreamWindow();
+        DestroyStreamWindowContext();
 
-    switch (event.type) {
-      case SDL_EVENT_QUIT:
-        if (stream_window_inited_) {
-          LOG_INFO("Destroy stream window");
-          SDL_SetWindowMouseGrab(stream_window_, false);
-          DestroyStreamWindow();
-          DestroyStreamWindowContext();
+        for (auto& [host_name, props] : client_properties_) {
+          thumbnail_->SaveToThumbnail(
+              (char*)props->dst_buffer_, props->video_width_,
+              props->video_height_, host_name, props->remote_host_name_,
+              props->remember_password_ ? props->remote_password_ : "");
 
-          for (auto& [host_name, props] : client_properties_) {
-            thumbnail_->SaveToThumbnail(
-                (char*)props->dst_buffer_, props->video_width_,
-                props->video_height_, host_name, props->remote_host_name_,
-                props->remember_password_ ? props->remote_password_ : "");
-
-            if (props->peer_) {
-              std::string client_id = (host_name == client_id_)
-                                          ? "C-" + std::string(client_id_)
-                                          : client_id_;
-              LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
-              LeaveConnection(props->peer_, host_name.c_str());
-              LOG_INFO("Destroy peer [{}]", client_id);
-              DestroyPeer(&props->peer_);
-            }
-
-            props->streaming_ = false;
-            props->remember_password_ = false;
-            props->connection_established_ = false;
-            props->audio_capture_button_pressed_ = false;
-
-            memset(&props->net_traffic_stats_, 0,
-                   sizeof(props->net_traffic_stats_));
-            SDL_SetWindowFullscreen(main_window_, false);
-            SDL_FlushEvents(STREAM_REFRESH_EVENT, STREAM_REFRESH_EVENT);
-            memset(audio_buffer_, 0, 720);
+          if (props->peer_) {
+            std::string client_id = (host_name == client_id_)
+                                        ? "C-" + std::string(client_id_)
+                                        : client_id_;
+            LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
+            LeaveConnection(props->peer_, host_name.c_str());
+            LOG_INFO("Destroy peer [{}]", client_id);
+            DestroyPeer(&props->peer_);
           }
-          client_properties_.clear();
 
-          rejoin_ = false;
-          is_client_mode_ = false;
-          reload_recent_connections_ = true;
-          fullscreen_button_pressed_ = false;
-          just_created_ = false;
-          recent_connection_image_save_time_ = SDL_GetTicks();
+          props->streaming_ = false;
+          props->remember_password_ = false;
+          props->connection_established_ = false;
+          props->audio_capture_button_pressed_ = false;
+
+          memset(&props->net_traffic_stats_, 0,
+                 sizeof(props->net_traffic_stats_));
+          SDL_SetWindowFullscreen(main_window_, false);
+          SDL_FlushEvents(STREAM_REFRESH_EVENT, STREAM_REFRESH_EVENT);
+          memset(audio_buffer_, 0, 720);
+        }
+        client_properties_.clear();
+
+        rejoin_ = false;
+        is_client_mode_ = false;
+        reload_recent_connections_ = true;
+        fullscreen_button_pressed_ = false;
+        just_created_ = false;
+        recent_connection_image_save_time_ = SDL_GetTicks();
+      } else {
+        LOG_INFO("Quit program");
+        exit_ = true;
+      }
+      break;
+
+    case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+      if (event.window.windowID != SDL_GetWindowID(stream_window_)) {
+        exit_ = true;
+      }
+      break;
+
+    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+      if (stream_window_created_ &&
+          event.window.windowID == SDL_GetWindowID(stream_window_)) {
+        UpdateRenderRect();
+      }
+      break;
+
+    case SDL_EVENT_WINDOW_FOCUS_GAINED:
+      if (stream_window_ &&
+          SDL_GetWindowID(stream_window_) == event.window.windowID) {
+        foucs_on_stream_window_ = true;
+      } else if (main_window_ &&
+                 SDL_GetWindowID(main_window_) == event.window.windowID) {
+        foucs_on_main_window_ = true;
+      }
+      break;
+
+    case SDL_EVENT_WINDOW_FOCUS_LOST:
+      if (stream_window_ &&
+          SDL_GetWindowID(stream_window_) == event.window.windowID) {
+        foucs_on_stream_window_ = false;
+      } else if (main_window_ &&
+                 SDL_GetWindowID(main_window_) == event.window.windowID) {
+        foucs_on_main_window_ = false;
+      }
+      break;
+
+    case SDL_EVENT_MOUSE_MOTION:
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+    case SDL_EVENT_MOUSE_BUTTON_UP:
+    case SDL_EVENT_MOUSE_WHEEL:
+      if (foucs_on_stream_window_) {
+        ProcessMouseEvent(event);
+      }
+      break;
+
+    default:
+      if (event.type == STREAM_REFRESH_EVENT) {
+        auto* props = static_cast<SubStreamWindowProperties*>(event.user.data1);
+        if (!props) {
+          break;
+        }
+        if (props->video_width_ <= 0 || props->video_height_ <= 0) {
+          break;
+        }
+        if (!props->dst_buffer_) {
+          break;
+        }
+
+        // use libyuv to convert NV12 to ARGB in order to fix SDL3 NV12 texture
+        // display issue
+        if (props->stream_texture_) {
+          if (props->video_width_ != props->texture_width_ ||
+              props->video_height_ != props->texture_height_) {
+            props->texture_width_ = props->video_width_;
+            props->texture_height_ = props->video_height_;
+
+            SDL_DestroyTexture(props->stream_texture_);
+            props->stream_texture_ = SDL_CreateTexture(
+                stream_renderer_, SDL_PIXELFORMAT_ARGB8888,
+                SDL_TEXTUREACCESS_STREAMING, props->texture_width_,
+                props->texture_height_);
+          }
         } else {
-          LOG_INFO("Quit program");
-          exit_ = true;
-        }
-        break;
-
-      case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-        if (event.window.windowID != SDL_GetWindowID(stream_window_)) {
-          exit_ = true;
-        }
-        break;
-
-      case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-        if (stream_window_created_ &&
-            event.window.windowID == SDL_GetWindowID(stream_window_)) {
-          UpdateRenderRect();
-        }
-        break;
-
-      case SDL_EVENT_WINDOW_FOCUS_GAINED:
-        if (stream_window_ &&
-            SDL_GetWindowID(stream_window_) == event.window.windowID) {
-          foucs_on_stream_window_ = true;
-        } else if (main_window_ &&
-                   SDL_GetWindowID(main_window_) == event.window.windowID) {
-          foucs_on_main_window_ = true;
-        }
-        break;
-
-      case SDL_EVENT_WINDOW_FOCUS_LOST:
-        if (stream_window_ &&
-            SDL_GetWindowID(stream_window_) == event.window.windowID) {
-          foucs_on_stream_window_ = false;
-        } else if (main_window_ &&
-                   SDL_GetWindowID(main_window_) == event.window.windowID) {
-          foucs_on_main_window_ = false;
-        }
-        break;
-
-      case SDL_EVENT_MOUSE_MOTION:
-      case SDL_EVENT_MOUSE_BUTTON_DOWN:
-      case SDL_EVENT_MOUSE_BUTTON_UP:
-      case SDL_EVENT_MOUSE_WHEEL:
-        if (foucs_on_stream_window_) {
-          ProcessMouseEvent(event);
-        }
-        break;
-    }
-
-    if (event.type == STREAM_REFRESH_EVENT) {
-      auto* props = static_cast<SubStreamWindowProperties*>(event.user.data1);
-      if (!props) {
-        continue;
-      }
-      if (props->video_width_ <= 0 || props->video_height_ <= 0) {
-        continue;
-      }
-      if (!props->dst_buffer_) {
-        continue;
-      }
-
-      // use libyuv to convert NV12 to ARGB in order to fix SDL3 NV12 texture
-      // display issue
-      if (props->stream_texture_) {
-        if (props->video_width_ != props->texture_width_ ||
-            props->video_height_ != props->texture_height_) {
           props->texture_width_ = props->video_width_;
           props->texture_height_ = props->video_height_;
-
-          SDL_DestroyTexture(props->stream_texture_);
           props->stream_texture_ =
               SDL_CreateTexture(stream_renderer_, SDL_PIXELFORMAT_ARGB8888,
                                 SDL_TEXTUREACCESS_STREAMING,
                                 props->texture_width_, props->texture_height_);
         }
-      } else {
-        props->texture_width_ = props->video_width_;
-        props->texture_height_ = props->video_height_;
-        props->stream_texture_ =
-            SDL_CreateTexture(stream_renderer_, SDL_PIXELFORMAT_ARGB8888,
-                              SDL_TEXTUREACCESS_STREAMING,
-                              props->texture_width_, props->texture_height_);
-      }
 
-      size_t argb_stride = props->texture_width_ * 4;
-      size_t argb_size = argb_stride * props->texture_height_;
-      if (!props->argb_buffer_ || props->argb_buffer_size_ != argb_size) {
-        if (props->argb_buffer_) {
-          delete[] props->argb_buffer_;
+        size_t argb_stride = props->texture_width_ * 4;
+        size_t argb_size = argb_stride * props->texture_height_;
+        if (!props->argb_buffer_ || props->argb_buffer_size_ != argb_size) {
+          if (props->argb_buffer_) {
+            delete[] props->argb_buffer_;
+          }
+          props->argb_buffer_ = new uint8_t[argb_size];
+          props->argb_buffer_size_ = argb_size;
         }
-        props->argb_buffer_ = new uint8_t[argb_size];
-        props->argb_buffer_size_ = argb_size;
+
+        uint8_t* src_y = reinterpret_cast<uint8_t*>(props->dst_buffer_);
+        int src_stride_y = props->texture_width_;
+        uint8_t* src_uv = src_y + src_stride_y * props->texture_height_;
+        int src_stride_uv = props->texture_width_;
+
+        libyuv::NV12ToARGB(src_y, src_stride_y, src_uv, src_stride_uv,
+                           props->argb_buffer_, static_cast<int>(argb_stride),
+                           props->texture_width_, props->texture_height_);
+
+        SDL_UpdateTexture(props->stream_texture_, NULL, props->argb_buffer_,
+                          static_cast<int>(argb_stride));
       }
-
-      uint8_t* src_y = reinterpret_cast<uint8_t*>(props->dst_buffer_);
-      int src_stride_y = props->texture_width_;
-      uint8_t* src_uv = src_y + src_stride_y * props->texture_height_;
-      int src_stride_uv = props->texture_width_;
-
-      libyuv::NV12ToARGB(src_y, src_stride_y, src_uv, src_stride_uv,
-                         props->argb_buffer_, static_cast<int>(argb_stride),
-                         props->texture_width_, props->texture_height_);
-
-      SDL_UpdateTexture(props->stream_texture_, NULL, props->argb_buffer_,
-                        static_cast<int>(argb_stride));
       break;
-    }
   }
 }
