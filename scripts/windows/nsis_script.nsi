@@ -27,6 +27,12 @@ RequestExecutionLevel admin
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
+
+; Add run-after-install option
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_TEXT "Run ${PRODUCT_NAME}"
+!define MUI_FINISHPAGE_RUN_FUNCTION LaunchApp
+
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_LANGUAGE "SimpChinese"
 !insertmacro MUI_RESERVEFILE_INSTALLOPTIONS
@@ -35,6 +41,7 @@ RequestExecutionLevel admin
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "crossdesk-win-x64-${PRODUCT_VERSION}.exe"
 InstallDir "$PROGRAMFILES\CrossDesk"
+InstallDirRegKey HKCU "Software\${PRODUCT_NAME}" "InstallDir"
 ShowInstDetails show
 
 Section "MainSection"
@@ -58,6 +65,7 @@ Section "MainSection"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "DisplayIcon" "$INSTDIR\crossdesk.ico"
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "NoModify" 1
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}" "NoRepair" 1
+    WriteRegStr HKCU "Software\${PRODUCT_NAME}" "InstallDir" "$INSTDIR"
 SectionEnd
 
 ; After installation
@@ -93,11 +101,18 @@ Section "Uninstall"
     ; Delete registry uninstall entry
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_REG_KEY}"
 
+    ; Delete remembered install dir
+    DeleteRegKey HKCU "Software\${PRODUCT_NAME}"
+
     ; Recursively delete CrossDesk folder in user AppData
     RMDir /r "$APPDATA\CrossDesk"
     RMDir /r "$LOCALAPPDATA\CrossDesk"
 SectionEnd
 
-
 Section -Post
 SectionEnd
+
+; ------ Functions ------
+Function LaunchApp
+    Exec "$INSTDIR\crossdesk.exe"
+FunctionEnd
