@@ -30,6 +30,11 @@ int ConfigCenter::SetTurn(bool enable_turn) {
   return 0;
 }
 
+int ConfigCenter::SetSrtp(bool enable_srtp) {
+  enable_srtp_ = enable_srtp;
+  return 0;
+}
+
 ConfigCenter::LANGUAGE ConfigCenter::GetLanguage() { return language_; }
 
 ConfigCenter::VIDEO_QUALITY ConfigCenter::GetVideoQuality() {
@@ -43,3 +48,5 @@ ConfigCenter::VIDEO_ENCODE_FORMAT ConfigCenter::GetVideoEncodeFormat() {
 bool ConfigCenter::IsHardwareVideoCodec() { return hardware_video_codec_; }
 
 bool ConfigCenter::IsEnableTurn() { return enable_turn_; }
+
+bool ConfigCenter::IsEnableSrtp() { return enable_srtp_; }

@@ -161,6 +161,23 @@ int Render::SettingWindow() {
         ImGui::Checkbox("##enable_turn", &enable_turn_);
       }
 
+      ImGui::Separator();
+
+      {
+        ImGui::SetCursorPosY(182);
+        ImGui::Text(
+            "%s",
+            localization::enable_srtp[localization_language_index_].c_str());
+
+        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+          ImGui::SetCursorPosX(ENABLE_SRTP_CHECKBOX_PADDING_CN);
+        } else {
+          ImGui::SetCursorPosX(ENABLE_SRTP_CHECKBOX_PADDING_EN);
+        }
+        ImGui::SetCursorPosY(180);
+        ImGui::Checkbox("##enable_srtp", &enable_srtp_);
+      }
+
       if (stream_window_inited_) {
         ImGui::EndDisabled();
       }
@@ -170,7 +187,7 @@ int Render::SettingWindow() {
       } else {
         ImGui::SetCursorPosX(SETTINGS_OK_BUTTON_PADDING_EN);
       }
-      ImGui::SetCursorPosY(190.0f);
+      ImGui::SetCursorPosY(220.0f);
       ImGui::PopStyleVar();
 
       // OK
@@ -226,6 +243,14 @@ int Render::SettingWindow() {
           config_center_.SetTurn(false);
         }
         enable_turn_last_ = enable_turn_;
+
+        // SRTP
+        if (enable_srtp_) {
+          config_center_.SetSrtp(true);
+        } else {
+          config_center_.SetSrtp(false);
+        }
+        enable_srtp_last_ = enable_srtp_;
 
         SaveSettingsIntoCacheFile();
         settings_window_pos_reset_ = true;

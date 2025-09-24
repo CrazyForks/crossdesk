@@ -23,6 +23,7 @@ class ConfigCenter {
   int SetVideoEncodeFormat(VIDEO_ENCODE_FORMAT video_encode_format);
   int SetHardwareVideoCodec(bool hardware_video_codec);
   int SetTurn(bool enable_turn);
+  int SetSrtp(bool enable_srtp);
 
  public:
   LANGUAGE GetLanguage();
@@ -30,6 +31,7 @@ class ConfigCenter {
   VIDEO_ENCODE_FORMAT GetVideoEncodeFormat();
   bool IsHardwareVideoCodec();
   bool IsEnableTurn();
+  bool IsEnableSrtp();
 
  private:
   // Default value should be same with parameters in localization.h
@@ -38,6 +40,7 @@ class ConfigCenter {
   VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::AV1;
   bool hardware_video_codec_ = false;
   bool enable_turn_ = false;
+  bool enable_srtp_ = true;
 };
 
 #endif

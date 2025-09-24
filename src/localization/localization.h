@@ -89,6 +89,9 @@ static std::vector<std::string> enable_hardware_video_codec = {
 static std::vector<std::string> enable_turn = {
     reinterpret_cast<const char*>(u8"启用中继服务:"), "Enable TURN Service:"};
 
+static std::vector<std::string> enable_srtp = {
+    reinterpret_cast<const char*>(u8"启用SRTP:"), "Enable SRTP:"};
+
 static std::vector<std::string> ok = {reinterpret_cast<const char*>(u8"确认"),
                                       "OK"};
 static std::vector<std::string> cancel = {

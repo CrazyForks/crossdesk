@@ -248,6 +248,7 @@ class Render {
     int video_encode_format;
     bool enable_hardware_video_codec;
     bool enable_turn;
+    bool enable_srtp;
 
     unsigned char key[16];
     unsigned char iv[16];
@@ -426,11 +427,13 @@ class Render {
   int video_encode_format_button_value_ = 0;
   bool enable_hardware_video_codec_ = false;
   bool enable_turn_ = false;
+  bool enable_srtp_ = true;
   int language_button_value_last_ = 0;
   int video_quality_button_value_last_ = 0;
   int video_encode_format_button_value_last_ = 0;
   bool enable_hardware_video_codec_last_ = false;
   bool enable_turn_last_ = false;
+  bool enable_srtp_last_ = true;
   bool settings_window_pos_reset_ = true;
   /* ------ main window property end ------ */
 

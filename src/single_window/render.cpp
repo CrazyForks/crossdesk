@@ -190,6 +190,7 @@ int Render::SaveSettingsIntoCacheFile() {
   memcpy(&cd_cache_.enable_hardware_video_codec, &enable_hardware_video_codec_,
          sizeof(enable_hardware_video_codec_));
   memcpy(&cd_cache_.enable_turn, &enable_turn_, sizeof(enable_turn_));
+  memcpy(&cd_cache_.enable_srtp, &enable_srtp_, sizeof(enable_srtp_));
   memcpy(&cd_cache_.key, &aes128_key_, sizeof(aes128_key_));
   memcpy(&cd_cache_.iv, &aes128_iv_, sizeof(aes128_iv_));
 
@@ -204,6 +205,7 @@ int Render::SaveSettingsIntoCacheFile() {
       (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
   config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
   config_center_.SetTurn(enable_turn_);
+  config_center_.SetSrtp(enable_srtp_);
 
   LOG_INFO("Save settings into cache file success");
 
@@ -225,6 +227,7 @@ int Render::LoadSettingsFromCacheFile() {
     video_encode_format_button_value_ = 1;
     enable_hardware_video_codec_ = false;
     enable_turn_ = false;
+    enable_srtp_ = true;
 
     config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
     config_center_.SetVideoQuality(
@@ -233,6 +236,7 @@ int Render::LoadSettingsFromCacheFile() {
         (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
     config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
     config_center_.SetTurn(enable_turn_);
+    config_center_.SetSrtp(enable_srtp_);
 
     thumbnail_.reset();
     thumbnail_ = std::make_unique<Thumbnail>(cache_path_ + "/thumbnails/");
@@ -284,12 +288,14 @@ int Render::LoadSettingsFromCacheFile() {
   video_encode_format_button_value_ = cd_cache_.video_encode_format;
   enable_hardware_video_codec_ = cd_cache_.enable_hardware_video_codec;
   enable_turn_ = cd_cache_.enable_turn;
+  enable_srtp_ = cd_cache_.enable_srtp;
 
   language_button_value_last_ = language_button_value_;
   video_quality_button_value_last_ = video_quality_button_value_;
   video_encode_format_button_value_last_ = video_encode_format_button_value_;
   enable_hardware_video_codec_last_ = enable_hardware_video_codec_;
   enable_turn_last_ = enable_turn_;
+  enable_srtp_last_ = enable_srtp_;
 
   config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
   config_center_.SetVideoQuality(
@@ -298,6 +304,7 @@ int Render::LoadSettingsFromCacheFile() {
       (ConfigCenter::VIDEO_ENCODE_FORMAT)video_encode_format_button_value_);
   config_center_.SetHardwareVideoCodec(enable_hardware_video_codec_);
   config_center_.SetTurn(enable_turn_);
+  config_center_.SetSrtp(enable_srtp_);
 
   LOG_INFO("Load settings from cache file");
 
@@ -476,6 +483,7 @@ int Render::CreateConnectionPeer() {
                              ? true
                              : false;
   params_.enable_turn = config_center_.IsEnableTurn();
+  params_.enable_srtp = config_center_.IsEnableSrtp();
   params_.on_receive_video_buffer = nullptr;
   params_.on_receive_audio_buffer = OnReceiveAudioBufferCb;
   params_.on_receive_data_buffer = OnReceiveDataBufferCb;
