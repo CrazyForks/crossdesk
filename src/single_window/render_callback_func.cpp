@@ -26,7 +26,7 @@ int Render::SendKeyCommand(int key_code, bool is_down) {
         client_properties_.end()) {
       auto props = client_properties_[controlled_remote_id_];
       if (props->connection_status_ == ConnectionStatus::Connected) {
-        SendDataFrame(props->peer_, (const char *)&remote_action,
+        SendDataFrame(props->peer_, (const char*)&remote_action,
                       sizeof(remote_action), props->data_label_.c_str());
       }
     }
@@ -35,14 +35,14 @@ int Render::SendKeyCommand(int key_code, bool is_down) {
   return 0;
 }
 
-int Render::ProcessMouseEvent(const SDL_Event &event) {
+int Render::ProcessMouseEvent(const SDL_Event& event) {
   controlled_remote_id_ = "";
   int video_width, video_height = 0;
   int render_width, render_height = 0;
   float ratio_x, ratio_y = 0;
   RemoteAction remote_action;
 
-  for (auto &it : client_properties_) {
+  for (auto& it : client_properties_) {
     auto props = it.second;
     if (!props->control_mouse_) {
       continue;
@@ -92,7 +92,7 @@ int Render::ProcessMouseEvent(const SDL_Event &event) {
       if (props->control_bar_hovered_ || props->display_selectable_hovered_) {
         remote_action.m.flag = MouseFlag::move;
       }
-      SendDataFrame(props->peer_, (const char *)&remote_action,
+      SendDataFrame(props->peer_, (const char*)&remote_action,
                     sizeof(remote_action), props->data_label_.c_str());
     } else if (SDL_EVENT_MOUSE_WHEEL == event.type &&
                last_mouse_event.button.x >= props->stream_render_rect_.x &&
@@ -125,7 +125,7 @@ int Render::ProcessMouseEvent(const SDL_Event &event) {
           (float)(event.button.y - props->stream_render_rect_.y) /
           render_height;
 
-      SendDataFrame(props->peer_, (const char *)&remote_action,
+      SendDataFrame(props->peer_, (const char*)&remote_action,
                     sizeof(remote_action), props->data_label_.c_str());
     }
   }
@@ -133,8 +133,8 @@ int Render::ProcessMouseEvent(const SDL_Event &event) {
   return 0;
 }
 
-void Render::SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
-  Render *render = (Render *)userdata;
+void Render::SdlCaptureAudioIn(void* userdata, Uint8* stream, int len) {
+  Render* render = (Render*)userdata;
   if (!render) {
     return;
   }
@@ -143,7 +143,7 @@ void Render::SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
     for (auto it : render->client_properties_) {
       auto props = it.second;
       if (props->connection_status_ == ConnectionStatus::Connected) {
-        SendAudioFrame(props->peer_, (const char *)stream, len,
+        SendAudioFrame(props->peer_, (const char*)stream, len,
                        render->audio_label_.c_str());
       }
     }
@@ -156,8 +156,8 @@ void Render::SdlCaptureAudioIn(void *userdata, Uint8 *stream, int len) {
   }
 }
 
-void Render::SdlCaptureAudioOut([[maybe_unused]] void *userdata,
-                                [[maybe_unused]] Uint8 *stream,
+void Render::SdlCaptureAudioOut([[maybe_unused]] void* userdata,
+                                [[maybe_unused]] Uint8* stream,
                                 [[maybe_unused]] int len) {
   // Render *render = (Render *)userdata;
   // for (auto it : render->client_properties_) {
@@ -184,10 +184,10 @@ void Render::SdlCaptureAudioOut([[maybe_unused]] void *userdata,
   // render->audio_buffer_fresh_ = false;
 }
 
-void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
-                                    const char *user_id, size_t user_id_size,
-                                    void *user_data) {
-  Render *render = (Render *)user_data;
+void Render::OnReceiveVideoBufferCb(const XVideoFrame* video_frame,
+                                    const char* user_id, size_t user_id_size,
+                                    void* user_data) {
+  Render* render = (Render*)user_data;
   if (!render) {
     return;
   }
@@ -197,7 +197,7 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
       render->client_properties_.end()) {
     return;
   }
-  SubStreamWindowProperties *props =
+  SubStreamWindowProperties* props =
       render->client_properties_.find(remote_id)->second.get();
 
   if (props->connection_established_) {
@@ -236,10 +236,10 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame *video_frame,
   }
 }
 
-void Render::OnReceiveAudioBufferCb(const char *data, size_t size,
-                                    const char *user_id, size_t user_id_size,
-                                    void *user_data) {
-  Render *render = (Render *)user_data;
+void Render::OnReceiveAudioBufferCb(const char* data, size_t size,
+                                    const char* user_id, size_t user_id_size,
+                                    void* user_data) {
+  Render* render = (Render*)user_data;
   if (!render) {
     return;
   }
@@ -248,17 +248,17 @@ void Render::OnReceiveAudioBufferCb(const char *data, size_t size,
 
   if (render->output_stream_) {
     int pushed = SDL_PutAudioStreamData(
-        render->output_stream_, (const Uint8 *)data, static_cast<int>(size));
+        render->output_stream_, (const Uint8*)data, static_cast<int>(size));
     if (pushed < 0) {
       LOG_ERROR("Failed to push audio data: {}", SDL_GetError());
     }
   }
 }
 
-void Render::OnReceiveDataBufferCb(const char *data, size_t size,
-                                   const char *user_id, size_t user_id_size,
-                                   void *user_data) {
-  Render *render = (Render *)user_data;
+void Render::OnReceiveDataBufferCb(const char* data, size_t size,
+                                   const char* user_id, size_t user_id_size,
+                                   void* user_data) {
+  Render* render = (Render*)user_data;
   if (!render) {
     return;
   }
@@ -325,9 +325,9 @@ void Render::OnReceiveDataBufferCb(const char *data, size_t size,
   }
 }
 
-void Render::OnSignalStatusCb(SignalStatus status, const char *user_id,
-                              size_t user_id_size, void *user_data) {
-  Render *render = (Render *)user_data;
+void Render::OnSignalStatusCb(SignalStatus status, const char* user_id,
+                              size_t user_id_size, void* user_data) {
+  Render* render = (Render*)user_data;
   if (!render) {
     return;
   }
@@ -378,9 +378,9 @@ void Render::OnSignalStatusCb(SignalStatus status, const char *user_id,
   }
 }
 
-void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
-                                  const size_t user_id_size, void *user_data) {
-  Render *render = (Render *)user_data;
+void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
+                                  const size_t user_id_size, void* user_data) {
+  Render* render = (Render*)user_data;
   if (!render) return;
 
   std::string remote_id(user_id, user_id_size);
@@ -468,19 +468,19 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char *user_id,
   }
 }
 
-void Render::NetStatusReport(const char *client_id, size_t client_id_size,
+void Render::NetStatusReport(const char* client_id, size_t client_id_size,
                              TraversalMode mode,
-                             const XNetTrafficStats *net_traffic_stats,
-                             const char *user_id, const size_t user_id_size,
-                             void *user_data) {
-  Render *render = (Render *)user_data;
+                             const XNetTrafficStats* net_traffic_stats,
+                             const char* user_id, const size_t user_id_size,
+                             void* user_data) {
+  Render* render = (Render*)user_data;
   if (!render) {
     return;
   }
 
   if (strchr(client_id, '@') != nullptr && strchr(user_id, '-') == nullptr) {
     std::string id, password;
-    const char *at_pos = strchr(client_id, '@');
+    const char* at_pos = strchr(client_id, '@');
     if (at_pos == nullptr) {
       id = client_id;
       password.clear();

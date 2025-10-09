@@ -382,7 +382,6 @@ class Render {
   bool rejoin_ = false;
   bool local_id_copied_ = false;
   bool show_password_ = true;
-  bool regenerate_password_ = false;
   bool show_about_window_ = false;
   bool show_connection_status_window_ = false;
   bool show_reset_password_window_ = false;
@@ -396,7 +395,6 @@ class Render {
   std::string delete_connection_name_ = "";
   bool re_enter_remote_id_ = false;
   double copy_start_time_ = 0;
-  double regenerate_password_start_time_ = 0;
   SignalStatus signal_status_ = SignalStatus::SignalClosed;
   std::string signal_status_str_ = "";
   bool signal_connected_ = false;
