@@ -27,7 +27,7 @@ CrossDesk 是 [MiniRTC](https://github.com/kunkundi/minirtc.git) 实时音视频
 发起连接前，可在设置中自定义配置项，如语言、视频编码格式等。
 ![settings](https://github.com/user-attachments/assets/8bc5468d-7bbb-4e30-95bd-da1f352ac08c)
 
-## 编译
+## 如何编译
 
 依赖：
 - [xmake](https://xmake.io/#/guide/installation)
@@ -51,7 +51,51 @@ git submodule update
 
 xmake b crossdesk
 ```
+#### 无 CUDA 环境下的开发支持
+
+对于未安装 **CUDA 环境** 的Linux开发者，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。  
+该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
+
+进入容器，下载工程后执行：
+```
+export CUDA_PATH=/usr/local/cuda
+export XMAKE_GLOBALDIR=/data
+
+xmake b --root crossdesk
+```
+
 运行
 ```
 xmake r crossdesk
 ```
+
+## 关于 Xmake
+
+#### 安装 Xmake
+使用 curl：
+```
+curl -fsSL https://xmake.io/shget.text | bash
+```
+使用 wget：
+```
+wget https://xmake.io/shget.text -O - | bash
+```
+使用 powershell：
+```
+irm https://xmake.io/psget.text | iex
+```
+
+#### 编译选项
+```
+# 切换编译模式
+xmake f -m debug/release
+
+# 可选编译参数
+-r ：重新构建目标
+-v ：显示详细的构建日志
+-y ：自动确认提示
+
+# 示例
+xmake b -vy crossdesk
+```
+更多使用方法可参考 [Xmake官方文档](https://xmake.io/guide/quick-start.html) 。

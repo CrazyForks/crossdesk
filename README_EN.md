@@ -51,7 +51,54 @@ git submodule update
 
 xmake b crossdesk
 ```
+
+#### Development Without CUDA Environment
+
+For developers who do not have a **CUDA environment** installed, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
+This image comes with all required build dependencies and allows you to build the project directly inside the container without any additional setup.
+
+After entering the container, download the project and run:
+```
+export CUDA_PATH=/usr/local/cuda
+export XMAKE_GLOBALDIR=/data
+
+xmake b --root crossdesk
+```
+
 Run:
 ```
 xmake r crossdesk
 ```
+
+## About Xmake
+#### Installing Xmake
+
+You can install Xmake using one of the following methods:
+
+Using curl:
+```
+curl -fsSL https://xmake.io/shget.text | bash
+```
+Using wget:
+```
+wget https://xmake.io/shget.text -O - | bash
+```
+Using powershell:
+```
+irm https://xmake.io/psget.text | iex
+```
+
+#### Build Options
+```
+# Switch build mode
+xmake f -m debug/release
+
+# Optional build parameters
+-r : Rebuild the target
+-v : Show detailed build logs
+-y : Automatically confirm prompts
+
+# Example
+xmake b -vy crossdesk
+```
+For more information, please refer to the [official Xmake documentation](https://xmake.io/guide/quick-start.html) .
