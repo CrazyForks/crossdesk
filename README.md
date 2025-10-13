@@ -3,7 +3,7 @@
 #### 跨界连接，高效如一
 
 ----
-[English](README.md) / [中文](README_CN.md)
+[English](README_EN.md) / [中文](README.md)
 
 ![sup_example](https://github.com/user-attachments/assets/eeb64fbe-1f07-4626-be1c-b77396beb905)
 

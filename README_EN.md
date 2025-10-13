@@ -3,7 +3,7 @@
 #### Bridging work, uniting efficiency
 
 ----
-[中文](README_CN.md) / [English](README.md)
+[中文](README.md) / [English](README_EN.md)
 
 ![sup_example](https://github.com/user-attachments/assets/3f17d8f3-7c4a-4b63-bae4-903363628687)
 
