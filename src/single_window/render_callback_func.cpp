@@ -233,6 +233,20 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame* video_frame,
     event.user.data1 = props;
     SDL_PushEvent(&event);
     props->streaming_ = true;
+
+    if (props->net_traffic_stats_button_pressed_) {
+      props->frame_count_++;
+      auto now = std::chrono::steady_clock::now();
+      auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         now - props->last_time_)
+                         .count();
+
+      if (elapsed >= 1000) {
+        props->fps_ = props->frame_count_ * 1000 / elapsed;
+        props->frame_count_ = 0;
+        props->last_time_ = now;
+      }
+    }
   }
 }
 

@@ -314,6 +314,11 @@ int Render::NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props) {
     ImGui::TableNextColumn();
     LossRateDisplay(props->net_traffic_stats_.total_inbound_stats.loss_rate);
 
+    ImGui::TableNextColumn();
+    ImGui::Text("FPS");
+    ImGui::TableNextColumn();
+    ImGui::Text("%d", props->fps_);
+
     ImGui::EndTable();
   }
 

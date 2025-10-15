@@ -65,7 +65,7 @@ class Render {
     float control_window_min_width_ = 20;
     float control_window_max_width_ = 230;
     float control_window_min_height_ = 40;
-    float control_window_max_height_ = 150;
+    float control_window_max_height_ = 170;
     float control_window_width_ = 230;
     float control_window_height_ = 40;
     float control_bar_pos_x_ = 0;
@@ -110,6 +110,9 @@ class Render {
     ImVec2 control_window_pos_;
     ConnectionStatus connection_status_ = ConnectionStatus::Closed;
     TraversalMode traversal_mode_ = TraversalMode::UnknownMode;
+    int fps_ = 0;
+    int frame_count_ = 0;
+    std::chrono::steady_clock::time_point last_time_;
     XNetTrafficStats net_traffic_stats_;
   };
 
