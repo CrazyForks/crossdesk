@@ -231,7 +231,7 @@ int Render::LoadSettingsFromCacheFile() {
     video_encode_format_button_value_ = 1;
     enable_hardware_video_codec_ = false;
     enable_turn_ = false;
-    enable_srtp_ = true;
+    enable_srtp_ = false;
 
     config_center_.SetLanguage((ConfigCenter::LANGUAGE)language_button_value_);
     config_center_.SetVideoQuality(

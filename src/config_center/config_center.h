@@ -44,7 +44,7 @@ class ConfigCenter {
   VIDEO_ENCODE_FORMAT video_encode_format_ = VIDEO_ENCODE_FORMAT::AV1;
   bool hardware_video_codec_ = false;
   bool enable_turn_ = false;
-  bool enable_srtp_ = true;
+  bool enable_srtp_ = false;
 };
 
 #endif

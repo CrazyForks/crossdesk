@@ -436,14 +436,14 @@ class Render {
   int video_encode_format_button_value_ = 0;
   bool enable_hardware_video_codec_ = false;
   bool enable_turn_ = false;
-  bool enable_srtp_ = true;
+  bool enable_srtp_ = false;
   bool enable_self_hosted_server_ = false;
   int language_button_value_last_ = 0;
   int video_quality_button_value_last_ = 0;
   int video_encode_format_button_value_last_ = 0;
   bool enable_hardware_video_codec_last_ = false;
   bool enable_turn_last_ = false;
-  bool enable_srtp_last_ = true;
+  bool enable_srtp_last_ = false;
   bool settings_window_pos_reset_ = true;
   bool self_hosted_server_config_window_pos_reset_ = true;
   std::string selected_current_file_path_ = "";
