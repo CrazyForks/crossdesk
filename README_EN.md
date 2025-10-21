@@ -65,7 +65,7 @@ xmake r crossdesk
 
 #### Development Without CUDA Environment
 
-For **Linux** developers who do not have a **CUDA environment** installed, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
+For **Linux developers who do not have a CUDA environment** installed, a preconfigured [Ubuntu 22.04 Docker image](https://hub.docker.com/r/crossdesk/ubuntu22.04) is provided.  
 This image comes with all required build dependencies and allows you to build the project directly inside the container without any additional setup.
 
 After entering the container, download the project and run:
@@ -76,7 +76,7 @@ export XMAKE_GLOBALDIR=/data
 xmake b --root -vy crossdesk
 ```
 
-For **Windows** developers without a **CUDA environment** installed, run the following command to install the CUDA build environment:
+For **Windows developers without a CUDA environment** installed, run the following command to install the CUDA build environment:
 ```
 xmake require -vy "cuda 12.6.3"
 ```

@@ -65,7 +65,7 @@ xmake r crossdesk
 
 ### 无 CUDA 环境下的开发支持
 
-对于未安装 **CUDA 环境** 的 Linux 开发者，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
+对于**未安装 CUDA 环境的 Linux 开发者**，这里提供了预配置的 [Ubuntu 22.04 Docker 镜像](https://hub.docker.com/r/crossdesk/ubuntu22.04)。该镜像内置必要的构建依赖，可在容器中开箱即用，无需额外配置即可直接编译项目。
 
 进入容器，下载工程后执行：
 ```
@@ -75,7 +75,7 @@ export XMAKE_GLOBALDIR=/data
 xmake b --root -vy crossdesk
 ```
 
-对于未安装 **CUDA 环境** 的 Windows 开发者，执行下面的命令安装 CUDA 编译环境：
+对于**未安装 CUDA 环境的 Windows 开发者**，执行下面的命令安装 CUDA 编译环境：
 ```
 xmake require -vy "cuda 12.6.3"
 ```
