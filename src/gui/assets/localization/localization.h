@@ -8,6 +8,10 @@
 
 #include <string>
 #include <vector>
+
+#if _WIN32
+#include <Windows.h>
+#endif
 namespace localization {
 
 static std::vector<std::string> local_desktop = {
@@ -155,6 +159,12 @@ static std::vector<std::string> version = {
 static std::vector<std::string> confirm_delete_connection = {
     reinterpret_cast<const char*>(u8"确认删除此连接"),
     "Confirm to delete this connection"};
-}  // namespace localization
+#if _WIN32
 
+static std::vector<std::string> minimize_to_tray = {
+    reinterpret_cast<const char*>(u8"退出时最小化到系统托盘:"),
+    "Minimize to system tray when exit:"};
+static std::vector<LPCWSTR> exit_program = {L"退出", L"Exit"};
+#endif
+}  // namespace localization
 #endif

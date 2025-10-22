@@ -139,9 +139,17 @@ int Render::TitleBar(bool main_window) {
     float xmark_size = 12.0f;
     std::string close_button = "##xmark";  // ICON_FA_XMARK;
     if (ImGui::Button(close_button.c_str(), ImVec2(BUTTON_PADDING, 30))) {
-      SDL_Event event;
-      event.type = SDL_EVENT_QUIT;
-      SDL_PushEvent(&event);
+#if _WIN32
+      if (enable_minimize_to_tray_) {
+        tray_->MinimizeToTray();
+      } else {
+#endif
+        SDL_Event event;
+        event.type = SDL_EVENT_QUIT;
+        SDL_PushEvent(&event);
+#if _WIN32
+      }
+#endif
     }
     draw_list->AddLine(ImVec2(xmark_pos_x - xmark_size / 2 - 0.25f,
                               xmark_pos_y - xmark_size / 2 + 0.75f),

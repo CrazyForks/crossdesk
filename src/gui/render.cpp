@@ -588,6 +588,17 @@ int Render::CreateMainWindow() {
   // for window region action
   SDL_SetWindowHitTest(main_window_, HitTestCallback, this);
 
+#if _WIN32
+  SDL_PropertiesID props = SDL_GetWindowProperties(main_window_);
+  HWND main_hwnd = (HWND)SDL_GetPointerProperty(
+      props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+
+  HICON tray_icon = (HICON)LoadImageW(NULL, L"crossdesk.ico", IMAGE_ICON, 0, 0,
+                                      LR_LOADFROMFILE | LR_DEFAULTSIZE);
+  tray_ = std::make_unique<WinTray>(main_hwnd, tray_icon, L"CrossDesk",
+                                    localization_language_index_);
+#endif
+
   return 0;
 }
 
@@ -967,6 +978,14 @@ void Render::MainLoop() {
     if (SDL_WaitEventTimeout(&event, sdl_refresh_ms_)) {
       ProcessSdlEvent(event);
     }
+
+#if _WIN32
+    MSG msg;
+    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+    }
+#endif
 
     UpdateLabels();
     HandleRecentConnections();

@@ -36,6 +36,7 @@ class ConfigCenter {
   int SetServerPort(int server_port);
   int SetCertFilePath(const std::string& cert_file_path);
   int SetSelfHosted(bool enable_self_hosted);
+  int SetMinimizeToTray(bool enable_minimize_to_tray);
 
   // read config
 
@@ -53,6 +54,7 @@ class ConfigCenter {
   int GetDefaultServerPort() const;
   std::string GetDefaultCertFilePath() const;
   bool IsSelfHosted() const;
+  bool IsMinimizeToTray() const;
 
   int Load();
   int Save();
@@ -76,6 +78,7 @@ class ConfigCenter {
   int server_port_default_ = 9099;
   std::string cert_file_path_default_ = "";
   bool enable_self_hosted_ = false;
+  bool enable_minimize_to_tray_ = false;
 };
 
 #endif

@@ -146,10 +146,14 @@ target("gui")
     add_deps("rd_log", "common", "assets", "config_center", "minirtc", 
         "path_manager", "screen_capturer", "speaker_capturer", 
         "device_controller", "thumbnail")
-    add_files("src/gui/*.cpp", "src/gui/panels/*.cpp", "src/gui/toolbars/*.cpp", 
+    add_files("src/gui/*.cpp", "src/gui/panels/*.cpp", "src/gui/toolbars/*.cpp",
         "src/gui/windows/*.cpp")
-    add_includedirs("src/gui", "src/gui/panels", "src/gui/toolbars", 
+    add_includedirs("src/gui", "src/gui/panels", "src/gui/toolbars",
         "src/gui/windows", {public = true})
+    if is_os("windows") then
+        add_files("src/gui/tray/*.cpp")
+        add_includedirs("src/gui/tray", {public = true})
+    end
 
 target("crossdesk")
     set_kind("binary")

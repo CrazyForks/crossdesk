@@ -44,6 +44,9 @@ int ConfigCenter::Load() {
   enable_self_hosted_ =
       ini_.GetBoolValue(section_, "enable_self_hosted", enable_self_hosted_);
 
+  enable_minimize_to_tray_ = ini_.GetBoolValue(
+      section_, "enable_minimize_to_tray", enable_minimize_to_tray_);
+
   return 0;
 }
 
@@ -62,6 +65,8 @@ int ConfigCenter::Save() {
   ini_.SetLongValue(section_, "server_port", static_cast<long>(server_port_));
   ini_.SetValue(section_, "cert_file_path", cert_file_path_.c_str());
   ini_.SetBoolValue(section_, "enable_self_hosted", enable_self_hosted_);
+  ini_.SetBoolValue(section_, "enable_minimize_to_tray",
+                    enable_minimize_to_tray_);
 
   SI_Error rc = ini_.SaveFile(config_path_.c_str());
   if (rc < 0) {
@@ -186,6 +191,11 @@ int ConfigCenter::SetSelfHosted(bool enable_self_hosted) {
   return 0;
 }
 
+int ConfigCenter::SetMinimizeToTray(bool enable_minimize_to_tray) {
+  enable_minimize_to_tray_ = enable_minimize_to_tray;
+  return 0;
+}
+
 // getters
 
 ConfigCenter::LANGUAGE ConfigCenter::GetLanguage() const { return language_; }
@@ -227,3 +237,5 @@ std::string ConfigCenter::GetDefaultCertFilePath() const {
 }
 
 bool ConfigCenter::IsSelfHosted() const { return enable_self_hosted_; }
+
+bool ConfigCenter::IsMinimizeToTray() const { return enable_minimize_to_tray_; }

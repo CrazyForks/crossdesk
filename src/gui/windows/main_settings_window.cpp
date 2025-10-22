@@ -57,7 +57,7 @@ int Render::SettingWindow() {
             localization::language_en[localization_language_index_].c_str()};
 
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset + 4);
         ImGui::Text(
             "%s", localization::language[localization_language_index_].c_str());
         if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
@@ -88,7 +88,7 @@ int Render::SettingWindow() {
                 .c_str()};
 
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset + 4);
         ImGui::Text(
             "%s",
             localization::video_quality[localization_language_index_].c_str());
@@ -111,7 +111,7 @@ int Render::SettingWindow() {
         const char* video_frame_rate_items[] = {"30 fps", "60 fps"};
 
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset + 4);
         ImGui::Text("%s",
                     localization::video_frame_rate[localization_language_index_]
                         .c_str());
@@ -137,7 +137,7 @@ int Render::SettingWindow() {
             localization::av1[localization_language_index_].c_str()};
 
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset + 4);
         ImGui::Text(
             "%s",
             localization::video_encode_format[localization_language_index_]
@@ -160,7 +160,7 @@ int Render::SettingWindow() {
 
       {
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset + 4);
         ImGui::Text("%s", localization::enable_hardware_video_codec
                               [localization_language_index_]
                                   .c_str());
@@ -179,7 +179,7 @@ int Render::SettingWindow() {
 
       {
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset + 4);
         ImGui::Text(
             "%s",
             localization::enable_turn[localization_language_index_].c_str());
@@ -197,7 +197,7 @@ int Render::SettingWindow() {
 
       {
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset + 4);
         ImGui::Text(
             "%s",
             localization::enable_srtp[localization_language_index_].c_str());
@@ -215,7 +215,7 @@ int Render::SettingWindow() {
 
       {
         settings_items_offset += settings_items_padding;
-        ImGui::SetCursorPosY(settings_items_offset + 2);
+        ImGui::SetCursorPosY(settings_items_offset + 1);
 
         if (ImGui::Button(localization::self_hosted_server_config
                               [localization_language_index_]
@@ -232,7 +232,27 @@ int Render::SettingWindow() {
         ImGui::Checkbox("##enable_self_hosted_server",
                         &enable_self_hosted_server_);
       }
+#if _WIN32
+      ImGui::Separator();
 
+      {
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 4);
+
+        ImGui::Text("%s",
+                    localization::minimize_to_tray[localization_language_index_]
+                        .c_str());
+
+        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+          ImGui::SetCursorPosX(ENABLE_MINIZE_TO_TRAY_PADDING_CN);
+        } else {
+          ImGui::SetCursorPosX(ENABLE_MINIZE_TO_TRAY_PADDING_EN);
+        }
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::Checkbox("##enable_minimize_to_tray_",
+                        &enable_minimize_to_tray_);
+      }
+#endif
       if (stream_window_inited_) {
         ImGui::EndDisabled();
       }

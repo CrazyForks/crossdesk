@@ -29,6 +29,9 @@
 #include "screen_capturer_factory.h"
 #include "speaker_capturer_factory.h"
 #include "thumbnail.h"
+#if _WIN32
+#include "win_tray.h"
+#endif
 
 class Render {
  public:
@@ -298,6 +301,9 @@ class Render {
   ImGuiContext* main_ctx_ = nullptr;
   bool exit_ = false;
   const int sdl_refresh_ms_ = 16;  // ~60 FPS
+#if _WIN32
+  std::unique_ptr<WinTray> tray_;
+#endif
 
   // main window properties
   bool start_mouse_controller_ = false;
@@ -444,6 +450,8 @@ class Render {
   bool enable_hardware_video_codec_last_ = false;
   bool enable_turn_last_ = false;
   bool enable_srtp_last_ = false;
+  bool enable_minimize_to_tray_ = false;
+  bool enable_minimize_to_tray_last_ = false;
   char signal_server_ip_tmp_[256] = "api.crossdesk.cn";
   char signal_server_port_tmp_[6] = "9099";
   bool settings_window_pos_reset_ = true;
