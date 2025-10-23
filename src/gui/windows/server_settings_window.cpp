@@ -43,7 +43,12 @@ int Render::ShowSimpleFileBrowser() {
         localization::select_a_file[localization_language_index_].c_str();
   }
 
+  // 设置固定宽度
+  // ImGui::SetNextItemWidth(SELF_HOSTED_SERVER_INPUT_WINDOW_WIDTH);
+
+  ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);  // 禁用自动关闭
   if (ImGui::BeginCombo("##select_a_file", display_text.c_str())) {
+    bool file_selected = false;
     if (selected_current_file_path_ == "Root" ||
         !std::filesystem::exists(selected_current_file_path_) ||
         !std::filesystem::is_directory(selected_current_file_path_)) {
@@ -77,6 +82,7 @@ int Render::ShowSimpleFileBrowser() {
           } else {
             if (ImGui::Selectable(name.c_str())) {
               selected_file_ = entry.path().string();
+              file_selected = true;  // 记录选中文件
             }
           }
         }
@@ -85,8 +91,14 @@ int Render::ShowSimpleFileBrowser() {
       }
     }
 
-    ImGui::EndCombo();
+    // 如果选中了文件，则自动关闭下拉框
+    if (file_selected) {
+      ImGui::EndCombo();  // 关闭下拉框
+    } else {
+      ImGui::EndCombo();  // 保持下拉框开启
+    }
   }
+  ImGui::PopItemFlag();  // 恢复默认行为
 
   return 0;
 }
