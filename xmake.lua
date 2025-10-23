@@ -7,8 +7,6 @@ option("CROSSDESK_VERSION")
     set_description("Set CROSSDESK_VERSION for build")
 option_end()
 
-add_defines("CROSSDESK_VERSION=\"" .. (get_config("CROSSDESK_VERSION") or "Unknown") .. "\"")
-
 add_rules("mode.release", "mode.debug")
 set_languages("c++17")
 set_encodings("utf-8")
@@ -148,6 +146,7 @@ target("assets")
 target("gui")
     set_kind("object")
     add_packages("libyuv")
+    add_defines("CROSSDESK_VERSION=\"" .. (get_config("CROSSDESK_VERSION") or "Unknown") .. "\"")
     add_deps("rd_log", "common", "assets", "config_center", "minirtc", 
         "path_manager", "screen_capturer", "speaker_capturer", 
         "device_controller", "thumbnail")

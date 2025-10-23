@@ -34,10 +34,11 @@ jobs:
         shell: bash
         id: set_deb_version
         run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
           if [[ ! "${VERSION_NUM}" =~ ^[0-9] ]]; then
-            LEGAL_VERSION="0.0.0-${VERSION_NUM}-${GITHUB_RUN_NUMBER}"
+            LEGAL_VERSION="0.0.0-${VERSION_NUM}-${SHORT_SHA}"
           else
-            LEGAL_VERSION="${VERSION_NUM}-${GITHUB_RUN_NUMBER}"
+            LEGAL_VERSION="${VERSION_NUM}-${SHORT_SHA}"
           fi
           echo "LEGAL_VERSION=${LEGAL_VERSION}" >> $GITHUB_ENV
 
@@ -97,10 +98,11 @@ jobs:
         shell: bash
         id: set_deb_version
         run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
           if [[ ! "${VERSION_NUM}" =~ ^[0-9] ]]; then
-            LEGAL_VERSION="0.0.0-${VERSION_NUM}-${GITHUB_RUN_NUMBER}"
+            LEGAL_VERSION="0.0.0-${VERSION_NUM}-${SHORT_SHA}"
           else
-            LEGAL_VERSION="${VERSION_NUM}-${GITHUB_RUN_NUMBER}"
+            LEGAL_VERSION="${VERSION_NUM}-${SHORT_SHA}"
           fi
           echo "LEGAL_VERSION=${LEGAL_VERSION}" >> $GITHUB_ENV
 
@@ -157,7 +159,8 @@ jobs:
         id: version
         run: |
           VERSION="${GITHUB_REF##*/}"
-          VERSION_NUM="${VERSION#v}-${GITHUB_RUN_NUMBER}"
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          VERSION_NUM="${VERSION#v}-${SHORT_SHA}"
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_ENV
           echo "VERSION_NUM=${VERSION_NUM}"
 
@@ -219,7 +222,8 @@ jobs:
           $version = $ref -replace '^refs/(tags|heads)/', ''
           $version = $version -replace '^v', ''
           $version = $version -replace '/', '-'
-          echo "VERSION_NUM=$version-${GITHUB_RUN_NUMBER}" >> $env:GITHUB_ENV
+          $SHORT_SHA = $env:GITHUB_SHA.Substring(0,7)
+          echo "VERSION_NUM=$version-$SHORT_SHA" >> $env:GITHUB_ENV
 
       - name: Cache xmake dependencies
         uses: actions/cache@v4
@@ -286,7 +290,7 @@ jobs:
 
       - name: Build CrossDesk
         run: |
-          xmake f --CROSSDESK_VERSION=${VERSION_NUM} -y
+          xmake f --CROSSDESK_VERSION=${{ env.VERSION_NUM }} -y
           xmake b -vy crossdesk
  
       - name: Decode and save certificate
@@ -327,7 +331,8 @@ jobs:
         id: version
         run: |
           VERSION="${GITHUB_REF##*/}"
-          VERSION_NUM="${VERSION#v}-${VERSION_NUM}"
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          VERSION_NUM="${VERSION#v}-${SHORT_SHA}"
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
 
       - name: Rename artifacts

@@ -341,8 +341,8 @@ class Render {
   float connection_status_window_height_ = 150;
   float notification_window_width_ = 200;
   float notification_window_height_ = 80;
-  float about_window_width_ = 200;
-  float about_window_height_ = 150;
+  float about_window_width_ = 300;
+  float about_window_height_ = 170;
   int screen_width_ = 1280;
   int screen_height_ = 720;
   int selected_display_ = 0;
