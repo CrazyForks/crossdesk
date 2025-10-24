@@ -15,8 +15,9 @@ jobs:
       - name: Set version number
         id: version
         run: |
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
           VERSION_NUM="${GITHUB_REF##*/}"
-          VERSION_NUM="${VERSION_NUM#v}"
+          VERSION_NUM="${VERSION_NUM#v}-${SHORT_SHA}"
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_ENV
           echo "VERSION_NUM=${VERSION_NUM}" >> $GITHUB_OUTPUT
 

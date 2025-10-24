@@ -27,15 +27,21 @@ int Render::AboutWindow() {
     ImGui::SetWindowFontScale(0.5f);
 
     std::string version;
-#ifdef RD_VERSION
-    version = RD_VERSION;
+#ifdef CROSSDESK_VERSION
+    version = CROSSDESK_VERSION;
 #else
     version = "Unknown";
 #endif
 
-    std::string text =
-        localization::version[localization_language_index_] + ": " + version;
+    std::string text = localization::version[localization_language_index_] +
+                       ": CrossDesk v" + version;
     ImGui::Text("%s", text.c_str());
+    ImGui::Text("");
+
+    std::string copyright_text = "© 2025 by JUNKUN DI. All rights reserved.";
+    std::string license_text = "Licensed under GNU LGPL v3.";
+    ImGui::Text("%s", copyright_text.c_str());
+    ImGui::Text("%s", license_text.c_str());
 
     ImGui::SetCursorPosX(about_window_width_ * 0.42f);
     ImGui::SetCursorPosY(about_window_height_ * 0.75f);

@@ -1,8 +1,11 @@
 set_project("crossdesk")
 set_license("LGPL-3.0")
 
-set_version("0.0.1")
-add_defines("RD_VERSION=\"0.0.1\"");
+option("CROSSDESK_VERSION")
+    set_default("0.0.0")
+    set_showmenu(true)
+    set_description("Set CROSSDESK_VERSION for build")
+option_end()
 
 add_rules("mode.release", "mode.debug")
 set_languages("c++17")
@@ -143,6 +146,7 @@ target("assets")
 target("gui")
     set_kind("object")
     add_packages("libyuv")
+    add_defines("CROSSDESK_VERSION=\"" .. (get_config("CROSSDESK_VERSION") or "Unknown") .. "\"")
     add_deps("rd_log", "common", "assets", "config_center", "minirtc", 
         "path_manager", "screen_capturer", "speaker_capturer", 
         "device_controller", "thumbnail")
