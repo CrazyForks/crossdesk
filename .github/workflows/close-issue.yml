@@ -63,3 +63,5 @@ jobs:
                 console.log(`Skipping issue #${issue.number} (Active within 7 days).`);
               }
             }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
