@@ -22,8 +22,13 @@
 #include "display_info.h"
 #include "rd_log.h"
 
-using namespace crossdesk;
 class ScreenCapturerSckImpl;
+
+namespace crossdesk {
+std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
+  return std::make_unique<ScreenCapturerSckImpl>();
+}
+}  // namespace crossdesk
 
 static const int kFullDesktopScreenId = -1;
 
@@ -172,8 +177,6 @@ std::string GetDisplayName(CGDirectDisplayID display_id) {
   CFRelease(display_info);
   return result;
 }
-
-namespace crossdesk {
 
 ScreenCapturerSckImpl::ScreenCapturerSckImpl() {
   helper_ = [[SckHelper alloc] initWithCapturer:this];
@@ -427,11 +430,6 @@ void ScreenCapturerSckImpl::StartOrReconfigureCapturer() {
   };
   [SCShareableContent getShareableContentWithCompletionHandler:handler];
 }
-
-std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
-  return std::make_unique<ScreenCapturerSckImpl>();
-}
-}  // namespace crossdesk
 
 @implementation SckHelper {
   // This lock is to prevent the capturer being destroyed while an instance
