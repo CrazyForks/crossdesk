@@ -46,7 +46,7 @@ end
 
 add_packages("spdlog", "imgui")
 
-includes("thirdparty")
+includes("submodules")
 
 target("rd_log")
     set_kind("object")
