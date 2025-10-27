@@ -22,10 +22,10 @@
 #include "display_info.h"
 #include "rd_log.h"
 
-namespace crossdesk {
+using namespace crossdesk;
+class ScreenCapturerSckImpl;
 
 static const int kFullDesktopScreenId = -1;
-class ScreenCapturerSckImpl;
 
 // The ScreenCaptureKit API was available in macOS 12.3, but full-screen capture
 // was reported to be broken before macOS 13 - see http://crbug.com/40234870.
@@ -172,6 +172,8 @@ std::string GetDisplayName(CGDirectDisplayID display_id) {
   CFRelease(display_info);
   return result;
 }
+
+namespace crossdesk {
 
 ScreenCapturerSckImpl::ScreenCapturerSckImpl() {
   helper_ = [[SckHelper alloc] initWithCapturer:this];
@@ -429,6 +431,7 @@ void ScreenCapturerSckImpl::StartOrReconfigureCapturer() {
 std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
   return std::make_unique<ScreenCapturerSckImpl>();
 }
+}  // namespace crossdesk
 
 @implementation SckHelper {
   // This lock is to prevent the capturer being destroyed while an instance
@@ -488,4 +491,3 @@ std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
 }
 
 @end
-}  // namespace crossdesk
