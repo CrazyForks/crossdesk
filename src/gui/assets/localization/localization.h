@@ -12,6 +12,9 @@
 #if _WIN32
 #include <Windows.h>
 #endif
+
+namespace crossdesk {
+
 namespace localization {
 
 static std::vector<std::string> local_desktop = {
@@ -169,4 +172,5 @@ static std::vector<std::string> minimize_to_tray = {
 static std::vector<LPCWSTR> exit_program = {L"退出", L"Exit"};
 #endif
 }  // namespace localization
+}  // namespace crossdesk
 #endif

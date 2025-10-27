@@ -9,6 +9,8 @@
 
 #include <string>
 
+namespace crossdesk {
+
 class DisplayInfo {
  public:
   DisplayInfo(std::string name, int left, int top, int right, int bottom)
@@ -40,5 +42,5 @@ class DisplayInfo {
   int width = 0;
   int height = 0;
 };
-
+}  // namespace crossdesk
 #endif

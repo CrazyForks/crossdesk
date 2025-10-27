@@ -9,6 +9,8 @@
 
 #include "rd_log.h"
 
+namespace crossdesk {
+
 constexpr int kSampleRate = 48000;
 constexpr pa_sample_format_t kFormat = PA_SAMPLE_S16LE;
 constexpr int kChannels = 1;
@@ -266,3 +268,4 @@ int SpeakerCapturerLinux::Resume() {
   paused_ = false;
   return 0;
 }
+}  // namespace crossdesk

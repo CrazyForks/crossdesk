@@ -2,6 +2,8 @@
 
 #include "rd_log.h"
 
+namespace crossdesk {
+
 ScreenCapturerSck::ScreenCapturerSck() {}
 ScreenCapturerSck::~ScreenCapturerSck() {}
 
@@ -71,3 +73,4 @@ std::vector<DisplayInfo> ScreenCapturerSck::GetDisplayInfoList() {
 void ScreenCapturerSck::OnFrame() {}
 
 void ScreenCapturerSck::CleanUp() {}
+}  // namespace crossdesk

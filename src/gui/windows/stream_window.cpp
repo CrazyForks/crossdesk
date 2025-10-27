@@ -2,6 +2,8 @@
 #include "rd_log.h"
 #include "render.h"
 
+namespace crossdesk {
+
 void Render::DrawConnectionStatusText(
     std::shared_ptr<SubStreamWindowProperties>& props) {
   std::string text;
@@ -200,3 +202,4 @@ int Render::StreamWindow() {
 
   return 0;
 }
+}  // namespace crossdesk

@@ -11,18 +11,21 @@
 
 #include "device_controller.h"
 
+namespace crossdesk {
+
 class KeyboardCapturer : public DeviceController {
  public:
   KeyboardCapturer();
   virtual ~KeyboardCapturer();
 
  public:
-  virtual int Hook(OnKeyAction on_key_action, void *user_ptr);
+  virtual int Hook(OnKeyAction on_key_action, void* user_ptr);
   virtual int Unhook();
   virtual int SendKeyboardCommand(int key_code, bool is_down);
 
  private:
   HHOOK keyboard_hook_ = nullptr;
 };
+}  // namespace crossdesk
 
 #endif

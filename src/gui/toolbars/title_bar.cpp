@@ -4,6 +4,8 @@
 
 #define BUTTON_PADDING 36.0f
 
+namespace crossdesk {
+
 int Render::TitleBar(bool main_window) {
   ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -172,3 +174,4 @@ int Render::TitleBar(bool main_window) {
   ImGui::PopStyleColor();
   return 0;
 }
+}  // namespace crossdesk

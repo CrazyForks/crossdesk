@@ -33,6 +33,7 @@
 #include "win_tray.h"
 #endif
 
+namespace crossdesk {
 class Render {
  public:
   struct SubStreamWindowProperties {
@@ -469,5 +470,5 @@ class Render {
   void CloseTab(decltype(client_properties_)::iterator& it);
   /* ------ stream window property end ------ */
 };
-
+}  // namespace crossdesk
 #endif

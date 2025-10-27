@@ -16,6 +16,8 @@
 
 #include "screen_capturer.h"
 
+namespace crossdesk {
+
 class ScreenCapturerSck : public ScreenCapturer {
  public:
   ScreenCapturerSck();
@@ -55,5 +57,5 @@ class ScreenCapturerSck : public ScreenCapturer {
  private:
   std::unique_ptr<ScreenCapturer> screen_capturer_sck_impl_;
 };
-
+}  // namespace crossdesk
 #endif

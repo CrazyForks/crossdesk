@@ -3,6 +3,8 @@
 
 #include <Windows.h>
 
+namespace crossdesk {
+
 class WgcSession {
  public:
   struct wgc_session_frame {
@@ -10,13 +12,13 @@ class WgcSession {
     unsigned int height;
     unsigned int row_pitch;
 
-    const unsigned char *data;
+    const unsigned char* data;
   };
 
   class wgc_session_observer {
    public:
     virtual ~wgc_session_observer() {}
-    virtual void OnFrame(const wgc_session_frame &frame, int id) = 0;
+    virtual void OnFrame(const wgc_session_frame& frame, int id) = 0;
   };
 
  public:
@@ -25,7 +27,7 @@ class WgcSession {
   virtual int Initialize(HWND hwnd) = 0;
   virtual int Initialize(HMONITOR hmonitor) = 0;
 
-  virtual void RegisterObserver(wgc_session_observer *observer) = 0;
+  virtual void RegisterObserver(wgc_session_observer* observer) = 0;
 
   virtual int Start() = 0;
   virtual int Stop() = 0;
@@ -33,7 +35,7 @@ class WgcSession {
   virtual int Pause() = 0;
   virtual int Resume() = 0;
 
-  virtual ~WgcSession(){};
+  virtual ~WgcSession() {};
 };
-
+}  // namespace crossdesk
 #endif

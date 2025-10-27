@@ -21,6 +21,8 @@
 
 #define MOUSE_GRAB_PADDING 5
 
+namespace crossdesk {
+
 std::vector<char> Render::SerializeRemoteAction(const RemoteAction& action) {
   std::vector<char> buffer;
   buffer.push_back(static_cast<char>(action.type));
@@ -1432,3 +1434,4 @@ void Render::ProcessSdlEvent(const SDL_Event& event) {
       break;
   }
 }
+}  // namespace crossdesk

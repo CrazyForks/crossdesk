@@ -12,6 +12,8 @@
 
 #include "speaker_capturer.h"
 
+namespace crossdesk {
+
 class SpeakerCapturerMacosx : public SpeakerCapturer {
  public:
   SpeakerCapturerMacosx();
@@ -33,5 +35,5 @@ class SpeakerCapturerMacosx : public SpeakerCapturer {
   class Impl;
   Impl* impl_ = nullptr;
 };
-
+}  // namespace crossdesk
 #endif

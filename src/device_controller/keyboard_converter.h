@@ -9,6 +9,8 @@
 
 #include <map>
 
+namespace crossdesk {
+
 // Windows vkCode to macOS CGKeyCode (104 keys)
 std::map<int, int> vkCodeToCGKeyCode = {
     // A-Z
@@ -736,5 +738,5 @@ std::map<int, int> x11KeySymToCgKeyCode = {
     {0xFFEB, 0x37},  // Left Command
     {0xFFEC, 0x36},  // Right Command
 };
-
+}  // namespace crossdesk
 #endif

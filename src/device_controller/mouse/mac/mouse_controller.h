@@ -11,6 +11,8 @@
 
 #include "device_controller.h"
 
+namespace crossdesk {
+
 class MouseController : public DeviceController {
  public:
   MouseController();
@@ -26,5 +28,5 @@ class MouseController : public DeviceController {
   bool left_dragging_ = false;
   bool right_dragging_ = false;
 };
-
+}  // namespace crossdesk
 #endif

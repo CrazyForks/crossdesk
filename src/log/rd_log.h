@@ -25,6 +25,8 @@
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
 
+namespace crossdesk {
+
 constexpr auto LOGGER_NAME = "crossdesk";
 
 void InitLogger(const std::string& log_dir);
@@ -35,5 +37,5 @@ std::shared_ptr<spdlog::logger> get_logger();
 #define LOG_WARN(...) SPDLOG_LOGGER_WARN(get_logger(), __VA_ARGS__)
 #define LOG_ERROR(...) SPDLOG_LOGGER_ERROR(get_logger(), __VA_ARGS__)
 #define LOG_FATAL(...) SPDLOG_LOGGER_CRITICAL(get_logger(), __VA_ARGS__)
-
+}  // namespace crossdesk
 #endif

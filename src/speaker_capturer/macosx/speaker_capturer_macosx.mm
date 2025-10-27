@@ -5,6 +5,8 @@
 #include "rd_log.h"
 #include "speaker_capturer_macosx.h"
 
+namespace crossdesk {
+
 @interface SpeakerCaptureDelegate : NSObject <SCStreamDelegate, SCStreamOutput>
 @property(nonatomic, assign) SpeakerCapturerMacosx* owner;
 - (instancetype)initWithOwner:(SpeakerCapturerMacosx*)owner;
@@ -262,3 +264,4 @@ int SpeakerCapturerMacosx::Destroy() {
 int SpeakerCapturerMacosx::Pause() { return 0; }
 
 int SpeakerCapturerMacosx::Resume() { return Start(); }
+}  // namespace crossdesk

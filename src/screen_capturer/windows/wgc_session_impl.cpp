@@ -18,9 +18,11 @@
     throw winrt::hresult_error(RO_E_CLOSED); \
   }
 
+namespace crossdesk {
+
 extern "C" {
 HRESULT __stdcall CreateDirect3D11DeviceFromDXGIDevice(
-    ::IDXGIDevice *dxgiDevice, ::IInspectable **graphicsDevice);
+    ::IDXGIDevice* dxgiDevice, ::IInspectable** graphicsDevice);
 }
 
 WgcSessionImpl::WgcSessionImpl(int id) : id_(id) {}
@@ -48,7 +50,7 @@ int WgcSessionImpl::Initialize(HMONITOR hmonitor) {
   return Initialize();
 }
 
-void WgcSessionImpl::RegisterObserver(wgc_session_observer *observer) {
+void WgcSessionImpl::RegisterObserver(wgc_session_observer* observer) {
   std::lock_guard locker(lock_);
   observer_ = observer;
 }
@@ -175,7 +177,7 @@ auto WgcSessionImpl::CreateCaptureItemForWindow(HWND hwnd) {
   interop_factory->CreateForWindow(
       hwnd,
       winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
-      reinterpret_cast<void **>(winrt::put_abi(item)));
+      reinterpret_cast<void**>(winrt::put_abi(item)));
   return item;
 }
 
@@ -187,7 +189,7 @@ auto WgcSessionImpl::CreateCaptureItemForMonitor(HMONITOR hmonitor) {
   interop_factory->CreateForMonitor(
       hmonitor,
       winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
-      reinterpret_cast<void **>(winrt::put_abi(item)));
+      reinterpret_cast<void**>(winrt::put_abi(item)));
   return item;
 }
 
@@ -216,8 +218,8 @@ HRESULT WgcSessionImpl::CreateMappedTexture(
 }
 
 void WgcSessionImpl::OnFrame(
-    winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool const &sender,
-    [[maybe_unused]] winrt::Windows::Foundation::IInspectable const &args) {
+    winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool const& sender,
+    [[maybe_unused]] winrt::Windows::Foundation::IInspectable const& args) {
   std::lock_guard locker(lock_);
 
   auto is_new_size = false;
@@ -268,8 +270,8 @@ void WgcSessionImpl::OnFrame(
             wgc_session_frame{static_cast<unsigned int>(frame_size.Width),
                               static_cast<unsigned int>(frame_size.Height),
                               map_result.RowPitch,
-                              const_cast<const unsigned char *>(
-                                  (unsigned char *)map_result.pData)},
+                              const_cast<const unsigned char*>(
+                                  (unsigned char*)map_result.pData)},
             id_);
       }
 
@@ -286,8 +288,8 @@ void WgcSessionImpl::OnFrame(
 }
 
 void WgcSessionImpl::OnClosed(
-    winrt::Windows::Graphics::Capture::GraphicsCaptureItem const &,
-    winrt::Windows::Foundation::IInspectable const &) {
+    winrt::Windows::Graphics::Capture::GraphicsCaptureItem const&,
+    winrt::Windows::Foundation::IInspectable const&) {
   OutputDebugStringW(L"WgcSessionImpl::OnClosed");
 }
 
@@ -376,3 +378,4 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM w_param,
 //   ::CloseWindow(hwnd_);
 //   ::DestroyWindow(hwnd_);
 // }
+}  // namespace crossdesk

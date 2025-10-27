@@ -3,9 +3,11 @@
 #include "rd_log.h"
 #include "render.h"
 
+namespace crossdesk {
+
 int Render::AboutWindow() {
   if (show_about_window_) {
-    const ImGuiViewport *viewport = ImGui::GetMainViewport();
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
     ImGui::SetNextWindowPos(ImVec2(
         (viewport->WorkSize.x - viewport->WorkPos.x - about_window_width_) / 2,
@@ -59,3 +61,4 @@ int Render::AboutWindow() {
   }
   return 0;
 }
+}  // namespace crossdesk

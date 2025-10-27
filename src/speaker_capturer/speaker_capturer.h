@@ -9,9 +9,11 @@
 
 #include <functional>
 
+namespace crossdesk {
+
 class SpeakerCapturer {
  public:
-  typedef std::function<void(unsigned char *, size_t, const char *)>
+  typedef std::function<void(unsigned char*, size_t, const char*)>
       speaker_data_cb;
 
  public:
@@ -23,5 +25,5 @@ class SpeakerCapturer {
   virtual int Start() = 0;
   virtual int Stop() = 0;
 };
-
+}  // namespace crossdesk
 #endif

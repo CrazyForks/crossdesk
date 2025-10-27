@@ -20,6 +20,8 @@
 
 #include "screen_capturer.h"
 
+namespace crossdesk {
+
 class ScreenCapturerX11 : public ScreenCapturer {
  public:
   ScreenCapturerX11();
@@ -60,5 +62,5 @@ class ScreenCapturerX11 : public ScreenCapturer {
   std::vector<uint8_t> y_plane_;
   std::vector<uint8_t> uv_plane_;
 };
-
+}  // namespace crossdesk
 #endif

@@ -7,6 +7,8 @@
 
 #define SAVE_AUDIO_FILE 0
 
+namespace crossdesk {
+
 static ma_device_config device_config_;
 static ma_device device_;
 static ma_format format_ = ma_format_s16;
@@ -99,3 +101,4 @@ int SpeakerCapturerWasapi::Destroy() {
 }
 
 int SpeakerCapturerWasapi::Pause() { return 0; }
+}  // namespace crossdesk

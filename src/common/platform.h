@@ -9,7 +9,10 @@
 
 #include <iostream>
 
+namespace crossdesk {
+
 std::string GetMac();
 std::string GetHostName();
 
+}  // namespace crossdesk
 #endif

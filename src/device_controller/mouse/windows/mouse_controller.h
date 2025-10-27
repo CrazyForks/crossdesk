@@ -11,6 +11,8 @@
 
 #include "device_controller.h"
 
+namespace crossdesk {
+
 class MouseController : public DeviceController {
  public:
   MouseController();
@@ -24,5 +26,5 @@ class MouseController : public DeviceController {
  private:
   std::vector<DisplayInfo> display_info_list_;
 };
-
+}  // namespace crossdesk
 #endif

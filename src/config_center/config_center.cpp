@@ -1,5 +1,7 @@
 #include "config_center.h"
 
+namespace crossdesk {
+
 ConfigCenter::ConfigCenter(const std::string& config_path,
                            const std::string& cert_file_path)
     : config_path_(config_path),
@@ -264,3 +266,4 @@ std::string ConfigCenter::GetDefaultCertFilePath() const {
 bool ConfigCenter::IsSelfHosted() const { return enable_self_hosted_; }
 
 bool ConfigCenter::IsMinimizeToTray() const { return enable_minimize_to_tray_; }
+}  // namespace crossdesk

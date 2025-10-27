@@ -19,6 +19,8 @@
 #include <unistd.h>
 #endif
 
+namespace crossdesk {
+
 std::string GetMac() {
   char mac_addr[16];
   int len = 0;
@@ -39,21 +41,21 @@ std::string GetMac() {
 #elif __APPLE__
   std::string if_name = "en0";
 
-  struct ifaddrs *addrs;
-  struct ifaddrs *cursor;
-  const struct sockaddr_dl *dlAddr;
+  struct ifaddrs* addrs;
+  struct ifaddrs* cursor;
+  const struct sockaddr_dl* dlAddr;
 
   if (!getifaddrs(&addrs)) {
     cursor = addrs;
     while (cursor != 0) {
-      const struct sockaddr_dl *socAddr =
-          (const struct sockaddr_dl *)cursor->ifa_addr;
+      const struct sockaddr_dl* socAddr =
+          (const struct sockaddr_dl*)cursor->ifa_addr;
       if ((cursor->ifa_addr->sa_family == AF_LINK) &&
           (socAddr->sdl_type == IFT_ETHER) &&
           strcmp(if_name.c_str(), cursor->ifa_name) == 0) {
-        dlAddr = (const struct sockaddr_dl *)cursor->ifa_addr;
-        const unsigned char *base =
-            (const unsigned char *)&dlAddr->sdl_data[dlAddr->sdl_nlen];
+        dlAddr = (const struct sockaddr_dl*)cursor->ifa_addr;
+        const unsigned char* base =
+            (const unsigned char*)&dlAddr->sdl_data[dlAddr->sdl_nlen];
         for (int i = 0; i < dlAddr->sdl_alen; i++) {
           len +=
               snprintf(mac_addr + len, sizeof(mac_addr) - len, "%.2X", base[i]);
@@ -77,8 +79,8 @@ std::string GetMac() {
     close(sock);
     return "";
   }
-  struct ifreq *it = ifc.ifc_req;
-  const struct ifreq *const end = it + (ifc.ifc_len / sizeof(struct ifreq));
+  struct ifreq* it = ifc.ifc_req;
+  const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
   for (; it != end; ++it) {
     std::strcpy(ifr.ifr_name, it->ifr_name);
     if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
@@ -123,3 +125,4 @@ std::string GetHostName() {
 #endif
   return hostname;
 }
+}  // namespace crossdesk

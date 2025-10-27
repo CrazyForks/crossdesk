@@ -15,6 +15,8 @@
 
 #include "device_controller.h"
 
+namespace crossdesk {
+
 class MouseController : public DeviceController {
  public:
   MouseController();
@@ -37,5 +39,5 @@ class MouseController : public DeviceController {
   int screen_width_ = 0;
   int screen_height_ = 0;
 };
-
+}  // namespace crossdesk
 #endif

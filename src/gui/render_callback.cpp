@@ -11,6 +11,8 @@
 #define MOUSE_CONTROL 1
 #endif
 
+namespace crossdesk {
+
 int Render::SendKeyCommand(int key_code, bool is_down) {
   RemoteAction remote_action;
   remote_action.type = ControlType::keyboard;
@@ -543,3 +545,4 @@ void Render::NetStatusReport(const char* client_id, size_t client_id_size,
     props->net_traffic_stats_ = *net_traffic_stats;
   }
 }
+}  // namespace crossdesk

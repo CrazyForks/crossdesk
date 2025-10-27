@@ -3,6 +3,8 @@
 #include "keyboard_converter.h"
 #include "rd_log.h"
 
+namespace crossdesk {
+
 static OnKeyAction g_on_key_action = nullptr;
 static void* g_user_ptr = nullptr;
 
@@ -67,3 +69,4 @@ int KeyboardCapturer::SendKeyboardCommand(int key_code, bool is_down) {
   }
   return 0;
 }
+}  // namespace crossdesk

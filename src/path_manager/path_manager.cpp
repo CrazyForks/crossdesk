@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 
+namespace crossdesk {
+
 PathManager::PathManager(const std::string& app_name) : app_name_(app_name) {}
 
 std::filesystem::path PathManager::GetConfigPath() {
@@ -89,3 +91,4 @@ std::filesystem::path PathManager::GetEnvOrDefault(const char* env_var,
 
   return std::filesystem::path(def);
 }
+}  // namespace crossdesk

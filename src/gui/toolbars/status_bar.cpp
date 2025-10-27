@@ -1,6 +1,8 @@
 #include "localization.h"
 #include "render.h"
 
+namespace crossdesk {
+
 int Render::StatusBar() {
   ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
   static bool a, b, c, d, e;
@@ -36,3 +38,4 @@ int Render::StatusBar() {
   ImGui::EndChild();
   return 0;
 }
+}  // namespace crossdesk

@@ -3,7 +3,9 @@
 #include "rd_log.h"
 #include "render.h"
 
-static int InputTextCallback(ImGuiInputTextCallbackData *data);
+namespace crossdesk {
+
+static int InputTextCallback(ImGuiInputTextCallbackData* data);
 
 int Render::RemoteWindow() {
   ImGui::SetNextWindowPos(ImVec2(local_window_width_ + 1.0f, title_bar_height_),
@@ -77,7 +79,7 @@ int Render::RemoteWindow() {
           enter_pressed) {
         connect_button_pressed_ = true;
         bool found = false;
-        for (auto &[id, props] : recent_connections_) {
+        for (auto& [id, props] : recent_connections_) {
           if (id.find(remote_id) != std::string::npos) {
             found = true;
             if (client_properties_.find(remote_id) !=
@@ -101,7 +103,7 @@ int Render::RemoteWindow() {
 
       if (need_to_rejoin_) {
         need_to_rejoin_ = false;
-        for (const auto &[_, props] : client_properties_) {
+        for (const auto& [_, props] : client_properties_) {
           if (props->rejoin_) {
             ConnectTo(props->remote_id_, props->remote_password_,
                       props->remember_password_);
@@ -117,7 +119,7 @@ int Render::RemoteWindow() {
   return 0;
 }
 
-static int InputTextCallback(ImGuiInputTextCallbackData *data) {
+static int InputTextCallback(ImGuiInputTextCallbackData* data) {
   if (data->BufTextLen > 3 && data->Buf[3] != ' ') {
     data->InsertChars(3, " ");
   }
@@ -129,7 +131,7 @@ static int InputTextCallback(ImGuiInputTextCallbackData *data) {
   return 0;
 }
 
-int Render::ConnectTo(const std::string &remote_id, const char *password,
+int Render::ConnectTo(const std::string& remote_id, const char* password,
                       bool remember_password) {
   LOG_INFO("Connect to [{}]", remote_id);
   focused_remote_id_ = remote_id;
@@ -179,3 +181,4 @@ int Render::ConnectTo(const std::string &remote_id, const char *password,
 
   return 0;
 }
+}  // namespace crossdesk

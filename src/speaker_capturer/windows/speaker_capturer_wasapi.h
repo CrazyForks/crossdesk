@@ -9,6 +9,8 @@
 
 #include "speaker_capturer.h"
 
+namespace crossdesk {
+
 class SpeakerCapturerWasapi : public SpeakerCapturer {
  public:
   SpeakerCapturerWasapi();
@@ -31,5 +33,5 @@ class SpeakerCapturerWasapi : public SpeakerCapturer {
  private:
   bool inited_ = false;
 };
-
+}  // namespace crossdesk
 #endif

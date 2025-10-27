@@ -11,6 +11,8 @@
 #include "keyboard_capturer.h"
 #include "mouse_controller.h"
 
+namespace crossdesk {
+
 class DeviceControllerFactory {
  public:
   enum Device { Mouse = 0, Keyboard };
@@ -30,5 +32,5 @@ class DeviceControllerFactory {
     }
   }
 };
-
+}  // namespace crossdesk
 #endif

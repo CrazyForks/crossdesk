@@ -18,6 +18,8 @@
 
 #include "speaker_capturer.h"
 
+namespace crossdesk {
+
 class SpeakerCapturerLinux : public SpeakerCapturer {
  public:
   SpeakerCapturerLinux();
@@ -50,5 +52,5 @@ class SpeakerCapturerLinux : public SpeakerCapturer {
   std::mutex state_mtx_;
   std::vector<uint8_t> frame_cache_;
 };
-
+}  // namespace crossdesk
 #endif

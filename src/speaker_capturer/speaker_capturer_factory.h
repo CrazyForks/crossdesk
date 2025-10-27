@@ -15,6 +15,8 @@
 #include "speaker_capturer_macosx.h"
 #endif
 
+namespace crossdesk {
+
 class SpeakerCapturerFactory {
  public:
   virtual ~SpeakerCapturerFactory() {}
@@ -32,5 +34,5 @@ class SpeakerCapturerFactory {
 #endif
   }
 };
-
+}  // namespace crossdesk
 #endif

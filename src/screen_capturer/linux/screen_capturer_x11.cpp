@@ -6,6 +6,8 @@
 #include "libyuv.h"
 #include "rd_log.h"
 
+namespace crossdesk {
+
 ScreenCapturerX11::ScreenCapturerX11() {}
 
 ScreenCapturerX11::~ScreenCapturerX11() { Destroy(); }
@@ -172,3 +174,4 @@ void ScreenCapturerX11::OnFrame() {
 
   XDestroyImage(image);
 }
+}  // namespace crossdesk

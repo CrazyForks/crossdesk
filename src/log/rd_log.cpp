@@ -3,6 +3,8 @@
 #include <atomic>
 #include <filesystem>
 
+namespace crossdesk {
+
 namespace {
 
 std::string g_log_dir = "logs";
@@ -60,3 +62,4 @@ std::shared_ptr<spdlog::logger> get_logger() {
 
   return g_logger;
 }
+}  // namespace crossdesk

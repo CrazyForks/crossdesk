@@ -14,6 +14,8 @@
 #include <windows.h>
 #endif
 
+namespace crossdesk {
+
 class PathManager {
  public:
   explicit PathManager(const std::string& app_name);
@@ -40,5 +42,5 @@ class PathManager {
  private:
   std::string app_name_;
 };
-
+}  // namespace crossdesk
 #endif

@@ -11,6 +11,8 @@
 
 #include "display_info.h"
 
+namespace crossdesk {
+
 typedef enum {
   mouse = 0,
   keyboard,
@@ -79,5 +81,5 @@ class DeviceController {
   // virtual int Hook();
   // virtual int Unhook();
 };
-
+}  // namespace crossdesk
 #endif

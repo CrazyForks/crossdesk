@@ -21,7 +21,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-static std::string test;
+namespace crossdesk {
 
 bool LoadTextureFromMemory(const void* data, size_t data_size,
                            SDL_Renderer* renderer, SDL_Texture** out_texture,
@@ -430,3 +430,4 @@ std::string Thumbnail::AES_decrypt(const std::string& ciphertext,
 
   return std::string(reinterpret_cast<char*>(plaintext), plaintext_len);
 }
+}  // namespace crossdesk

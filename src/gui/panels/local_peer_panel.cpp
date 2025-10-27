@@ -5,6 +5,8 @@
 #include "rd_log.h"
 #include "render.h"
 
+namespace crossdesk {
+
 int Render::LocalWindow() {
   ImGui::SetNextWindowPos(ImVec2(-1.0f, title_bar_height_), ImGuiCond_Always);
   ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
@@ -288,3 +290,4 @@ int Render::LocalWindow() {
 
   return 0;
 }
+}  // namespace crossdesk

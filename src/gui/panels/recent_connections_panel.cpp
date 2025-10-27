@@ -2,6 +2,8 @@
 #include "rd_log.h"
 #include "render.h"
 
+namespace crossdesk {
+
 int Render::RecentConnectionsWindow() {
   ImGui::SetNextWindowPos(
       ImVec2(0, title_bar_height_ + local_window_height_ - 1.0f),
@@ -284,3 +286,4 @@ int Render::ConfirmDeleteConnection() {
   ImGui::PopStyleVar();
   return 0;
 }
+}  // namespace crossdesk

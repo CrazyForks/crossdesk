@@ -3,12 +3,14 @@
 #include "keyboard_converter.h"
 #include "rd_log.h"
 
+namespace crossdesk {
+
 static OnKeyAction g_on_key_action = nullptr;
-static void *g_user_ptr = nullptr;
+static void* g_user_ptr = nullptr;
 
 CGEventRef eventCallback(CGEventTapProxy proxy, CGEventType type,
-                         CGEventRef event, void *userInfo) {
-  KeyboardCapturer *keyboard_capturer = (KeyboardCapturer *)userInfo;
+                         CGEventRef event, void* userInfo) {
+  KeyboardCapturer* keyboard_capturer = (KeyboardCapturer*)userInfo;
   if (!keyboard_capturer) {
     LOG_ERROR("keyboard_capturer is nullptr");
     return event;
@@ -91,7 +93,7 @@ KeyboardCapturer::KeyboardCapturer() {}
 
 KeyboardCapturer::~KeyboardCapturer() {}
 
-int KeyboardCapturer::Hook(OnKeyAction on_key_action, void *user_ptr) {
+int KeyboardCapturer::Hook(OnKeyAction on_key_action, void* user_ptr) {
   g_on_key_action = on_key_action;
   g_user_ptr = user_ptr;
 
@@ -165,3 +167,4 @@ int KeyboardCapturer::SendKeyboardCommand(int key_code, bool is_down) {
 
   return 0;
 }
+}  // namespace crossdesk

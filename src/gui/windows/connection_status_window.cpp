@@ -3,9 +3,11 @@
 #include "rd_log.h"
 #include "render.h"
 
+namespace crossdesk {
+
 bool Render::ConnectionStatusWindow(
-    std::shared_ptr<SubStreamWindowProperties> &props) {
-  const ImGuiViewport *viewport = ImGui::GetMainViewport();
+    std::shared_ptr<SubStreamWindowProperties>& props) {
+  const ImGuiViewport* viewport = ImGui::GetMainViewport();
   bool ret_flag = false;
   ImGui::SetNextWindowPos(ImVec2((viewport->WorkSize.x - viewport->WorkPos.x -
                                   connection_status_window_width_) /
@@ -169,3 +171,4 @@ bool Render::ConnectionStatusWindow(
 
   return ret_flag;
 }
+}  // namespace crossdesk

@@ -11,6 +11,8 @@
 
 #include "SimpleIni.h"
 
+namespace crossdesk {
+
 class ConfigCenter {
  public:
   enum class LANGUAGE { CHINESE = 0, ENGLISH = 1 };
@@ -85,5 +87,5 @@ class ConfigCenter {
   bool enable_self_hosted_ = false;
   bool enable_minimize_to_tray_ = false;
 };
-
+}  // namespace crossdesk
 #endif

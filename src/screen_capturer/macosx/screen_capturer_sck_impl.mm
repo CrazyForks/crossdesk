@@ -22,6 +22,8 @@
 #include "display_info.h"
 #include "rd_log.h"
 
+namespace crossdesk {
+
 static const int kFullDesktopScreenId = -1;
 class ScreenCapturerSckImpl;
 
@@ -486,3 +488,4 @@ std::unique_ptr<ScreenCapturer> ScreenCapturerSck::CreateScreenCapturerSck() {
 }
 
 @end
+}  // namespace crossdesk

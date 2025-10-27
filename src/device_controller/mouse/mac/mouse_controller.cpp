@@ -4,6 +4,8 @@
 
 #include "rd_log.h"
 
+namespace crossdesk {
+
 MouseController::MouseController() {}
 
 MouseController::~MouseController() {}
@@ -99,3 +101,4 @@ int MouseController::SendMouseCommand(RemoteAction remote_action,
 
   return 0;
 }
+}  // namespace crossdesk

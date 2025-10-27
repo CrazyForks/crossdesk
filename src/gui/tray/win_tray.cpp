@@ -4,6 +4,8 @@
 
 #include "localization.h"
 
+namespace crossdesk {
+
 // callback for the message-only window that handles tray icon messages
 static LRESULT CALLBACK MsgWndProc(HWND hwnd, UINT msg, WPARAM wParam,
                                    LPARAM lParam) {
@@ -110,3 +112,4 @@ bool WinTray::HandleTrayMessage(MSG* msg) {
   }
   return true;
 }
+}  // namespace crossdesk

@@ -1,7 +1,9 @@
 #include "rd_log.h"
 #include "render.h"
 
-int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties> &props) {
+namespace crossdesk {
+
+int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties>& props) {
   double time_duration =
       ImGui::GetTime() - props->control_bar_button_pressed_time_;
   if (props->control_window_width_is_changing_) {
@@ -221,3 +223,4 @@ int Render::ControlWindow(std::shared_ptr<SubStreamWindowProperties> &props) {
 
   return 0;
 }
+}  // namespace crossdesk

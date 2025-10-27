@@ -16,6 +16,8 @@
 #include "screen_capturer_sck.h"
 #endif
 
+namespace crossdesk {
+
 class ScreenCapturerFactory {
  public:
   virtual ~ScreenCapturerFactory() {}
@@ -34,5 +36,5 @@ class ScreenCapturerFactory {
 #endif
   }
 };
-
+}  // namespace crossdesk
 #endif

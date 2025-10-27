@@ -9,8 +9,8 @@
 #include "rd_log.h"
 #include "render.h"
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
-  Render render;
+int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
+  crossdesk::Render render;
   render.Run();
 
   return 0;

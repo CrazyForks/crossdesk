@@ -10,6 +10,8 @@
 #include "rd_log.h"
 #include "render.h"
 
+namespace crossdesk {
+
 std::vector<std::string> GetRootEntries() {
   std::vector<std::string> roots;
 #ifdef _WIN32
@@ -319,3 +321,4 @@ int Render::SelfHostedServerWindow() {
 
   return 0;
 }
+}  // namespace crossdesk

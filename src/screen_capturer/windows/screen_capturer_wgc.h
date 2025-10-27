@@ -11,6 +11,8 @@
 #include "wgc_session.h"
 #include "wgc_session_impl.h"
 
+namespace crossdesk {
+
 class ScreenCapturerWgc : public ScreenCapturer,
                           public WgcSession::wgc_session_observer {
  public:
@@ -64,5 +66,5 @@ class ScreenCapturerWgc : public ScreenCapturer,
   unsigned char* nv12_frame_ = nullptr;
   unsigned char* nv12_frame_scaled_ = nullptr;
 };
-
+}  // namespace crossdesk
 #endif

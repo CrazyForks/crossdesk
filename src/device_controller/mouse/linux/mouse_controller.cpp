@@ -4,6 +4,8 @@
 
 #include "rd_log.h"
 
+namespace crossdesk {
+
 MouseController::MouseController() {}
 
 MouseController::~MouseController() { Destroy(); }
@@ -122,3 +124,4 @@ void MouseController::SimulateMouseWheel(int direction_button, int count) {
   }
   XFlush(display_);
 }
+}  // namespace crossdesk

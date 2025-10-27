@@ -14,6 +14,8 @@
 
 #define WM_TRAY_CALLBACK (WM_USER + 1)
 
+namespace crossdesk {
+
 class WinTray {
  public:
   WinTray(HWND app_hwnd, HICON icon, const std::wstring& tooltip,
@@ -32,5 +34,5 @@ class WinTray {
   int language_index_;
   NOTIFYICONDATA nid_;
 };
-
+}  // namespace crossdesk
 #endif

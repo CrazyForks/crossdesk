@@ -10,15 +10,17 @@
 
 #include "wgc_session.h"
 
+namespace crossdesk {
+
 class WgcSessionImpl : public WgcSession {
   struct __declspec(uuid("A9B3D012-3DF2-4EE3-B8D1-8695F457D3C1"))
-      IDirect3DDxgiInterfaceAccess : ::IUnknown {
-    virtual HRESULT __stdcall GetInterface(GUID const &id, void **object) = 0;
+  IDirect3DDxgiInterfaceAccess : ::IUnknown {
+    virtual HRESULT __stdcall GetInterface(GUID const& id, void** object) = 0;
   };
 
   template <typename T>
   inline auto GetDXGIInterfaceFromObject(
-      winrt::Windows::Foundation::IInspectable const &object) {
+      winrt::Windows::Foundation::IInspectable const& object) {
     auto access = object.as<IDirect3DDxgiInterfaceAccess>();
     winrt::com_ptr<T> result;
     winrt::check_hresult(
@@ -44,7 +46,7 @@ class WgcSessionImpl : public WgcSession {
   int Initialize(HWND hwnd) override;
   int Initialize(HMONITOR hmonitor) override;
 
-  void RegisterObserver(wgc_session_observer *observer) override;
+  void RegisterObserver(wgc_session_observer* observer) override;
 
   int Start() override;
   int Stop() override;
@@ -60,11 +62,11 @@ class WgcSessionImpl : public WgcSession {
   HRESULT CreateMappedTexture(winrt::com_ptr<ID3D11Texture2D> src_texture,
                               unsigned int width = 0, unsigned int height = 0);
   void OnFrame(
-      winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool const
-          &sender,
-      winrt::Windows::Foundation::IInspectable const &args);
-  void OnClosed(winrt::Windows::Graphics::Capture::GraphicsCaptureItem const &,
-                winrt::Windows::Foundation::IInspectable const &);
+      winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool const&
+          sender,
+      winrt::Windows::Foundation::IInspectable const& args);
+  void OnClosed(winrt::Windows::Graphics::Capture::GraphicsCaptureItem const&,
+                winrt::Windows::Foundation::IInspectable const&);
 
   int Initialize();
   void CleanUp();
@@ -78,7 +80,7 @@ class WgcSessionImpl : public WgcSession {
   bool is_running_ = false;
   bool is_paused_ = false;
 
-  wgc_session_observer *observer_ = nullptr;
+  wgc_session_observer* observer_ = nullptr;
 
   // wgc
   winrt::Windows::Graphics::Capture::GraphicsCaptureItem capture_item_{nullptr};
@@ -113,5 +115,5 @@ class WgcSessionImpl : public WgcSession {
 //       access->GetInterface(winrt::guid_of<T>(), result.put_void()));
 //   return result;
 // }
-
+}  // namespace crossdesk
 #endif

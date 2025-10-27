@@ -14,6 +14,8 @@
 #include <unordered_map>
 #include <vector>
 
+namespace crossdesk {
+
 class Thumbnail {
  public:
   struct RecentConnection {
@@ -83,5 +85,5 @@ class Thumbnail {
   unsigned char ciphertext_[64];
   unsigned char decryptedtext_[64];
 };
-
+}  // namespace crossdesk
 #endif

@@ -3,6 +3,8 @@
 #include "rd_log.h"
 #include "render.h"
 
+namespace crossdesk {
+
 int CountDigits(int number) {
   if (number == 0) return 1;
   return (int)std::floor(std::log10(std::abs(number))) + 1;
@@ -324,3 +326,4 @@ int Render::NetTrafficStats(std::shared_ptr<SubStreamWindowProperties>& props) {
 
   return 0;
 }
+}  // namespace crossdesk

@@ -3,6 +3,8 @@
 #include "rd_log.h"
 #include "render.h"
 
+namespace crossdesk {
+
 int Render::SettingWindow() {
   if (show_settings_window_) {
     if (settings_window_pos_reset_) {
@@ -391,3 +393,4 @@ int Render::SettingWindow() {
 
   return 0;
 }
+}  // namespace crossdesk
