@@ -23,6 +23,7 @@ end
 add_requires("spdlog 1.14.1", {system = false})
 add_requires("imgui v1.91.5-docking", {configs = {sdl3 = true, sdl3_renderer = true}})
 add_requires("openssl3 3.3.2", {system = false})
+add_requires("nlohmann_json 3.11.3")
 
 if is_os("windows") then
     add_requires("libyuv", "miniaudio 0.11.21")
@@ -45,7 +46,7 @@ elseif is_os("macosx") then
         "CoreMedia", "CoreVideo", "CoreAudio", "AudioToolbox")
 end
 
-add_packages("spdlog", "imgui")
+add_packages("spdlog", "imgui", "nlohmann_json")
 
 includes("submodules")
 

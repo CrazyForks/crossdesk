@@ -28,8 +28,10 @@ int Render::SendKeyCommand(int key_code, bool is_down) {
         client_properties_.end()) {
       auto props = client_properties_[controlled_remote_id_];
       if (props->connection_status_ == ConnectionStatus::Connected) {
-        SendDataFrame(props->peer_, (const char*)&remote_action,
-                      sizeof(remote_action), props->data_label_.c_str());
+        json j = remote_action.to_json();
+        std::string msg = j.dump();
+        SendDataFrame(props->peer_, msg.c_str(), msg.size(),
+                      props->data_label_.c_str());
       }
     }
   }
@@ -94,8 +96,11 @@ int Render::ProcessMouseEvent(const SDL_Event& event) {
       if (props->control_bar_hovered_ || props->display_selectable_hovered_) {
         remote_action.m.flag = MouseFlag::move;
       }
-      SendDataFrame(props->peer_, (const char*)&remote_action,
-                    sizeof(remote_action), props->data_label_.c_str());
+
+      json j = remote_action.to_json();
+      std::string msg = j.dump();
+      SendDataFrame(props->peer_, msg.c_str(), msg.size(),
+                    props->data_label_.c_str());
     } else if (SDL_EVENT_MOUSE_WHEEL == event.type &&
                last_mouse_event.button.x >= props->stream_render_rect_.x &&
                last_mouse_event.button.x <= props->stream_render_rect_.x +
@@ -127,8 +132,10 @@ int Render::ProcessMouseEvent(const SDL_Event& event) {
           (float)(event.button.y - props->stream_render_rect_.y) /
           render_height;
 
-      SendDataFrame(props->peer_, (const char*)&remote_action,
-                    sizeof(remote_action), props->data_label_.c_str());
+      json j = remote_action.to_json();
+      std::string msg = j.dump();
+      SendDataFrame(props->peer_, msg.c_str(), msg.size(),
+                    props->data_label_.c_str());
     }
   }
 
@@ -279,64 +286,54 @@ void Render::OnReceiveDataBufferCb(const char* data, size_t size,
     return;
   }
 
+  std::string json_str(data, size);
   RemoteAction remote_action;
-  memcpy(&remote_action, data, size);
+
+  try {
+    remote_action.from_json(json_str);
+  } catch (const std::exception& e) {
+    LOG_ERROR("Failed to parse RemoteAction JSON: {}", e.what());
+    return;
+  }
 
   std::string remote_id(user_id, user_id_size);
   if (render->client_properties_.find(remote_id) !=
       render->client_properties_.end()) {
     // local
     auto props = render->client_properties_.find(remote_id)->second;
-    RemoteAction host_info;
-    if (DeserializeRemoteAction(data, size, host_info)) {
-      if (ControlType::host_infomation == host_info.type &&
-          props->remote_host_name_.empty()) {
-        props->remote_host_name_ =
-            std::string(host_info.i.host_name, host_info.i.host_name_size);
-        LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
-
-        for (int i = 0; i < host_info.i.display_num; i++) {
-          props->display_info_list_.push_back(DisplayInfo(
-              std::string(host_info.i.display_list[i]), host_info.i.left[i],
-              host_info.i.top[i], host_info.i.right[i], host_info.i.bottom[i]));
-          LOG_INFO("Remote display [{}:{}], bound [({}, {}) ({}, {})]", i + 1,
-                   props->display_info_list_[i].name,
-                   props->display_info_list_[i].left,
-                   props->display_info_list_[i].top,
-                   props->display_info_list_[i].right,
-                   props->display_info_list_[i].bottom);
-        }
-      }
-    } else {
+    if (remote_action.type == ControlType::host_infomation &&
+        props->remote_host_name_.empty()) {
       props->remote_host_name_ = std::string(remote_action.i.host_name,
                                              remote_action.i.host_name_size);
       LOG_INFO("Remote hostname: [{}]", props->remote_host_name_);
-      LOG_ERROR("No remote display detected");
+
+      for (int i = 0; i < remote_action.i.display_num; i++) {
+        props->display_info_list_.push_back(
+            DisplayInfo(remote_action.i.display_list[i],
+                        remote_action.i.left[i], remote_action.i.top[i],
+                        remote_action.i.right[i], remote_action.i.bottom[i]));
+      }
     }
-    FreeRemoteAction(host_info);
+    FreeRemoteAction(remote_action);
   } else {
     // remote
-    if (ControlType::mouse == remote_action.type && render->mouse_controller_) {
+    if (remote_action.type == ControlType::mouse && render->mouse_controller_) {
       render->mouse_controller_->SendMouseCommand(remote_action,
                                                   render->selected_display_);
-    } else if (ControlType::audio_capture == remote_action.type) {
-      if (remote_action.a) {
+    } else if (remote_action.type == ControlType::audio_capture) {
+      if (remote_action.a)
         render->StartSpeakerCapturer();
-        render->audio_capture_ = true;
-      } else {
+      else
         render->StopSpeakerCapturer();
-        render->audio_capture_ = false;
-      }
-    } else if (ControlType::keyboard == remote_action.type &&
+    } else if (remote_action.type == ControlType::keyboard &&
                render->keyboard_capturer_) {
       render->keyboard_capturer_->SendKeyboardCommand(
           (int)remote_action.k.key_value,
           remote_action.k.flag == KeyFlag::key_down);
-    } else if (ControlType::display_id == remote_action.type) {
-      if (render->screen_capturer_) {
-        render->selected_display_ = remote_action.d;
-        render->screen_capturer_->SwitchTo(remote_action.d);
-      }
+    } else if (remote_action.type == ControlType::display_id &&
+               render->screen_capturer_) {
+      render->selected_display_ = remote_action.d;
+      render->screen_capturer_->SwitchTo(remote_action.d);
     }
   }
 }
