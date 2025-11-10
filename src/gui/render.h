@@ -448,6 +448,7 @@ class Render {
   bool enable_self_hosted_ = false;
   int language_button_value_last_ = 0;
   int video_quality_button_value_last_ = 0;
+  int video_frame_rate_button_value_last_ = 0;
   int video_encode_format_button_value_last_ = 0;
   bool enable_hardware_video_codec_last_ = false;
   bool enable_turn_last_ = false;
