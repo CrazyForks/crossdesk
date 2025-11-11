@@ -288,13 +288,22 @@ int Render::SettingWindow() {
 
         // Video quality
         if (video_quality_button_value_ == 0) {
-          config_center_->SetVideoQuality(ConfigCenter::VIDEO_QUALITY::HIGH);
+          config_center_->SetVideoQuality(ConfigCenter::VIDEO_QUALITY::LOW);
         } else if (video_quality_button_value_ == 1) {
           config_center_->SetVideoQuality(ConfigCenter::VIDEO_QUALITY::MEDIUM);
         } else {
-          config_center_->SetVideoQuality(ConfigCenter::VIDEO_QUALITY::LOW);
+          config_center_->SetVideoQuality(ConfigCenter::VIDEO_QUALITY::HIGH);
         }
         video_quality_button_value_last_ = video_quality_button_value_;
+
+        if (video_frame_rate_button_value_ == 0) {
+          config_center_->SetVideoFrameRate(
+              ConfigCenter::VIDEO_FRAME_RATE::FPS_30);
+        } else if (video_frame_rate_button_value_ == 1) {
+          config_center_->SetVideoFrameRate(
+              ConfigCenter::VIDEO_FRAME_RATE::FPS_60);
+        }
+        video_frame_rate_button_value_last_ = video_frame_rate_button_value_;
 
         // Video encode format
         if (video_encode_format_button_value_ == 0) {
@@ -364,6 +373,11 @@ int Render::SettingWindow() {
 
         if (video_quality_button_value_ != video_quality_button_value_last_) {
           video_quality_button_value_ = video_quality_button_value_last_;
+        }
+
+        if (video_frame_rate_button_value_ !=
+            video_frame_rate_button_value_last_) {
+          video_frame_rate_button_value_ = video_frame_rate_button_value_last_;
         }
 
         if (video_encode_format_button_value_ !=
