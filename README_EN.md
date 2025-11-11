@@ -19,6 +19,15 @@ CrossDesk is a lightweight cross-platform remote desktop software.
 
 CrossDesk is an experimental application of [MiniRTC](https://github.com/kunkundi/minirtc.git), a lightweight cross-platform real-time audio and video transmission library. MiniRTC provides fundamental capabilities including network traversal ([RFC5245](https://datatracker.ietf.org/doc/html/rfc5245)), video software/hardware encoding and decoding (H264/AV1), audio encoding/decoding ([Opus](https://github.com/xiph/opus)), signaling interaction, network congestion control, and transmission encryption ([SRTP](https://tools.ietf.org/html/rfc3711)).
 
+## System Requirements
+
+| Platform | Minimum Version |
+|-----------|-----------------|
+| **Windows** | Windows 10 or later (64-bit) |
+| **macOS** | macOS Intel 15.0 or later *(versions between 14.0 and 15.0 can be built manually for compatibility)*<br>macOS Apple Silicon 14.0 or later |
+| **Linux** | Ubuntu 22.04 or later *(older versions can be built manually for compatibility)* |
+
+
 ## Usage
 
 Enter the remote desktop ID in the menu bar’s “Remote ID” field and click “→” to initiate a remote connection.
