@@ -48,7 +48,7 @@ class WgcSessionImpl : public WgcSession {
 
   void RegisterObserver(wgc_session_observer* observer) override;
 
-  int Start() override;
+  int Start(bool show_cursor) override;
   int Stop() override;
 
   int Pause() override;

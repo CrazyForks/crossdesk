@@ -29,7 +29,7 @@ class WgcSession {
 
   virtual void RegisterObserver(wgc_session_observer* observer) = 0;
 
-  virtual int Start() = 0;
+  virtual int Start(bool show_cursor) = 0;
   virtual int Stop() = 0;
 
   virtual int Pause() = 0;

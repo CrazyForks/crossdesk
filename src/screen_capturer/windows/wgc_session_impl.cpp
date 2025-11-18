@@ -55,7 +55,7 @@ void WgcSessionImpl::RegisterObserver(wgc_session_observer* observer) {
   observer_ = observer;
 }
 
-int WgcSessionImpl::Start() {
+int WgcSessionImpl::Start(bool show_cursor) {
   std::lock_guard locker(lock_);
 
   if (is_running_) return 0;
@@ -91,7 +91,7 @@ int WgcSessionImpl::Start() {
 
     capture_session_.StartCapture();
 
-    capture_session_.IsCursorCaptureEnabled(false);
+    capture_session_.IsCursorCaptureEnabled(show_cursor);
 
     error = 0;
   } catch (winrt::hresult_error) {

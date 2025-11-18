@@ -57,7 +57,7 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
  public:
   int Init(const int fps, cb_desktop_data cb) override;
 
-  int Start() override;
+  int Start(bool show_cursor) override;
 
   int SwitchTo(int monitor_index) override;
 
@@ -80,6 +80,7 @@ class API_AVAILABLE(macos(14.0)) ScreenCapturerSckImpl : public ScreenCapturer {
   int width_ = 0;
   int height_ = 0;
   int fps_ = 60;
+  bool show_cursor_ = false;
 
  public:
   // Called by SckHelper when shareable content is returned by ScreenCaptureKit. `content` will be
@@ -246,7 +247,8 @@ int ScreenCapturerSckImpl::Init(const int fps, cb_desktop_data cb) {
   return 0;
 }
 
-int ScreenCapturerSckImpl::Start() {
+int ScreenCapturerSckImpl::Start(bool show_cursor) {
+  show_cursor_ = show_cursor;
   StartOrReconfigureCapturer();
   return 0;
 }
@@ -328,7 +330,7 @@ void ScreenCapturerSckImpl::OnShareableContentCreated(SCShareableContent *conten
                                                     excludingWindows:@[]];
   SCStreamConfiguration *config = [[SCStreamConfiguration alloc] init];
   config.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
-  config.showsCursor = false;
+  config.showsCursor = show_cursor_;
   config.width = filter.contentRect.size.width * filter.pointPixelScale;
   config.height = filter.contentRect.size.height * filter.pointPixelScale;
   config.captureResolution = SCCaptureResolutionAutomatic;

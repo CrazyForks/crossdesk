@@ -152,7 +152,7 @@ int ScreenCapturerWgc::Init(const int fps, cb_desktop_data cb) {
 
 int ScreenCapturerWgc::Destroy() { return 0; }
 
-int ScreenCapturerWgc::Start() {
+int ScreenCapturerWgc::Start(bool show_cursor) {
   if (running_ == true) {
     LOG_ERROR("Screen capturer already running");
     return 0;
@@ -172,7 +172,7 @@ int ScreenCapturerWgc::Start() {
     if (sessions_[i].running_) {
       LOG_ERROR("Session {} is already running", i);
     } else {
-      sessions_[i].session_->Start();
+      sessions_[i].session_->Start(show_cursor);
 
       if (i != 0) {
         sessions_[i].session_->Pause();

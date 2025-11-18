@@ -316,6 +316,7 @@ class Render {
   bool start_speaker_capturer_ = false;
   bool speaker_capturer_is_started_ = false;
   bool start_keyboard_capturer_ = true;
+  bool show_cursor_ = false;
   bool keyboard_capturer_is_started_ = false;
   bool foucs_on_main_window_ = false;
   bool foucs_on_stream_window_ = false;

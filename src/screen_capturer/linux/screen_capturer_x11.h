@@ -10,6 +10,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xrandr.h>
+#include <X11/extensions/Xfixes.h>
 
 #include <atomic>
 #include <cstring>
@@ -30,7 +31,7 @@ class ScreenCapturerX11 : public ScreenCapturer {
  public:
   int Init(const int fps, cb_desktop_data cb) override;
   int Destroy() override;
-  int Start() override;
+  int Start(bool show_cursor) override;
   int Stop() override;
 
   int Pause(int monitor_index) override;
@@ -54,6 +55,7 @@ class ScreenCapturerX11 : public ScreenCapturer {
   std::atomic<bool> running_{false};
   std::atomic<bool> paused_{false};
   std::atomic<int> monitor_index_{0};
+  std::atomic<bool> show_cursor_{true};
   int fps_ = 60;
   cb_desktop_data callback_;
   std::vector<DisplayInfo> display_info_list_;
@@ -61,6 +63,9 @@ class ScreenCapturerX11 : public ScreenCapturer {
   // 缓冲区
   std::vector<uint8_t> y_plane_;
   std::vector<uint8_t> uv_plane_;
+  
+  // 鼠标光标相关
+  void DrawCursor(XImage* image, int x, int y);
 };
 }  // namespace crossdesk
 #endif

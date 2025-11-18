@@ -28,8 +28,8 @@ int ScreenCapturerSck::Destroy() {
   return 0;
 }
 
-int ScreenCapturerSck::Start() {
-  screen_capturer_sck_impl_->Start();
+int ScreenCapturerSck::Start(bool show_cursor) {
+  screen_capturer_sck_impl_->Start(show_cursor);
   return 0;
 }
 

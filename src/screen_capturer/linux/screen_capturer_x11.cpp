@@ -86,7 +86,7 @@ int ScreenCapturerX11::Destroy() {
   return 0;
 }
 
-int ScreenCapturerX11::Start() {
+int ScreenCapturerX11::Start(bool show_cursor) {
   if (running_) return 0;
   running_ = true;
   paused_ = false;

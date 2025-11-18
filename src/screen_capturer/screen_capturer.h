@@ -24,7 +24,7 @@ class ScreenCapturer {
  public:
   virtual int Init(const int fps, cb_desktop_data cb) = 0;
   virtual int Destroy() = 0;
-  virtual int Start() = 0;
+  virtual int Start(bool show_cursor) = 0;
   virtual int Stop() = 0;
   virtual int Pause(int monitor_index) = 0;
   virtual int Resume(int monitor_index) = 0;

@@ -24,7 +24,7 @@ class ScreenCapturerWgc : public ScreenCapturer,
 
   int Init(const int fps, cb_desktop_data cb) override;
   int Destroy() override;
-  int Start() override;
+  int Start(bool show_cursor) override;
   int Stop() override;
 
   int Pause(int monitor_index) override;

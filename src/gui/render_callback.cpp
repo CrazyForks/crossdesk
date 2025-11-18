@@ -464,6 +464,13 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
 #else
         render->start_mouse_controller_ = true;
 #endif
+        if (std::all_of(render->connection_status_.begin(),
+                        render->connection_status_.end(), [](const auto& kv) {
+                          return kv.first.find("web") != std::string::npos;
+                        })) {
+          render->show_cursor_ = true;
+        }
+
         break;
       }
       case ConnectionStatus::Closed: {
@@ -486,6 +493,14 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
 
           render->connection_status_.erase(remote_id);
         }
+
+        if (std::all_of(render->connection_status_.begin(),
+                        render->connection_status_.end(), [](const auto& kv) {
+                          return kv.first.find("web") == std::string::npos;
+                        })) {
+          render->show_cursor_ = false;
+        }
+
         break;
       }
       default:

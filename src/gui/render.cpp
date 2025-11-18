@@ -329,8 +329,9 @@ int Render::ScreenCapturerInit() {
 
 int Render::StartScreenCapturer() {
   if (screen_capturer_) {
-    LOG_INFO("Start screen capturer");
-    screen_capturer_->Start();
+    LOG_INFO("Start screen capturer, show cursor: {}", show_cursor_);
+
+    screen_capturer_->Start(show_cursor_);
   }
 
   return 0;
