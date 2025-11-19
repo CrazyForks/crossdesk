@@ -261,6 +261,7 @@ int Render::LoadSettingsFromCacheFile() {
   enable_srtp_ = config_center_->IsEnableSrtp();
   enable_self_hosted_ = config_center_->IsSelfHosted();
   enable_autostart_ = config_center_->IsEnableAutostart();
+  enable_daemon_ = config_center_->IsEnableDaemon();
   enable_minimize_to_tray_ = config_center_->IsMinimizeToTray();
 
   language_button_value_last_ = language_button_value_;

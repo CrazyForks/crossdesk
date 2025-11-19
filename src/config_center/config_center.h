@@ -41,6 +41,7 @@ class ConfigCenter {
   int SetSelfHosted(bool enable_self_hosted);
   int SetMinimizeToTray(bool enable_minimize_to_tray);
   int SetAutostart(bool enable_autostart);
+  int SetDaemon(bool enable_daemon);
 
   // read config
 
@@ -62,6 +63,7 @@ class ConfigCenter {
   bool IsSelfHosted() const;
   bool IsMinimizeToTray() const;
   bool IsEnableAutostart() const;
+  bool IsEnableDaemon() const;
 
   int Load();
   int Save();
@@ -89,6 +91,7 @@ class ConfigCenter {
   bool enable_self_hosted_ = false;
   bool enable_minimize_to_tray_ = false;
   bool enable_autostart_ = false;
+  bool enable_daemon_ = false;
 };
 }  // namespace crossdesk
 #endif

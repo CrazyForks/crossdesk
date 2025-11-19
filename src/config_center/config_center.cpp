@@ -53,6 +53,7 @@ int ConfigCenter::Load() {
       ini_.GetBoolValue(section_, "enable_self_hosted", enable_self_hosted_);
   enable_autostart_ =
       ini_.GetBoolValue(section_, "enable_autostart", enable_autostart_);
+  enable_daemon_ = ini_.GetBoolValue(section_, "enable_daemon", enable_daemon_);
   enable_minimize_to_tray_ = ini_.GetBoolValue(
       section_, "enable_minimize_to_tray", enable_minimize_to_tray_);
 
@@ -76,6 +77,7 @@ int ConfigCenter::Save() {
   ini_.SetValue(section_, "cert_file_path", cert_file_path_.c_str());
   ini_.SetBoolValue(section_, "enable_self_hosted", enable_self_hosted_);
   ini_.SetBoolValue(section_, "enable_autostart", enable_autostart_);
+  ini_.SetBoolValue(section_, "enable_daemon", enable_daemon_);
   ini_.SetBoolValue(section_, "enable_minimize_to_tray",
                     enable_minimize_to_tray_);
 
@@ -249,6 +251,18 @@ int ConfigCenter::SetAutostart(bool enable_autostart) {
   return 0;
 }
 
+int ConfigCenter::SetDaemon(bool enable_daemon) {
+  enable_daemon_ = enable_daemon;
+
+  ini_.SetBoolValue(section_, "enable_daemon", enable_daemon_);
+  SI_Error rc = ini_.SaveFile(config_path_.c_str());
+  if (rc < 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
 // getters
 
 ConfigCenter::LANGUAGE ConfigCenter::GetLanguage() const { return language_; }
@@ -304,4 +318,6 @@ bool ConfigCenter::IsSelfHosted() const { return enable_self_hosted_; }
 bool ConfigCenter::IsMinimizeToTray() const { return enable_minimize_to_tray_; }
 
 bool ConfigCenter::IsEnableAutostart() const { return enable_autostart_; }
+
+bool ConfigCenter::IsEnableDaemon() const { return enable_daemon_; }
 }  // namespace crossdesk

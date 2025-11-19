@@ -252,6 +252,25 @@ int Render::SettingWindow() {
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::Checkbox("##enable_autostart_", &enable_autostart_);
       }
+
+      ImGui::Separator();
+
+      {
+        settings_items_offset += settings_items_padding;
+        ImGui::SetCursorPosY(settings_items_offset + 4);
+
+        ImGui::Text(
+            "%s",
+            localization::enable_daemon[localization_language_index_].c_str());
+
+        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+          ImGui::SetCursorPosX(ENABLE_DAEMON_PADDING_CN);
+        } else {
+          ImGui::SetCursorPosX(ENABLE_DAEMON_PADDING_EN);
+        }
+        ImGui::SetCursorPosY(settings_items_offset);
+        ImGui::Checkbox("##enable_daemon_", &enable_daemon_);
+      }
 #if _WIN32
       ImGui::Separator();
 
@@ -372,6 +391,13 @@ int Render::SettingWindow() {
           config_center_->SetAutostart(false);
         }
         enable_autostart_last_ = enable_autostart_;
+
+        if (enable_daemon_) {
+          config_center_->SetDaemon(true);
+        } else {
+          config_center_->SetDaemon(false);
+        }
+        enable_daemon_last_ = enable_daemon_;
 
 #if _WIN32
         if (enable_minimize_to_tray_) {
