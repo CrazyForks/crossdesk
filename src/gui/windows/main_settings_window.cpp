@@ -272,6 +272,15 @@ int Render::SettingWindow() {
         }
         ImGui::SetCursorPosY(settings_items_offset);
         ImGui::Checkbox("##enable_daemon_", &enable_daemon_);
+        if (ImGui::IsItemHovered()) {
+          ImGui::BeginTooltip();
+          ImGui::SetWindowFontScale(0.5f);
+          ImGui::Text("%s", localization::takes_effect_after_restart
+                                [localization_language_index_]
+                                    .c_str());
+          ImGui::SetWindowFontScale(1.0f);
+          ImGui::EndTooltip();
+        }
       }
 #if _WIN32
       ImGui::Separator();

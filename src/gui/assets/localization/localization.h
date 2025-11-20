@@ -173,6 +173,9 @@ static std::vector<std::string> enable_autostart = {
     reinterpret_cast<const char*>(u8"开机自启:"), "Auto Start:"};
 static std::vector<std::string> enable_daemon = {
     reinterpret_cast<const char*>(u8"启用守护进程:"), "Enable Daemon:"};
+static std::vector<std::string> takes_effect_after_restart = {
+    reinterpret_cast<const char*>(u8"重启后生效"),
+    "Takes effect after restart"};
 #if _WIN32
 static std::vector<std::string> minimize_to_tray = {
     reinterpret_cast<const char*>(u8"退出时最小化到系统托盘:"),
