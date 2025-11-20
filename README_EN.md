@@ -189,7 +189,7 @@ sudo docker run -d \
   -v /path/to/your/certs:/crossdesk-server/certs \
   -v /path/to/your/db:/crossdesk-server/db \
   -v /path/to/your/logs:/crossdesk-server/logs \
-  crossdesk/crossdesk-server:v1.1.0
+  crossdesk/crossdesk-server:v1.1.1
 ```
 
 The parameters you need to pay attention to are as follows:

@@ -181,7 +181,7 @@ sudo docker run -d \
   -v /path/to/your/certs:/crossdesk-server/certs \
   -v /path/to/your/db:/crossdesk-server/db \
   -v /path/to/your/logs:/crossdesk-server/logs \
-  crossdesk/crossdesk-server:latest
+  crossdesk/crossdesk-server:v1.1.1
 ```
 
 上述命令中，用户需注意的参数如下：
