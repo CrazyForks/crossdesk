@@ -11,7 +11,13 @@
 
 [ [English](README_EN.md) / 中文 ]
 
+PC 客户端
 ![sup_example](https://github.com/user-attachments/assets/eeb64fbe-1f07-4626-be1c-b77396beb905)
+
+Web 客户端
+<p align="center">
+  <img width="850" height="550" alt="6bddcbed47ffd4b9988a4037c7f4f524" src="https://github.com/user-attachments/assets/e44f73f9-24ac-46a3-a189-b7f8b6669881" />
+</p>
 
 ## 简介
 
