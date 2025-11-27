@@ -36,7 +36,7 @@ std::filesystem::path PathManager::GetLogPath() {
 #elif __APPLE__
   return GetHome() + "/Library/Logs/" + app_name_;
 #else
-  return GetCachePath() / app_name_ / "logs";
+  return GetCachePath() / "logs";
 #endif
 }
 
