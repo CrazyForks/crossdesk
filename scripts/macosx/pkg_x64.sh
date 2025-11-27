@@ -90,13 +90,50 @@ mkdir -p build_pkg_scripts
 
 cat > build_pkg_scripts/postinstall <<'EOF'
 #!/bin/bash
+set -e
+
+IDENTIFIER="cn.crossdesk.app"
+
+# 获取当前登录用户
 USER_HOME=$( /usr/bin/stat -f "%Su" /dev/console )
 HOME_DIR=$( /usr/bin/dscl . -read /Users/$USER_HOME NFSHomeDirectory | awk '{print $2}' )
 
+# 复制证书文件
 DEST="$HOME_DIR/Library/Application Support/CrossDesk/certs"
-
 mkdir -p "$DEST"
 cp -R "/Library/Application Support/CrossDesk/certs/"* "$DEST/"
+
+# 清除应用的权限授权，以便重新授权
+# 使用 tccutil 重置录屏权限和辅助功能权限
+if command -v tccutil >/dev/null 2>&1; then
+    # 重置录屏权限
+    tccutil reset ScreenCapture "$IDENTIFIER" 2>/dev/null || true
+    # 重置辅助功能权限
+    tccutil reset Accessibility "$IDENTIFIER" 2>/dev/null || true
+    # 重置摄像头权限（如果需要）
+    tccutil reset Camera "$IDENTIFIER" 2>/dev/null || true
+    # 重置麦克风权限（如果需要）
+    tccutil reset Microphone "$IDENTIFIER" 2>/dev/null || true
+fi
+
+# 为所有用户清除权限（可选，如果需要）
+# 遍历所有用户目录并清除权限
+for USER_DIR in /Users/*; do
+    if [ -d "$USER_DIR" ] && [ "$USER_DIR" != "/Users/Shared" ]; then
+        USER_NAME=$(basename "$USER_DIR")
+        # 跳过系统用户
+        if [ "$USER_NAME" != "Shared" ] && [ -d "$USER_DIR/Library" ]; then
+            # 删除 TCC 数据库中的相关条目（需要管理员权限）
+            TCC_DB="$USER_DIR/Library/Application Support/com.apple.TCC/TCC.db"
+            if [ -f "$TCC_DB" ]; then
+                # 使用 sqlite3 删除相关权限记录（如果可用）
+                if command -v sqlite3 >/dev/null 2>&1; then
+                    sqlite3 "$TCC_DB" "DELETE FROM access WHERE client='$IDENTIFIER' AND service IN ('kTCCServiceScreenCapture', 'kTCCServiceAccessibility');" 2>/dev/null || true
+                fi
+            fi
+        fi
+    fi
+done
 
 exit 0
 EOF
