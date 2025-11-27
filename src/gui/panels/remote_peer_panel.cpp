@@ -82,6 +82,7 @@ int Render::RemoteWindow() {
         for (auto& [id, props] : recent_connections_) {
           if (id.find(remote_id) != std::string::npos) {
             found = true;
+            std::shared_lock lock(client_properties_mutex_);
             if (client_properties_.find(remote_id) !=
                 client_properties_.end()) {
               if (!client_properties_[remote_id]->connection_established_) {
@@ -111,6 +112,7 @@ int Render::RemoteWindow() {
         if (elapsed >= 1000) {
           last_rejoin_check_time_ = now;
           need_to_rejoin_ = false;
+          std::shared_lock lock(client_properties_mutex_);
           for (const auto& [_, props] : client_properties_) {
             if (props->rejoin_) {
               ConnectTo(props->remote_id_, props->remote_password_,
@@ -145,38 +147,49 @@ int Render::ConnectTo(const std::string& remote_id, const char* password,
   LOG_INFO("Connect to [{}]", remote_id);
   focused_remote_id_ = remote_id;
 
-  if (client_properties_.find(remote_id) == client_properties_.end()) {
-    client_properties_[remote_id] =
-        std::make_shared<SubStreamWindowProperties>();
-    auto props = client_properties_[remote_id];
-    props->local_id_ = "C-" + std::string(client_id_);
-    props->remote_id_ = remote_id;
-    memcpy(&props->params_, &params_, sizeof(Params));
-    props->params_.user_id = props->local_id_.c_str();
-    props->peer_ = CreatePeer(&props->params_);
+  std::shared_lock shared_lock(client_properties_mutex_);
+  bool exists =
+      (client_properties_.find(remote_id) != client_properties_.end());
+  shared_lock.unlock();
 
-    if (!props->peer_) {
-      LOG_INFO("Create peer [{}] instance failed", props->local_id_);
-      return -1;
+  if (!exists) {
+    std::unique_lock unique_lock(client_properties_mutex_);
+    if (client_properties_.find(remote_id) == client_properties_.end()) {
+      client_properties_[remote_id] =
+          std::make_shared<SubStreamWindowProperties>();
+      auto props = client_properties_[remote_id];
+      props->local_id_ = "C-" + std::string(client_id_);
+      props->remote_id_ = remote_id;
+      memcpy(&props->params_, &params_, sizeof(Params));
+      props->params_.user_id = props->local_id_.c_str();
+      props->peer_ = CreatePeer(&props->params_);
+
+      if (!props->peer_) {
+        LOG_INFO("Create peer [{}] instance failed", props->local_id_);
+        return -1;
+      }
+
+      for (auto& display_info : display_info_list_) {
+        AddVideoStream(props->peer_, display_info.name.c_str());
+      }
+      AddAudioStream(props->peer_, props->audio_label_.c_str());
+      AddDataStream(props->peer_, props->data_label_.c_str());
+
+      if (props->peer_) {
+        LOG_INFO("[{}] Create peer instance successful", props->local_id_);
+        Init(props->peer_);
+        LOG_INFO("[{}] Peer init finish", props->local_id_);
+      } else {
+        LOG_INFO("Create peer [{}] instance failed", props->local_id_);
+      }
+
+      props->connection_status_ = ConnectionStatus::Connecting;
     }
-
-    for (auto& display_info : display_info_list_) {
-      AddVideoStream(props->peer_, display_info.name.c_str());
-    }
-    AddAudioStream(props->peer_, props->audio_label_.c_str());
-    AddDataStream(props->peer_, props->data_label_.c_str());
-
-    if (props->peer_) {
-      LOG_INFO("[{}] Create peer instance successful", props->local_id_);
-      Init(props->peer_);
-      LOG_INFO("[{}] Peer init finish", props->local_id_);
-    } else {
-      LOG_INFO("Create peer [{}] instance failed", props->local_id_);
-    }
-
-    props->connection_status_ = ConnectionStatus::Connecting;
+    unique_lock.unlock();
   }
+
   int ret = -1;
+  std::shared_lock read_lock(client_properties_mutex_);
   auto props = client_properties_[remote_id];
   if (!props->connection_established_) {
     props->remember_password_ = remember_password;
@@ -188,14 +201,17 @@ int Render::ConnectTo(const std::string& remote_id, const char* password,
     }
 
     std::string remote_id_with_pwd = remote_id + "@" + password;
-    ret = JoinConnection(props->peer_, remote_id_with_pwd.c_str());
-    if (0 == ret) {
-      props->rejoin_ = false;
-    } else {
-      props->rejoin_ = true;
-      need_to_rejoin_ = true;
+    if (props->peer_) {
+      ret = JoinConnection(props->peer_, remote_id_with_pwd.c_str());
+      if (0 == ret) {
+        props->rejoin_ = false;
+      } else {
+        props->rejoin_ = true;
+        need_to_rejoin_ = true;
+      }
     }
   }
+  read_lock.unlock();
 
   return 0;
 }

@@ -947,6 +947,7 @@ int Render::DrawStreamWindow() {
   ImGui::Render();
   SDL_RenderClear(stream_renderer_);
 
+  std::shared_lock lock(client_properties_mutex_);
   for (auto& it : client_properties_) {
     auto props = it.second;
     if (props->tab_selected_) {
@@ -1283,12 +1284,18 @@ void Render::CleanupPeers() {
     DestroyPeer(&peer_);
   }
 
-  for (auto& it : client_properties_) {
-    auto props = it.second;
-    CleanupPeer(props);
+  {
+    std::shared_lock lock(client_properties_mutex_);
+    for (auto& it : client_properties_) {
+      auto props = it.second;
+      CleanupPeer(props);
+    }
   }
 
-  client_properties_.clear();
+  {
+    std::unique_lock lock(client_properties_mutex_);
+    client_properties_.clear();
+  }
 }
 
 void Render::CleanSubStreamWindowProperties(
@@ -1305,6 +1312,7 @@ void Render::CleanSubStreamWindowProperties(
 }
 
 void Render::UpdateRenderRect() {
+  std::shared_lock lock(client_properties_mutex_);
   for (auto& [_, props] : client_properties_) {
     if (!props->reset_control_bar_pos_) {
       props->mouse_diff_control_bar_pos_x_ = 0;
@@ -1379,34 +1387,41 @@ void Render::ProcessSdlEvent(const SDL_Event& event) {
         DestroyStreamWindow();
         DestroyStreamWindowContext();
 
-        for (auto& [host_name, props] : client_properties_) {
-          thumbnail_->SaveToThumbnail(
-              (char*)props->dst_buffer_, props->video_width_,
-              props->video_height_, host_name, props->remote_host_name_,
-              props->remember_password_ ? props->remote_password_ : "");
+        {
+          std::shared_lock lock(client_properties_mutex_);
+          for (auto& [host_name, props] : client_properties_) {
+            thumbnail_->SaveToThumbnail(
+                (char*)props->dst_buffer_, props->video_width_,
+                props->video_height_, host_name, props->remote_host_name_,
+                props->remember_password_ ? props->remote_password_ : "");
 
-          if (props->peer_) {
-            std::string client_id = (host_name == client_id_)
-                                        ? "C-" + std::string(client_id_)
-                                        : client_id_;
-            LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
-            LeaveConnection(props->peer_, host_name.c_str());
-            LOG_INFO("Destroy peer [{}]", client_id);
-            DestroyPeer(&props->peer_);
+            if (props->peer_) {
+              std::string client_id = (host_name == client_id_)
+                                          ? "C-" + std::string(client_id_)
+                                          : client_id_;
+              LOG_INFO("[{}] Leave connection [{}]", client_id, host_name);
+              LeaveConnection(props->peer_, host_name.c_str());
+              LOG_INFO("Destroy peer [{}]", client_id);
+              DestroyPeer(&props->peer_);
+            }
+
+            props->streaming_ = false;
+            props->remember_password_ = false;
+            props->connection_established_ = false;
+            props->audio_capture_button_pressed_ = false;
+
+            memset(&props->net_traffic_stats_, 0,
+                   sizeof(props->net_traffic_stats_));
+            SDL_SetWindowFullscreen(main_window_, false);
+            SDL_FlushEvents(STREAM_REFRESH_EVENT, STREAM_REFRESH_EVENT);
+            memset(audio_buffer_, 0, 720);
           }
-
-          props->streaming_ = false;
-          props->remember_password_ = false;
-          props->connection_established_ = false;
-          props->audio_capture_button_pressed_ = false;
-
-          memset(&props->net_traffic_stats_, 0,
-                 sizeof(props->net_traffic_stats_));
-          SDL_SetWindowFullscreen(main_window_, false);
-          SDL_FlushEvents(STREAM_REFRESH_EVENT, STREAM_REFRESH_EVENT);
-          memset(audio_buffer_, 0, 720);
         }
-        client_properties_.clear();
+
+        {
+          std::unique_lock lock(client_properties_mutex_);
+          client_properties_.clear();
+        }
 
         rejoin_ = false;
         is_client_mode_ = false;

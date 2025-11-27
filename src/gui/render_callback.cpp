@@ -21,13 +21,16 @@ int Render::SendKeyCommand(int key_code, bool is_down) {
   remote_action.k.key_value = key_code;
 
   if (!controlled_remote_id_.empty()) {
+    std::shared_lock lock(client_properties_mutex_);
     if (client_properties_.find(controlled_remote_id_) !=
         client_properties_.end()) {
       auto props = client_properties_[controlled_remote_id_];
       if (props->connection_status_ == ConnectionStatus::Connected) {
         std::string msg = remote_action.to_json();
-        SendDataFrame(props->peer_, msg.c_str(), msg.size(),
-                      props->data_label_.c_str());
+        if (props->peer_) {
+          SendDataFrame(props->peer_, msg.c_str(), msg.size(),
+                        props->data_label_.c_str());
+        }
       }
     }
   }
@@ -42,6 +45,7 @@ int Render::ProcessMouseEvent(const SDL_Event& event) {
   float ratio_x, ratio_y = 0;
   RemoteAction remote_action;
 
+  std::shared_lock lock(client_properties_mutex_);
   for (auto& it : client_properties_) {
     auto props = it.second;
     if (!props->control_mouse_) {
@@ -94,8 +98,10 @@ int Render::ProcessMouseEvent(const SDL_Event& event) {
       }
 
       std::string msg = remote_action.to_json();
-      SendDataFrame(props->peer_, msg.c_str(), msg.size(),
-                    props->data_label_.c_str());
+      if (props->peer_) {
+        SendDataFrame(props->peer_, msg.c_str(), msg.size(),
+                      props->data_label_.c_str());
+      }
     } else if (SDL_EVENT_MOUSE_WHEEL == event.type &&
                last_mouse_event.button.x >= props->stream_render_rect_.x &&
                last_mouse_event.button.x <= props->stream_render_rect_.x +
@@ -139,8 +145,10 @@ int Render::ProcessMouseEvent(const SDL_Event& event) {
           render_height;
 
       std::string msg = remote_action.to_json();
-      SendDataFrame(props->peer_, msg.c_str(), msg.size(),
-                    props->data_label_.c_str());
+      if (props->peer_) {
+        SendDataFrame(props->peer_, msg.c_str(), msg.size(),
+                      props->data_label_.c_str());
+      }
     }
   }
 
@@ -154,11 +162,14 @@ void Render::SdlCaptureAudioIn(void* userdata, Uint8* stream, int len) {
   }
 
   if (1) {
-    for (auto it : render->client_properties_) {
+    std::shared_lock lock(render->client_properties_mutex_);
+    for (const auto& it : render->client_properties_) {
       auto props = it.second;
       if (props->connection_status_ == ConnectionStatus::Connected) {
-        SendAudioFrame(props->peer_, (const char*)stream, len,
-                       render->audio_label_.c_str());
+        if (props->peer_) {
+          SendAudioFrame(props->peer_, (const char*)stream, len,
+                         render->audio_label_.c_str());
+        }
       }
     }
 
@@ -207,6 +218,7 @@ void Render::OnReceiveVideoBufferCb(const XVideoFrame* video_frame,
   }
 
   std::string remote_id(user_id, user_id_size);
+  std::shared_lock lock(render->client_properties_mutex_);
   if (render->client_properties_.find(remote_id) ==
       render->client_properties_.end()) {
     return;
@@ -302,6 +314,7 @@ void Render::OnReceiveDataBufferCb(const char* data, size_t size,
   }
 
   std::string remote_id(user_id, user_id_size);
+  std::shared_lock lock(render->client_properties_mutex_);
   if (render->client_properties_.find(remote_id) !=
       render->client_properties_.end()) {
     // local
@@ -373,6 +386,7 @@ void Render::OnSignalStatusCb(SignalStatus status, const char* user_id,
     }
 
     std::string remote_id(client_id.begin() + 2, client_id.end());
+    std::shared_lock lock(render->client_properties_mutex_);
     if (render->client_properties_.find(remote_id) ==
         render->client_properties_.end()) {
       return;
@@ -402,6 +416,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
   if (!render) return;
 
   std::string remote_id(user_id, user_id_size);
+  std::shared_lock lock(render->client_properties_mutex_);
   auto it = render->client_properties_.find(remote_id);
   auto props = (it != render->client_properties_.end()) ? it->second : nullptr;
 
@@ -428,7 +443,7 @@ void Render::OnConnectionStatusCb(ConnectionStatus status, const char* user_id,
       case ConnectionStatus::Closed: {
         props->connection_established_ = false;
         props->mouse_control_button_pressed_ = false;
-        if (props->dst_buffer_) {
+        if (props->dst_buffer_ && props->stream_texture_) {
           memset(props->dst_buffer_, 0, props->dst_buffer_capacity_);
           SDL_UpdateTexture(props->stream_texture_, NULL, props->dst_buffer_,
                             props->texture_width_);
@@ -562,6 +577,7 @@ void Render::NetStatusReport(const char* client_id, size_t client_id_size,
   }
 
   std::string remote_id(user_id, user_id_size);
+  std::shared_lock lock(render->client_properties_mutex_);
   if (render->client_properties_.find(remote_id) ==
       render->client_properties_.end()) {
     return;

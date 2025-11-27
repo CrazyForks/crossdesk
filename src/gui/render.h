@@ -15,6 +15,7 @@
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <shared_mutex>
 #include <string>
 #include <unordered_map>
 
@@ -30,6 +31,7 @@
 #include "screen_capturer_factory.h"
 #include "speaker_capturer_factory.h"
 #include "thumbnail.h"
+
 #if _WIN32
 #include "win_tray.h"
 #endif
@@ -504,6 +506,7 @@ class Render {
   /* ------ sub stream window property start ------ */
   std::unordered_map<std::string, std::shared_ptr<SubStreamWindowProperties>>
       client_properties_;
+  std::shared_mutex client_properties_mutex_;
   void CloseTab(decltype(client_properties_)::iterator& it);
   /* ------ stream window property end ------ */
 
