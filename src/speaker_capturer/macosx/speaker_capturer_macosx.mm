@@ -38,8 +38,50 @@ class SpeakerCapturerMacosx;
 
   if (_owner->cb_ && dataPtr && length > 0 && asbd) {
     std::vector<short> out_pcm16;
-    // ... 数据转换逻辑保持不变 ...
-    // 调用回调
+    if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
+      int channels = asbd->mChannelsPerFrame;
+      int samples = (int)(length / sizeof(float));
+      float* floatData = (float*)dataPtr;
+      std::vector<short> pcm16(samples);
+      for (int i = 0; i < samples; ++i) {
+        float v = floatData[i];
+        if (v > 1.0f) v = 1.0f;
+        if (v < -1.0f) v = -1.0f;
+        pcm16[i] = (short)(v * 32767.0f);
+      }
+
+      if (channels > 1) {
+        int mono_samples = samples / channels;
+        out_pcm16.resize(mono_samples);
+        for (int i = 0; i < mono_samples; ++i) {
+          int sum = 0;
+          for (int c = 0; c < channels; ++c) {
+            sum += pcm16[i * channels + c];
+          }
+          out_pcm16[i] = sum / channels;
+        }
+      } else {
+        out_pcm16 = std::move(pcm16);
+      }
+    } else if (asbd->mBitsPerChannel == 16) {
+      int channels = asbd->mChannelsPerFrame;
+      int samples = (int)(length / 2);
+      short* src = (short*)dataPtr;
+      if (channels > 1) {
+        int mono_samples = samples / channels;
+        out_pcm16.resize(mono_samples);
+        for (int i = 0; i < mono_samples; ++i) {
+          int sum = 0;
+          for (int c = 0; c < channels; ++c) {
+            sum += src[i * channels + c];
+          }
+          out_pcm16[i] = sum / channels;
+        }
+      } else {
+        out_pcm16.assign(src, src + samples);
+      }
+    }
+
     size_t frame_bytes = 960;  // 480 * 2
     size_t total_bytes = out_pcm16.size() * sizeof(short);
     unsigned char* p = (unsigned char*)out_pcm16.data();
@@ -48,6 +90,7 @@ class SpeakerCapturerMacosx;
     }
   }
 }
+
 @end
 
 namespace crossdesk {

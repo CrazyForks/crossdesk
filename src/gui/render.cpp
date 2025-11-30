@@ -365,13 +365,16 @@ int Render::StartSpeakerCapturer() {
 
   if (speaker_capturer_) {
     speaker_capturer_->Start();
+    start_speaker_capturer_ = true;
   }
+
   return 0;
 }
 
 int Render::StopSpeakerCapturer() {
   if (speaker_capturer_) {
     speaker_capturer_->Stop();
+    start_speaker_capturer_ = false;
   }
 
   return 0;
