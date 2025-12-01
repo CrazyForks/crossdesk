@@ -180,7 +180,7 @@ class Render {
   int DestroyMainWindow();
   int CreateStreamWindow();
   int DestroyStreamWindow();
-  int SetupFontAndStyle();
+  int SetupFontAndStyle(bool main_window);
   int DestroyMainWindowContext();
   int DestroyStreamWindowContext();
   int DrawMainWindow();
@@ -313,7 +313,8 @@ class Render {
   SDL_Window* main_window_ = nullptr;
   SDL_Renderer* main_renderer_ = nullptr;
   ImGuiContext* main_ctx_ = nullptr;
-  ImFont* system_chinese_font_ = nullptr;  // System Chinese font for fallback
+  ImFont* main_windows_system_chinese_font_ = nullptr;
+  ImFont* stream_windows_system_chinese_font_ = nullptr;
   bool exit_ = false;
   const int sdl_refresh_ms_ = 16;  // ~60 FPS
 #if _WIN32

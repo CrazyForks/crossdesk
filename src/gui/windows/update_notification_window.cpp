@@ -111,8 +111,8 @@ int Render::UpdateNotificationWindow() {
     float scrollable_height =
         window_height - UPDATE_NOTIFICATION_RESERVED_HEIGHT;
 
-    if (system_chinese_font_ != nullptr) {
-      ImGui::PushFont(system_chinese_font_);
+    if (main_windows_system_chinese_font_ != nullptr) {
+      ImGui::PushFont(main_windows_system_chinese_font_);
     }
     // scrollable content area
     ImGui::SetCursorPosX(window_width * 0.05f);
@@ -163,7 +163,7 @@ int Render::UpdateNotificationWindow() {
     ImGui::EndChild();
 
     // pop system font
-    if (system_chinese_font_ != nullptr) {
+    if (main_windows_system_chinese_font_ != nullptr) {
       ImGui::PopFont();
     }
 

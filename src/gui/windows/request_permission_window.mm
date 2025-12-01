@@ -138,8 +138,8 @@ int Render::RequestPermissionWindow() {
   ImGui::SetWindowFontScale(0.3f);
 
   // use system font
-  if (system_chinese_font_ != nullptr) {
-    ImGui::PushFont(system_chinese_font_);
+  if (main_windows_system_chinese_font_ != nullptr) {
+    ImGui::PushFont(main_windows_system_chinese_font_);
   }
 
   ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetTextLineHeight() + 5.0f);
@@ -191,7 +191,7 @@ int Render::RequestPermissionWindow() {
   ImGui::SetWindowFontScale(0.45f);
 
   // pop system font
-  if (system_chinese_font_ != nullptr) {
+  if (main_windows_system_chinese_font_ != nullptr) {
     ImGui::PopFont();
   }
 

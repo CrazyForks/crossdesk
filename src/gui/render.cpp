@@ -681,7 +681,7 @@ int Render::CreateMainWindow() {
   // for window region action
   SDL_SetWindowHitTest(main_window_, HitTestCallback, this);
 
-  SetupFontAndStyle();
+  SetupFontAndStyle(true);
 
   ImGuiStyle& style = ImGui::GetStyle();
   style.ScaleAllSizes(dpi_scale_);
@@ -750,7 +750,7 @@ int Render::CreateStreamWindow() {
   // for window region action
   SDL_SetWindowHitTest(stream_window_, HitTestCallback, this);
 
-  SetupFontAndStyle();
+  SetupFontAndStyle(false);
 
   SDL_SetRenderScale(stream_renderer_, dpi_scale_, dpi_scale_);
 
@@ -793,7 +793,7 @@ int Render::DestroyStreamWindow() {
   return 0;
 }
 
-int Render::SetupFontAndStyle() {
+int Render::SetupFontAndStyle(bool main_window) {
   float font_size = 32.0f;
 
   // Setup Dear ImGui style
@@ -815,7 +815,11 @@ int Render::SetupFontAndStyle() {
   // Load system Chinese font as fallback
   config.MergeMode = false;
   config.FontDataOwnedByAtlas = false;
-  system_chinese_font_ = nullptr;
+  if (main_window) {
+    main_windows_system_chinese_font_ = nullptr;
+  } else {
+    stream_windows_system_chinese_font_ = nullptr;
+  }
 
 #if defined(_WIN32)
   // Windows: Try Microsoft YaHei (微软雅黑) first, then SimSun (宋体)
@@ -841,20 +845,37 @@ int Render::SetupFontAndStyle() {
     std::ifstream font_file(font_paths[i], std::ios::binary);
     if (font_file.good()) {
       font_file.close();
-      system_chinese_font_ =
-          io.Fonts->AddFontFromFileTTF(font_paths[i], font_size, &config,
-                                       io.Fonts->GetGlyphRangesChineseFull());
-      if (system_chinese_font_ != nullptr) {
-        LOG_INFO("Loaded system Chinese font: {}", font_paths[i]);
-        break;
+      if (main_window) {
+        main_windows_system_chinese_font_ =
+            io.Fonts->AddFontFromFileTTF(font_paths[i], font_size, &config,
+                                         io.Fonts->GetGlyphRangesChineseFull());
+        if (main_windows_system_chinese_font_ != nullptr) {
+          LOG_INFO("Loaded system Chinese font: {}", font_paths[i]);
+          break;
+        }
+      } else {
+        stream_windows_system_chinese_font_ =
+            io.Fonts->AddFontFromFileTTF(font_paths[i], font_size, &config,
+                                         io.Fonts->GetGlyphRangesChineseFull());
+        if (stream_windows_system_chinese_font_ != nullptr) {
+          LOG_INFO("Loaded system Chinese font: {}", font_paths[i]);
+          break;
+        }
       }
     }
   }
 
   // If no system font found, use default font
-  if (system_chinese_font_ == nullptr) {
-    system_chinese_font_ = io.Fonts->AddFontDefault(&config);
-    LOG_WARN("System Chinese font not found, using default font");
+  if (main_window) {
+    if (main_windows_system_chinese_font_ == nullptr) {
+      main_windows_system_chinese_font_ = io.Fonts->AddFontDefault(&config);
+      LOG_WARN("System Chinese font not found, using default font");
+    }
+  } else {
+    if (stream_windows_system_chinese_font_ == nullptr) {
+      stream_windows_system_chinese_font_ = io.Fonts->AddFontDefault(&config);
+      LOG_WARN("System Chinese font not found, using default font");
+    }
   }
 
   ImGui::StyleColorsLight();
