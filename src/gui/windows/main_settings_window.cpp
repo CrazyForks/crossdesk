@@ -11,7 +11,9 @@ int Render::SettingWindow() {
     if (settings_window_pos_reset_) {
       const ImGuiViewport* viewport = ImGui::GetMainViewport();
       if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-#if USE_CUDA && !defined(__aarch64__) && !defined(__arm__)
+#if (((defined(_WIN32) || defined(__linux__)) && !defined(__aarch64__) && \
+      !defined(__arm__) && USE_CUDA) ||                                   \
+     defined(__APPLE__))
         ImGui::SetNextWindowPos(
             ImVec2(io.DisplaySize.x * 0.343f, io.DisplaySize.y * 0.07f));
         ImGui::SetNextWindowSize(
@@ -23,7 +25,9 @@ int Render::SettingWindow() {
             ImVec2(io.DisplaySize.x * 0.315f, io.DisplaySize.y * 0.8f));
 #endif
       } else {
-#if USE_CUDA && !defined(__aarch64__) && !defined(__arm__)
+#if (((defined(_WIN32) || defined(__linux__)) && !defined(__aarch64__) && \
+      !defined(__arm__) && USE_CUDA) ||                                   \
+     defined(__APPLE__))
         ImGui::SetNextWindowPos(
             ImVec2(io.DisplaySize.x * 0.297f, io.DisplaySize.y * 0.07f));
         ImGui::SetNextWindowSize(
@@ -197,7 +201,9 @@ int Render::SettingWindow() {
         }
       }
 
-#if USE_CUDA && !defined(__aarch64__) && !defined(__arm__)
+#if (((defined(_WIN32) || defined(__linux__)) && !defined(__aarch64__) && \
+      !defined(__arm__) && USE_CUDA) ||                                   \
+     defined(__APPLE__))
       ImGui::Separator();
 
       {
