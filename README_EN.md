@@ -187,142 +187,44 @@ sudo docker run -d \
   -e COTURN_PORT=xxxx \
   -e MIN_PORT=xxxxx \
   -e MAX_PORT=xxxxx \
-  -v /path/to/your/certs:/crossdesk-server/certs \
-  -v /path/to/your/db:/crossdesk-server/db \
-  -v /path/to/your/logs:/crossdesk-server/logs \
-  crossdesk/crossdesk-server:v1.1.1
+  -v /var/lib/crossdesk:/var/lib/crossdesk \
+  -v /var/log/crossdesk:/var/log/crossdesk \
+  crossdesk/crossdesk-server:v1.1.2
 ```
 
 The parameters you need to pay attention to are as follows:
 
-- **EXTERNAL_IP**: The server's public IP, corresponding to the **Server Address** in the CrossDesk client **Self-Hosted Server Configuration**.
+**Parameters**
+- **EXTERNAL_IP**: The server’s public IP. This corresponds to **Server Address** in the CrossDesk client’s **Self-Hosted Server Configuration**.
+- **INTERNAL_IP**: The server’s internal IP.
+- **CROSSDESK_SERVER_PORT**: The port used by the self-hosted service. This corresponds to **Server Port** in the CrossDesk client’s **Self-Hosted Server Configuration**.
+- **COTURN_PORT**: The port used by the COTURN service. This corresponds to **Relay Service Port** in the CrossDesk client’s **Self-Hosted Server Configuration**.
+- **MIN_PORT / MAX_PORT**: The port range used by the COTURN service. Example: `MIN_PORT=50000`, `MAX_PORT=60000`. Adjust the range depending on the number of clients.
+- `-v /var/lib/crossdesk:/var/lib/crossdesk`: Persists database and certificate files on the host machine.
+- `-v /var/log/crossdesk:/var/log/crossdesk`: Persists log files on the host machine.
 
-- **INTERNAL_IP**: The server's internal IP.
+**Notes**
+- **The server must open the following ports: 3478/udp, 3478/tcp, MIN_PORT–MAX_PORT/udp, and CROSSDESK_SERVER_PORT/tcp.**
+- If you don’t mount volumes, all data will be lost when the container is removed.
+- Certificate files will be automatically generated on first startup and persisted to the host at `/var/lib/crossdesk/certs`.
+- The database file will be automatically created and stored at `/var/lib/crossdesk/db/crossdesk-server.db`.
+- Log files will be created and stored at `/var/log/crossdesk/`.
 
-- **CROSSDESK_SERVER_PORT**: The port used by the self-hosted server, corresponding to the **Server Port** in the CrossDesk client **Self-Hosted Server Configuration**.
+**Permission Notice**
+If the directories automatically created by Docker belong to root and have insufficient write permissions, the container user may not be able to write to them. This can cause:
+  - Certificate generation failure, leading to startup script errors and container exit.
+  - Database directory creation failure, causing the program to throw exceptions and crash.
+  - Log directory creation failure, preventing logs from being written (though the program may continue running).
 
-- **COTURN_PORT**: The port used by Coturn, corresponding to the **Relay Server Port** in the CrossDesk client **Self-Hosted Server Configuration**.
-
-- **MIN_PORT** and **MAX_PORT**: The range of ports used by the self-hosted server, corresponding to the **Minimum Port** and **Maximum Port** in the CrossDesk client **Self-Hosted Server Configuration**. Example: 50000-60000. It depends on the number of devices connected to the server.
-
-- **/path/to/your/certs**: Directory for certificate files.
-
-- **/path/to/your/db**: CrossDesk Server device management database.
-
-- **/path/to/your/logs**: Log directory.
-
-**Note**:  
-- **/path/to/your/ is an example path; please replace it with your actual path. The mounted directories must be created in advance, otherwise the container will fail.**
-- **The server must open the following ports: 3478/udp, 3478/tcp, 30000-60000/udp, CROSSDESK_SERVER_PORT/tcp.**
-
-## Certificate Files
-The client needs to load the root certificate, and the server needs to load the server private key and server certificate.
-
-If you already have an SSL certificate, you can skip the following certificate generation steps.
-
-For users without a certificate, you can use the script below to generate the certificate files:
+**Solution:** Manually set permissions before starting the container:
+```bash
+sudo mkdir -p /var/lib/crossdesk /var/log/crossdesk
+sudo chown -R $(id -u):$(id -g) /var/lib/crossdesk /var/log/crossdesk
 ```
-# Create certificate generation script
-vim generate_certs.sh
-```
-Copy the following into the script:
-```
-#!/bin/bash
-set -e
 
-# Check arguments
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <SERVER_IP>"
-    exit 1
-fi
-
-SERVER_IP="$1"
-
-# Filenames
-ROOT_KEY="crossdesk.cn_root.key"
-ROOT_CERT="crossdesk.cn_root.crt"
-SERVER_KEY="crossdesk.cn.key"
-SERVER_CSR="crossdesk.cn.csr"
-SERVER_CERT="crossdesk.cn_bundle.crt"
-FULLCHAIN_CERT="crossdesk.cn_fullchain.crt"
-
-# Certificate subject
-SUBJ="/C=CN/ST=Zhejiang/L=Hangzhou/O=CrossDesk/OU=CrossDesk/CN=$SERVER_IP"
-
-# 1. Generate root certificate
-echo "Generating root private key..."
-openssl genrsa -out "$ROOT_KEY" 4096
-
-echo "Generating self-signed root certificate..."
-openssl req -x509 -new -nodes -key "$ROOT_KEY" -sha256 -days 3650 -out "$ROOT_CERT" -subj "$SUBJ"
-
-# 2. Generate server private key
-echo "Generating server private key..."
-openssl genrsa -out "$SERVER_KEY" 2048
-
-# 3. Generate server CSR
-echo "Generating server CSR..."
-openssl req -new -key "$SERVER_KEY" -out "$SERVER_CSR" -subj "$SUBJ"
-
-# 4. Create temporary OpenSSL config file with SAN
-SAN_CONF="san.cnf"
-cat > $SAN_CONF <<EOL
-[ req ]
-default_bits = 2048
-distinguished_name = req_distinguished_name
-req_extensions = req_ext
-prompt = no
-
-[ req_distinguished_name ]
-C = CN
-ST = Zhejiang
-L = Hangzhou
-O = CrossDesk
-OU = CrossDesk
-CN = $SERVER_IP
-
-[ req_ext ]
-subjectAltName = IP:$SERVER_IP
-EOL
-
-# 5. Sign server certificate with root certificate (including SAN)
-echo "Signing server certificate with root certificate..."
-openssl x509 -req -in "$SERVER_CSR" -CA "$ROOT_CERT" -CAkey "$ROOT_KEY" -CAcreateserial \
-  -out "$SERVER_CERT" -days 3650 -sha256 -extfile "$SAN_CONF" -extensions req_ext
-
-# 6. Generate full chain certificate
-cat "$SERVER_CERT" "$ROOT_CERT" > "$FULLCHAIN_CERT"
-
-# 7. Clean up intermediate files
-rm -f "$ROOT_CERT.srl" "$SAN_CONF" "$ROOT_KEY" "$SERVER_CSR" "FULLCHAIN_CERT"
-
-echo "Generation complete. Deployment files:"
-echo "  Client root certificate: $ROOT_CERT"
-echo "  Server private key: $SERVER_KEY"
-echo "  Server certificate: $SERVER_CERT"
-```
-Execute:
-```
-chmod +x generate_certs.sh
-./generate_certs.sh EXTERNAL_IP
-
-# example ./generate_certs.sh 111.111.111.111
-```
-Expected output:
-```
-Generating root private key...
-Generating self-signed root certificate...
-Generating server private key...
-Generating server CSR...
-Signing server certificate with root certificate...
-Certificate request self-signature ok
-subject=C = CN, ST = Zhejiang, L = Hangzhou, O = CrossDesk, OU = CrossDesk, CN = xxx.xxx.xxx.xxx
-cleaning up intermediate files...
-Generation complete. Deployment files::
-  Client root certificate:: crossdesk.cn_root.crt
-  Server private key: crossdesk.cn.key
-  Server certificate: crossdesk.cn_bundle.crt
-```
+### Certificate Files
+You can find the certificate file `crossdesk.cn_root.crt` at `/var/lib/crossdesk/certs` on the host machine.
+Download it to your client device and select it in the **Certificate File Path** field under the CrossDesk client’s **Self-Hosted Server Settings**.
 
 ### Server Side
 Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/your/certs** directory.
