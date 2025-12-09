@@ -1,4 +1,5 @@
 #include <cmath>
+#include <fstream>
 
 #include "device_controller.h"
 #include "localization.h"
@@ -556,24 +557,93 @@ void Render::NetStatusReport(const char* client_id, size_t client_id_size,
       password = at_pos + 1;
     }
 
-    memset(&render->client_id_, 0, sizeof(render->client_id_));
-    strncpy(render->client_id_, id.c_str(), sizeof(render->client_id_) - 1);
-    render->client_id_[sizeof(render->client_id_) - 1] = '\0';
+    bool is_self_hosted = render->config_center_->IsSelfHosted();
 
-    memset(&render->password_saved_, 0, sizeof(render->password_saved_));
-    strncpy(render->password_saved_, password.c_str(),
-            sizeof(render->password_saved_) - 1);
-    render->password_saved_[sizeof(render->password_saved_) - 1] = '\0';
+    if (is_self_hosted) {
+      memset(&render->client_id_, 0, sizeof(render->client_id_));
+      strncpy(render->client_id_, id.c_str(), sizeof(render->client_id_) - 1);
+      render->client_id_[sizeof(render->client_id_) - 1] = '\0';
 
-    memset(&render->client_id_with_password_, 0,
-           sizeof(render->client_id_with_password_));
-    strncpy(render->client_id_with_password_, client_id,
-            sizeof(render->client_id_with_password_) - 1);
-    render->client_id_with_password_[sizeof(render->client_id_with_password_) -
+      memset(&render->password_saved_, 0, sizeof(render->password_saved_));
+      strncpy(render->password_saved_, password.c_str(),
+              sizeof(render->password_saved_) - 1);
+      render->password_saved_[sizeof(render->password_saved_) - 1] = '\0';
+
+      memset(&render->self_hosted_id_, 0, sizeof(render->self_hosted_id_));
+      strncpy(render->self_hosted_id_, client_id,
+              sizeof(render->self_hosted_id_) - 1);
+      render->self_hosted_id_[sizeof(render->self_hosted_id_) - 1] = '\0';
+
+      LOG_INFO("Use self-hosted client id [{}] and save to cache file", id);
+
+      render->cd_cache_mutex_.lock();
+
+      std::ifstream v2_file_read(render->cache_path_ + "/secure_cache_v2.enc",
+                                 std::ios::binary);
+      if (v2_file_read.good()) {
+        v2_file_read.read(reinterpret_cast<char*>(&render->cd_cache_v2_),
+                          sizeof(CDCacheV2));
+        v2_file_read.close();
+      } else {
+        memset(&render->cd_cache_v2_, 0, sizeof(CDCacheV2));
+        memset(&render->cd_cache_v2_.client_id_with_password, 0,
+               sizeof(render->cd_cache_v2_.client_id_with_password));
+        strncpy(render->cd_cache_v2_.client_id_with_password,
+                render->client_id_with_password_,
+                sizeof(render->cd_cache_v2_.client_id_with_password));
+        memcpy(&render->cd_cache_v2_.key, &render->aes128_key_,
+               sizeof(render->cd_cache_v2_.key));
+        memcpy(&render->cd_cache_v2_.iv, &render->aes128_iv_,
+               sizeof(render->cd_cache_v2_.iv));
+      }
+
+      memset(&render->cd_cache_v2_.self_hosted_id, 0,
+             sizeof(render->cd_cache_v2_.self_hosted_id));
+      strncpy(render->cd_cache_v2_.self_hosted_id, client_id,
+              sizeof(render->cd_cache_v2_.self_hosted_id) - 1);
+      render->cd_cache_v2_
+          .self_hosted_id[sizeof(render->cd_cache_v2_.self_hosted_id) - 1] =
+          '\0';
+
+      memset(&render->cd_cache_v2_.client_id_with_password, 0,
+             sizeof(render->cd_cache_v2_.client_id_with_password));
+      strncpy(render->cd_cache_v2_.client_id_with_password,
+              render->client_id_with_password_,
+              sizeof(render->cd_cache_v2_.client_id_with_password));
+      memcpy(&render->cd_cache_v2_.key, &render->aes128_key_,
+             sizeof(render->cd_cache_v2_.key));
+      memcpy(&render->cd_cache_v2_.iv, &render->aes128_iv_,
+             sizeof(render->cd_cache_v2_.iv));
+      std::ofstream cd_cache_v2_file(
+          render->cache_path_ + "/secure_cache_v2.enc", std::ios::binary);
+      if (cd_cache_v2_file) {
+        cd_cache_v2_file.write(reinterpret_cast<char*>(&render->cd_cache_v2_),
+                               sizeof(CDCacheV2));
+        cd_cache_v2_file.close();
+      }
+
+      render->cd_cache_mutex_.unlock();
+    } else {
+      memset(&render->client_id_, 0, sizeof(render->client_id_));
+      strncpy(render->client_id_, id.c_str(), sizeof(render->client_id_) - 1);
+      render->client_id_[sizeof(render->client_id_) - 1] = '\0';
+
+      memset(&render->password_saved_, 0, sizeof(render->password_saved_));
+      strncpy(render->password_saved_, password.c_str(),
+              sizeof(render->password_saved_) - 1);
+      render->password_saved_[sizeof(render->password_saved_) - 1] = '\0';
+
+      memset(&render->client_id_with_password_, 0,
+             sizeof(render->client_id_with_password_));
+      strncpy(render->client_id_with_password_, client_id,
+              sizeof(render->client_id_with_password_) - 1);
+      render
+          ->client_id_with_password_[sizeof(render->client_id_with_password_) -
                                      1] = '\0';
 
-    LOG_INFO("Use client id [{}] and save id into cache file", id);
-    render->SaveSettingsIntoCacheFile();
+      LOG_INFO("Use client id [{}] and save id into cache file", id);
+      render->SaveSettingsIntoCacheFile();
+    }
   }
 
   std::string remote_id(user_id, user_id_size);

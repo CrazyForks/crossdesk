@@ -277,8 +277,25 @@ class Render {
     unsigned char iv[16];
   };
 
+  struct CDCacheV2 {
+    char client_id_with_password[17];
+    int language;
+    int video_quality;
+    int video_frame_rate;
+    int video_encode_format;
+    bool enable_hardware_video_codec;
+    bool enable_turn;
+    bool enable_srtp;
+
+    unsigned char key[16];
+    unsigned char iv[16];
+
+    char self_hosted_id[17];
+  };
+
  private:
   CDCache cd_cache_;
+  CDCacheV2 cd_cache_v2_;
   std::mutex cd_cache_mutex_;
   std::unique_ptr<ConfigCenter> config_center_;
   ConfigCenter::LANGUAGE localization_language_ =
@@ -470,6 +487,8 @@ class Render {
   char client_id_display_[12] = "";
   char client_id_with_password_[17] = "";
   char password_saved_[7] = "";
+  char self_hosted_id_[17] = "";
+  char self_hosted_user_id_[17] = "";
   int language_button_value_ = 0;
   int video_quality_button_value_ = 0;
   int video_frame_rate_button_value_ = 1;

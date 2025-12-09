@@ -233,14 +233,40 @@ int Render::LocalWindow() {
                     sizeof(password_saved_) - 1);
             password_saved_[sizeof(password_saved_) - 1] = '\0';
 
-            std::string client_id_with_password =
-                std::string(client_id_) + "@" + password_saved_;
-            strncpy(client_id_with_password_, client_id_with_password.c_str(),
-                    sizeof(client_id_with_password_) - 1);
-            client_id_with_password_[sizeof(client_id_with_password_) - 1] =
-                '\0';
+            // if self hosted
+            if (config_center_->IsSelfHosted()) {
+              std::string self_hosted_id_str;
+              if (strlen(self_hosted_id_) > 0) {
+                const char* at_pos = strchr(self_hosted_id_, '@');
+                if (at_pos != nullptr) {
+                  self_hosted_id_str =
+                      std::string(self_hosted_id_, at_pos - self_hosted_id_);
+                } else {
+                  self_hosted_id_str = self_hosted_id_;
+                }
+              } else {
+                self_hosted_id_str = client_id_;
+              }
+
+              std::string new_self_hosted_id =
+                  self_hosted_id_str + "@" + password_saved_;
+              memset(&self_hosted_id_, 0, sizeof(self_hosted_id_));
+              strncpy(self_hosted_id_, new_self_hosted_id.c_str(),
+                      sizeof(self_hosted_id_) - 1);
+              self_hosted_id_[sizeof(self_hosted_id_) - 1] = '\0';
+
+            } else {
+              std::string client_id_with_password =
+                  std::string(client_id_) + "@" + password_saved_;
+              strncpy(client_id_with_password_, client_id_with_password.c_str(),
+                      sizeof(client_id_with_password_) - 1);
+              client_id_with_password_[sizeof(client_id_with_password_) - 1] =
+                  '\0';
+            }
 
             SaveSettingsIntoCacheFile();
+
+            memset(new_password_, 0, sizeof(new_password_));
 
             LeaveConnection(peer_, client_id_);
             DestroyPeer(&peer_);

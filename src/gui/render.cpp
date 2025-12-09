@@ -203,22 +203,41 @@ Render::~Render() {}
 
 int Render::SaveSettingsIntoCacheFile() {
   cd_cache_mutex_.lock();
-  std::ofstream cd_cache_file(cache_path_ + "/secure_cache.enc",
-                              std::ios::binary);
-  if (!cd_cache_file) {
+
+  std::ofstream cd_cache_v2_file(cache_path_ + "/secure_cache_v2.enc",
+                                 std::ios::binary);
+  if (!cd_cache_v2_file) {
     cd_cache_mutex_.unlock();
     return -1;
   }
 
-  memset(&cd_cache_.client_id_with_password, 0,
-         sizeof(cd_cache_.client_id_with_password));
-  memcpy(cd_cache_.client_id_with_password, client_id_with_password_,
+  memset(&cd_cache_v2_.client_id_with_password, 0,
+         sizeof(cd_cache_v2_.client_id_with_password));
+  memcpy(cd_cache_v2_.client_id_with_password, client_id_with_password_,
          sizeof(client_id_with_password_));
-  memcpy(&cd_cache_.key, &aes128_key_, sizeof(aes128_key_));
-  memcpy(&cd_cache_.iv, &aes128_iv_, sizeof(aes128_iv_));
+  memcpy(&cd_cache_v2_.key, &aes128_key_, sizeof(aes128_key_));
+  memcpy(&cd_cache_v2_.iv, &aes128_iv_, sizeof(aes128_iv_));
 
-  cd_cache_file.write(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
-  cd_cache_file.close();
+  memset(&cd_cache_v2_.self_hosted_id, 0, sizeof(cd_cache_v2_.self_hosted_id));
+  memcpy(cd_cache_v2_.self_hosted_id, self_hosted_id_, sizeof(self_hosted_id_));
+
+  cd_cache_v2_file.write(reinterpret_cast<char*>(&cd_cache_v2_),
+                         sizeof(CDCacheV2));
+  cd_cache_v2_file.close();
+
+  std::ofstream cd_cache_file(cache_path_ + "/secure_cache.enc",
+                              std::ios::binary);
+  if (cd_cache_file) {
+    memset(&cd_cache_.client_id_with_password, 0,
+           sizeof(cd_cache_.client_id_with_password));
+    memcpy(cd_cache_.client_id_with_password, client_id_with_password_,
+           sizeof(client_id_with_password_));
+    memcpy(&cd_cache_.key, &aes128_key_, sizeof(aes128_key_));
+    memcpy(&cd_cache_.iv, &aes128_iv_, sizeof(aes128_iv_));
+    cd_cache_file.write(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
+    cd_cache_file.close();
+  }
+
   cd_cache_mutex_.unlock();
 
   return 0;
@@ -226,32 +245,80 @@ int Render::SaveSettingsIntoCacheFile() {
 
 int Render::LoadSettingsFromCacheFile() {
   cd_cache_mutex_.lock();
-  std::ifstream cd_cache_file(cache_path_ + "/secure_cache.enc",
-                              std::ios::binary);
-  if (!cd_cache_file) {
+
+  std::ifstream cd_cache_v2_file(cache_path_ + "/secure_cache_v2.enc",
+                                 std::ios::binary);
+  bool v2_file_exists = cd_cache_v2_file.good();
+
+  if (v2_file_exists) {
+    cd_cache_v2_file.read(reinterpret_cast<char*>(&cd_cache_v2_),
+                          sizeof(CDCacheV2));
+    cd_cache_v2_file.close();
+
+    memset(&client_id_with_password_, 0, sizeof(client_id_with_password_));
+    memcpy(client_id_with_password_, cd_cache_v2_.client_id_with_password,
+           sizeof(client_id_with_password_));
+
+    memset(&self_hosted_id_, 0, sizeof(self_hosted_id_));
+    memcpy(self_hosted_id_, cd_cache_v2_.self_hosted_id,
+           sizeof(self_hosted_id_));
+
+    memcpy(aes128_key_, cd_cache_v2_.key, sizeof(cd_cache_v2_.key));
+    memcpy(aes128_iv_, cd_cache_v2_.iv, sizeof(cd_cache_v2_.iv));
+
+    LOG_INFO("Load settings from v2 cache file");
+  } else {
+    std::ifstream cd_cache_file(cache_path_ + "/secure_cache.enc",
+                                std::ios::binary);
+    if (!cd_cache_file) {
+      cd_cache_mutex_.unlock();
+
+      memset(password_saved_, 0, sizeof(password_saved_));
+      memset(aes128_key_, 0, sizeof(aes128_key_));
+      memset(aes128_iv_, 0, sizeof(aes128_iv_));
+      memset(self_hosted_id_, 0, sizeof(self_hosted_id_));
+
+      thumbnail_.reset();
+      thumbnail_ = std::make_shared<Thumbnail>(cache_path_ + "/thumbnails/");
+      thumbnail_->GetKeyAndIv(aes128_key_, aes128_iv_);
+      thumbnail_->DeleteAllFilesInDirectory();
+
+      SaveSettingsIntoCacheFile();
+
+      return -1;
+    }
+
+    cd_cache_file.read(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
+    cd_cache_file.close();
+
+    memset(&cd_cache_v2_.client_id_with_password, 0,
+           sizeof(cd_cache_v2_.client_id_with_password));
+    memcpy(cd_cache_v2_.client_id_with_password,
+           cd_cache_.client_id_with_password,
+           sizeof(cd_cache_.client_id_with_password));
+    memcpy(&cd_cache_v2_.key, &cd_cache_.key, sizeof(cd_cache_.key));
+    memcpy(&cd_cache_v2_.iv, &cd_cache_.iv, sizeof(cd_cache_.iv));
+
+    memset(&cd_cache_v2_.self_hosted_id, 0,
+           sizeof(cd_cache_v2_.self_hosted_id));
+
+    memset(&client_id_with_password_, 0, sizeof(client_id_with_password_));
+    memcpy(client_id_with_password_, cd_cache_.client_id_with_password,
+           sizeof(client_id_with_password_));
+
+    memset(&self_hosted_id_, 0, sizeof(self_hosted_id_));
+
+    memcpy(aes128_key_, cd_cache_.key, sizeof(cd_cache_.key));
+    memcpy(aes128_iv_, cd_cache_.iv, sizeof(cd_cache_.iv));
+
     cd_cache_mutex_.unlock();
-
-    memset(password_saved_, 0, sizeof(password_saved_));
-    memset(aes128_key_, 0, sizeof(aes128_key_));
-    memset(aes128_iv_, 0, sizeof(aes128_iv_));
-
-    thumbnail_.reset();
-    thumbnail_ = std::make_shared<Thumbnail>(cache_path_ + "/thumbnails/");
-    thumbnail_->GetKeyAndIv(aes128_key_, aes128_iv_);
-    thumbnail_->DeleteAllFilesInDirectory();
-
     SaveSettingsIntoCacheFile();
+    cd_cache_mutex_.lock();
 
-    return -1;
+    LOG_INFO("Migrated settings from v1 to v2 cache file");
   }
 
-  cd_cache_file.read(reinterpret_cast<char*>(&cd_cache_), sizeof(CDCache));
-  cd_cache_file.close();
   cd_cache_mutex_.unlock();
-
-  memset(&client_id_with_password_, 0, sizeof(client_id_with_password_));
-  memcpy(client_id_with_password_, cd_cache_.client_id_with_password,
-         sizeof(client_id_with_password_));
 
   if (strchr(client_id_with_password_, '@') != nullptr) {
     std::string id, password;
@@ -272,9 +339,6 @@ int Render::LoadSettingsFromCacheFile() {
     strncpy(password_saved_, password.c_str(), sizeof(password_saved_) - 1);
     password_saved_[sizeof(password_saved_) - 1] = '\0';
   }
-
-  memcpy(aes128_key_, cd_cache_.key, sizeof(cd_cache_.key));
-  memcpy(aes128_iv_, cd_cache_.iv, sizeof(cd_cache_.iv));
 
   thumbnail_.reset();
   thumbnail_ = std::make_shared<Thumbnail>(cache_path_ + "/thumbnails/",
@@ -480,11 +544,68 @@ int Render::CreateConnectionPeer() {
     signal_server_port = config_center_->GetSignalServerPort();
     coturn_server_port = config_center_->GetCoturnServerPort();
     tls_cert_path = config_center_->GetCertFilePath();
+
+    std::string current_self_hosted_ip = config_center_->GetSignalServerHost();
+    bool use_cached_id = false;
+
+    // Check secure_cache_v2.enc exists or not
+    std::ifstream v2_file(cache_path_ + "/secure_cache_v2.enc",
+                          std::ios::binary);
+    if (v2_file.good()) {
+      CDCacheV2 temp_cache;
+      v2_file.read(reinterpret_cast<char*>(&temp_cache), sizeof(CDCacheV2));
+      v2_file.close();
+
+      if (strlen(temp_cache.self_hosted_id) > 0) {
+        memset(&self_hosted_id_, 0, sizeof(self_hosted_id_));
+        strncpy(self_hosted_id_, temp_cache.self_hosted_id,
+                sizeof(self_hosted_id_) - 1);
+        self_hosted_id_[sizeof(self_hosted_id_) - 1] = '\0';
+        use_cached_id = true;
+
+        std::string id, password;
+        const char* at_pos = strchr(self_hosted_id_, '@');
+        if (at_pos == nullptr) {
+          id = self_hosted_id_;
+          password.clear();
+        } else {
+          id.assign(self_hosted_id_, at_pos - self_hosted_id_);
+          password = at_pos + 1;
+        }
+
+        memset(&client_id_, 0, sizeof(client_id_));
+        strncpy(client_id_, id.c_str(), sizeof(client_id_) - 1);
+        client_id_[sizeof(client_id_) - 1] = '\0';
+
+        memset(&password_saved_, 0, sizeof(password_saved_));
+        strncpy(password_saved_, password.c_str(), sizeof(password_saved_) - 1);
+        password_saved_[sizeof(password_saved_) - 1] = '\0';
+      }
+    } else {
+      memset(&self_hosted_id_, 0, sizeof(self_hosted_id_));
+      LOG_INFO(
+          "secure_cache_v2.enc not found, will use empty id to get new id from "
+          "server");
+    }
+
+    if (use_cached_id && strlen(self_hosted_id_) > 0) {
+      memset(&self_hosted_user_id_, 0, sizeof(self_hosted_user_id_));
+      strncpy(self_hosted_user_id_, self_hosted_id_,
+              sizeof(self_hosted_user_id_) - 1);
+      self_hosted_user_id_[sizeof(self_hosted_user_id_) - 1] = '\0';
+      params_.user_id = self_hosted_user_id_;
+    } else {
+      memset(&self_hosted_user_id_, 0, sizeof(self_hosted_user_id_));
+      params_.user_id = self_hosted_user_id_;
+      LOG_INFO(
+          "Using empty id for self-hosted server, server will assign new id");
+    }
   } else {
     signal_server_ip = config_center_->GetDefaultServerHost();
     signal_server_port = config_center_->GetDefaultSignalServerPort();
     coturn_server_port = config_center_->GetDefaultCoturnServerPort();
     tls_cert_path = config_center_->GetDefaultCertFilePath();
+    params_.user_id = client_id_with_password_;
   }
 
   // self hosted server config
@@ -554,7 +675,6 @@ int Render::CreateConnectionPeer() {
   params_.on_connection_status = OnConnectionStatusCb;
   params_.net_status_report = NetStatusReport;
 
-  params_.user_id = client_id_with_password_;
   params_.user_data = this;
 
   peer_ = CreatePeer(&params_);
