@@ -39,7 +39,9 @@ class ConfigCenter {
   int SetCoturnServerPort(int coturn_server_port);
   int SetCertFilePath(const std::string& cert_file_path);
   int SetCertFingerprint(const std::string& fingerprint);
+  int SetDefaultCertFingerprint(const std::string& fingerprint);
   int ClearCertFingerprint();
+  int ClearDefaultCertFingerprint();
   int SetSelfHosted(bool enable_self_hosted);
   int SetMinimizeToTray(bool enable_minimize_to_tray);
   int SetAutostart(bool enable_autostart);
@@ -59,6 +61,7 @@ class ConfigCenter {
   int GetCoturnServerPort() const;
   std::string GetCertFilePath() const;
   std::string GetCertFingerprint() const;
+  std::string GetDefaultCertFingerprint() const;
   std::string GetDefaultServerHost() const;
   int GetDefaultSignalServerPort() const;
   int GetDefaultCoturnServerPort() const;
@@ -93,6 +96,8 @@ class ConfigCenter {
   std::string cert_file_path_default_ = "";
   std::string cert_fingerprint_ = "";
   std::string cert_fingerprint_server_host_ = "";
+  std::string default_cert_fingerprint_ = "";
+  std::string default_cert_fingerprint_server_host_ = "";
   bool enable_self_hosted_ = false;
   bool enable_minimize_to_tray_ = false;
   bool enable_autostart_ = false;

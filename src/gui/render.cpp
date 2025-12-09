@@ -604,7 +604,7 @@ int Render::CreateConnectionPeer() {
     signal_server_ip = config_center_->GetDefaultServerHost();
     signal_server_port = config_center_->GetDefaultSignalServerPort();
     coturn_server_port = config_center_->GetDefaultCoturnServerPort();
-    tls_cert_fingerprint = "";
+    tls_cert_fingerprint = config_center_->GetDefaultCertFingerprint();
     params_.user_id = client_id_with_password_;
   }
 
@@ -658,12 +658,20 @@ int Render::CreateConnectionPeer() {
       Render* render = static_cast<Render*>(user_data);
       if (render && render->config_center_) {
         render->config_center_->SetCertFingerprint(fingerprint);
+        LOG_INFO("Saved self-hosted certificate fingerprint: {}", fingerprint);
       }
     };
     params_.fingerprint_user_data = this;
   } else {
-    params_.on_cert_fingerprint = nullptr;
-    params_.fingerprint_user_data = nullptr;
+    params_.on_cert_fingerprint = [](const char* fingerprint, void* user_data) {
+      Render* render = static_cast<Render*>(user_data);
+      if (render && render->config_center_) {
+        render->config_center_->SetDefaultCertFingerprint(fingerprint);
+        LOG_INFO("Saved default server certificate fingerprint: {}",
+                 fingerprint);
+      }
+    };
+    params_.fingerprint_user_data = this;
   }
 
   strncpy(params_.log_path, dll_log_path_.c_str(),

@@ -93,6 +93,24 @@ int ConfigCenter::Load() {
     cert_fingerprint_server_host_ = "";
   }
 
+  const char* default_cert_fingerprint_value =
+      ini_.GetValue(section_, "default_cert_fingerprint", nullptr);
+  if (default_cert_fingerprint_value != nullptr &&
+      strlen(default_cert_fingerprint_value) > 0) {
+    default_cert_fingerprint_ = default_cert_fingerprint_value;
+  } else {
+    default_cert_fingerprint_ = "";
+  }
+  const char* default_cert_fingerprint_server_host_value =
+      ini_.GetValue(section_, "default_cert_fingerprint_server_host", nullptr);
+  if (default_cert_fingerprint_server_host_value != nullptr &&
+      strlen(default_cert_fingerprint_server_host_value) > 0) {
+    default_cert_fingerprint_server_host_ =
+        default_cert_fingerprint_server_host_value;
+  } else {
+    default_cert_fingerprint_server_host_ = "";
+  }
+
   if (enable_self_hosted_ && !cert_fingerprint_.empty() &&
       !cert_fingerprint_server_host_.empty() &&
       signal_server_host_ != cert_fingerprint_server_host_) {
@@ -102,6 +120,19 @@ int ConfigCenter::Load() {
     cert_fingerprint_server_host_.clear();
     ini_.Delete(section_, "cert_fingerprint", false);
     ini_.Delete(section_, "cert_fingerprint_server_host", false);
+    ini_.SaveFile(config_path_.c_str());
+  }
+
+  if (!enable_self_hosted_ && !default_cert_fingerprint_.empty() &&
+      !default_cert_fingerprint_server_host_.empty() &&
+      signal_server_host_default_ != default_cert_fingerprint_server_host_) {
+    LOG_INFO(
+        "Default server IP changed from {} to {}, clearing old fingerprint",
+        default_cert_fingerprint_server_host_, signal_server_host_default_);
+    default_cert_fingerprint_.clear();
+    default_cert_fingerprint_server_host_.clear();
+    ini_.Delete(section_, "default_cert_fingerprint", false);
+    ini_.Delete(section_, "default_cert_fingerprint_server_host", false);
     ini_.SaveFile(config_path_.c_str());
   }
 
@@ -140,6 +171,13 @@ int ConfigCenter::Save() {
       ini_.SetValue(section_, "cert_fingerprint_server_host",
                     cert_fingerprint_server_host_.c_str());
     }
+  }
+
+  if (!default_cert_fingerprint_.empty()) {
+    ini_.SetValue(section_, "default_cert_fingerprint",
+                  default_cert_fingerprint_.c_str());
+    ini_.SetValue(section_, "default_cert_fingerprint_server_host",
+                  default_cert_fingerprint_server_host_.c_str());
   }
 
   ini_.SetBoolValue(section_, "enable_autostart", enable_autostart_);
@@ -284,11 +322,24 @@ int ConfigCenter::SetCertFilePath(const std::string& cert_file_path) {
 
 int ConfigCenter::SetCertFingerprint(const std::string& fingerprint) {
   cert_fingerprint_ = fingerprint;
-  // 保存指纹时，同时保存当前的服务器IP
   cert_fingerprint_server_host_ = signal_server_host_;
   ini_.SetValue(section_, "cert_fingerprint", cert_fingerprint_.c_str());
   ini_.SetValue(section_, "cert_fingerprint_server_host",
                 cert_fingerprint_server_host_.c_str());
+  SI_Error rc = ini_.SaveFile(config_path_.c_str());
+  if (rc < 0) {
+    return -1;
+  }
+  return 0;
+}
+
+int ConfigCenter::SetDefaultCertFingerprint(const std::string& fingerprint) {
+  default_cert_fingerprint_ = fingerprint;
+  default_cert_fingerprint_server_host_ = signal_server_host_default_;
+  ini_.SetValue(section_, "default_cert_fingerprint",
+                default_cert_fingerprint_.c_str());
+  ini_.SetValue(section_, "default_cert_fingerprint_server_host",
+                default_cert_fingerprint_server_host_.c_str());
   SI_Error rc = ini_.SaveFile(config_path_.c_str());
   if (rc < 0) {
     return -1;
@@ -301,6 +352,18 @@ int ConfigCenter::ClearCertFingerprint() {
   cert_fingerprint_server_host_.clear();
   ini_.Delete(section_, "cert_fingerprint", false);
   ini_.Delete(section_, "cert_fingerprint_server_host", false);
+  SI_Error rc = ini_.SaveFile(config_path_.c_str());
+  if (rc < 0) {
+    return -1;
+  }
+  return 0;
+}
+
+int ConfigCenter::ClearDefaultCertFingerprint() {
+  default_cert_fingerprint_.clear();
+  default_cert_fingerprint_server_host_.clear();
+  ini_.Delete(section_, "default_cert_fingerprint", false);
+  ini_.Delete(section_, "default_cert_fingerprint_server_host", false);
   SI_Error rc = ini_.SaveFile(config_path_.c_str());
   if (rc < 0) {
     return -1;
@@ -464,6 +527,10 @@ std::string ConfigCenter::GetCertFilePath() const { return cert_file_path_; }
 
 std::string ConfigCenter::GetCertFingerprint() const {
   return cert_fingerprint_;
+}
+
+std::string ConfigCenter::GetDefaultCertFingerprint() const {
+  return default_cert_fingerprint_;
 }
 
 std::string ConfigCenter::GetDefaultServerHost() const {
