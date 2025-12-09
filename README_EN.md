@@ -216,7 +216,7 @@ sudo docker run -d \
   -e MAX_PORT=60000 \
   -v /var/lib/crossdesk:/var/lib/crossdesk \
   -v /var/log/crossdesk:/var/log/crossdesk \
-  crossdesk/crossdesk-server:v1.1.2
+  crossdesk/crossdesk-server:v1.1.3
 ```
 
 **Notes**
