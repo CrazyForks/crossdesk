@@ -214,20 +214,30 @@ int Render::SelfHostedServerWindow() {
 
       ImGui::Separator();
 
+      // {
+      //   ImGui::AlignTextToFramePadding();
+      //   ImGui::Text(
+      //       "%s",
+      //       localization::reset_cert_fingerprint[localization_language_index_]
+      //           .c_str());
+      //   ImGui::SameLine();
+      //   if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
+      //     ImGui::SetCursorPosX(title_bar_button_width_ * 2.5f);
+      //   } else {
+      //     ImGui::SetCursorPosX(title_bar_button_width_ * 3.43f);
+      //   }
+      //   ImGui::SetNextItemWidth(title_bar_button_width_ * 3.8f);
+
+      //   ShowSimpleFileBrowser();
+      // }
       {
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("%s", localization::self_hosted_server_certificate_path
+        if (ImGui::Button(localization::reset_cert_fingerprint
                               [localization_language_index_]
-                                  .c_str());
-        ImGui::SameLine();
-        if (ConfigCenter::LANGUAGE::CHINESE == localization_language_) {
-          ImGui::SetCursorPosX(title_bar_button_width_ * 2.5f);
-        } else {
-          ImGui::SetCursorPosX(title_bar_button_width_ * 3.43f);
+                                  .c_str())) {
+          config_center_->ClearCertFingerprint();
+          LOG_INFO("Certificate fingerprint cleared by user");
         }
-        ImGui::SetNextItemWidth(title_bar_button_width_ * 3.8f);
-
-        ShowSimpleFileBrowser();
       }
 
       if (stream_window_inited_) {

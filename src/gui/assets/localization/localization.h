@@ -116,6 +116,9 @@ static std::vector<std::string> self_hosted_server_certificate_path = {
     reinterpret_cast<const char*>(u8"证书文件路径:"), "Certificate File Path:"};
 static std::vector<std::string> select_a_file = {
     reinterpret_cast<const char*>(u8"请选择文件"), "Please select a file"};
+static std::vector<std::string> reset_cert_fingerprint = {
+    reinterpret_cast<const char*>(u8"重置证书指纹"),
+    "Reset Certificate Fingerprint"};
 static std::vector<std::string> ok = {reinterpret_cast<const char*>(u8"确认"),
                                       "OK"};
 static std::vector<std::string> cancel = {

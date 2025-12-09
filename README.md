@@ -229,21 +229,17 @@ sudo mkdir -p /var/lib/crossdesk /var/log/crossdesk
 sudo chown -R $(id -u):$(id -g) /var/lib/crossdesk /var/log/crossdesk
 ```
 
-## 证书文件
-在宿主机的 `/var/lib/crossdesk/certs` 路径下可找到证书文件 `crossdesk.cn_root.crt`，下载到你的客户端主机，并在客户端的**自托管服务器设置**中选择相应的**证书文件路径**。
 
 ### 客户端
 1. 点击右上角设置进入设置页面。<br>
 <img width="600" height="210" alt="image" src="https://github.com/user-attachments/assets/6431131d-b32a-4726-8783-6788f47baa3b" /><br><br>
 
-3. 点击点击**自托管服务器配置**。<br><br>
+2. 点击点击`自托管服务器配置`按钮。<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/24c761a3-1985-4d7e-84be-787383c2afb8" /><br><br>
 
-5. 在**证书文件路径**选择框中找到 **crossdesk.cn_root.crt** 的存放路径，选中 **crossdesk.cn_root.crt**，点击确认。<br><br>
-<img width="600" height="220" alt="image" src="https://github.com/user-attachments/assets/4af7cd3a-c72e-44fb-b032-30e050019c2a" /><br><br>
+3. 输入`服务器地址`(**EXTERNAL_IP**)、`信令服务端口`(**CROSSDESK_SERVER_PORT**)、`中继服务端口`(**COTURN_PORT**)。
 
-7. 勾选使用**自托管服务器配置**，点击确认配置生效。<br><br>
-<img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/1e455dc3-4087-4f37-a544-1ff9f8789383" /><br><br>
+4. 后续如果自托管服务器被重置或因其他原因导致证书更换，可以点击`重置证书指纹`按钮重置客户端保存的证书指纹。
 
 ### Web 客户端
 详情见项目 [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client)。

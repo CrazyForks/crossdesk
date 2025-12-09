@@ -238,10 +238,6 @@ sudo mkdir -p /var/lib/crossdesk /var/log/crossdesk
 sudo chown -R $(id -u):$(id -g) /var/lib/crossdesk /var/log/crossdesk
 ```
 
-### Certificate Files
-You can find the certificate file `crossdesk.cn_root.crt` at `/var/lib/crossdesk/certs` on the host machine.
-Download it to your client device and select it in the **Certificate File Path** field under the CrossDesk client’s **Self-Hosted Server Settings**.
-
 ### Server Side
 Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/your/certs** directory.
 
@@ -249,14 +245,12 @@ Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/y
 1. Click the settings icon in the top-right corner to enter the settings page.<br>
 <img width="600" height="210" alt="image" src="https://github.com/user-attachments/assets/6431131d-b32a-4726-8783-6788f47baa3b" /><br><br>
 
-2. Click **Self-Hosted Server Configuration**.<br><br>
+2. Click `Self-Hosted Server Configuration` button.<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/24c761a3-1985-4d7e-84be-787383c2afb8" /><br><br>
 
-3. In the **Certificate File Path** selection, locate and select the **crossdesk.cn_root.crt** file.<br><br>
-<img width="600" height="220" alt="image" src="https://github.com/user-attachments/assets/4af7cd3a-c72e-44fb-b032-30e050019c2a" /><br><br>
+3. Enter the `Server Address` (**EXTERNAL_IP**), `Signaling Service Port` (**CROSSDESK_SERVER_PORT**), and `Relay Service Port` (**COTURN_PORT**).
 
-4. Check the option to use **Self-Hosted Server Configuration**.<br><br>
-<img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/1e455dc3-4087-4f37-a544-1ff9f8789383" /><br><br>
+4. If the self-hosted server is later reset or the certificate is replaced for any reason, you can click the `Reset Certificate Fingerprint` button to clear the certificate fingerprint saved on the client.
 
 ### Web Client
 See [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client)。
