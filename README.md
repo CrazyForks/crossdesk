@@ -231,15 +231,17 @@ sudo chown -R $(id -u):$(id -g) /var/lib/crossdesk /var/log/crossdesk
 
 
 ### 客户端
-1. 点击右上角设置进入设置页面。<br>
+1. 点击右上角设置进入设置页面。<br><br>
 <img width="600" height="210" alt="image" src="https://github.com/user-attachments/assets/6431131d-b32a-4726-8783-6788f47baa3b" /><br><br>
 
 2. 点击点击`自托管服务器配置`按钮。<br><br>
-<img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/24c761a3-1985-4d7e-84be-787383c2afb8" /><br><br>
+<img width="600" height="140" alt="image" src="https://github.com/user-attachments/assets/24c761a3-1985-4d7e-84be-787383c2afb8" /><br><br>
 
-3. 输入`服务器地址`(**EXTERNAL_IP**)、`信令服务端口`(**CROSSDESK_SERVER_PORT**)、`中继服务端口`(**COTURN_PORT**)。
+3. 输入`服务器地址`(**EXTERNAL_IP**)、`信令服务端口`(**CROSSDESK_SERVER_PORT**)、`中继服务端口`(**COTURN_PORT**)。<br><br>
+<img width="600" height="200" alt="image" src="https://github.com/user-attachments/assets/9a32ddd5-37f8-4bee-9a51-eae295820f9a" /><br><br>
 
-4. 后续如果自托管服务器被重置或因其他原因导致证书更换，可以点击`重置证书指纹`按钮重置客户端保存的证书指纹。
+4. 后续如果自托管服务器被重置或因其他原因导致证书更换，可以点击`重置证书指纹`按钮重置客户端保存的证书指纹。<br><br>
+<img width="600" height="200" alt="image" src="https://github.com/user-attachments/assets/d9e423ab-0c2b-4fab-b132-4dc27462d704" /><br><br>
 
 ### Web 客户端
 详情见项目 [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client)。

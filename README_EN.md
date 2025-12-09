@@ -242,15 +242,17 @@ sudo chown -R $(id -u):$(id -g) /var/lib/crossdesk /var/log/crossdesk
 Place **crossdesk.cn.key** and **crossdesk.cn_bundle.crt** into the **/path/to/your/certs** directory.
 
 ### Client Side
-1. Click the settings icon in the top-right corner to enter the settings page.<br>
+1. Click the settings icon in the top-right corner to enter the settings page.<br><br>
 <img width="600" height="210" alt="image" src="https://github.com/user-attachments/assets/6431131d-b32a-4726-8783-6788f47baa3b" /><br><br>
 
 2. Click `Self-Hosted Server Configuration` button.<br><br>
 <img width="600" height="160" alt="image" src="https://github.com/user-attachments/assets/24c761a3-1985-4d7e-84be-787383c2afb8" /><br><br>
 
-3. Enter the `Server Address` (**EXTERNAL_IP**), `Signaling Service Port` (**CROSSDESK_SERVER_PORT**), and `Relay Service Port` (**COTURN_PORT**).
+3. Enter the `Server Address` (**EXTERNAL_IP**), `Signaling Service Port` (**CROSSDESK_SERVER_PORT**), and `Relay Service Port` (**COTURN_PORT**).<br><br>
+<img width="600" height="200" alt="image" src="https://github.com/user-attachments/assets/9a32ddd5-37f8-4bee-9a51-eae295820f9a" /><br><br>
 
-4. If the self-hosted server is later reset or the certificate is replaced for any reason, you can click the `Reset Certificate Fingerprint` button to clear the certificate fingerprint saved on the client.
+4. If the self-hosted server is later reset or the certificate is replaced for any reason, you can click the `Reset Certificate Fingerprint` button to clear the certificate fingerprint saved on the client.<br><br>
+<img width="600" height="200" alt="image" src="https://github.com/user-attachments/assets/d9e423ab-0c2b-4fab-b132-4dc27462d704" /><br><br>
 
 ### Web Client
 See [CrossDesk Web Client](https://github.com/kunkundi/crossdesk-web-client)。
